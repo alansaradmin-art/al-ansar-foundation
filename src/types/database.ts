@@ -90,7 +90,7 @@ export interface Database {
         Row: {
           id: string
           donation_id: string
-          member_id: string
+          member_id: string | null
           donation_date: string
           donation_month: number
           donation_year: number
@@ -107,7 +107,6 @@ export interface Database {
           updated_at: string
         }
         Insert: Partial<Database['public']['Tables']['donations']['Row']> & {
-          member_id: string
           donation_date: string
           donation_month: number
           donation_year: number

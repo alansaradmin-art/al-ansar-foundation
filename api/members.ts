@@ -151,6 +151,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         summaries[id] = { donationTotal: 0, donationCount: 0, hasCompletedFollowup: false, isPending: false }
       }
       for (const d of donationsResult.data ?? []) {
+        // member_id is only nullable for anonymous donations (see
+        // supabase/migrations/0013_nullable_donation_member.sql), which can
+        // never appear here anyway — the query above filters
+        // .in('member_id', allowedIds), and NULL never matches an IN list.
+        if (!d.member_id) continue
         summaries[d.member_id].donationTotal += Number(d.amount_inr)
         summaries[d.member_id].donationCount += 1
       }

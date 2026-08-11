@@ -6,7 +6,12 @@ const REFERENCE_REQUIRED_METHODS = new Set(['UPI', 'ONLINE', 'BANK_TRANSFER'])
 
 export const donationFormSchema = z
   .object({
-    member_id: z.string().uuid('Select a member.'),
+    // Absent entirely for an Admin-only anonymous donation (see
+    // AnonymousDonationDialog.tsx) — every other donation-entry dialog
+    // always supplies a real memberId prop, so this stays effectively
+    // required for them in practice. The server is the real gate on who
+    // may omit it (api/donations.ts).
+    member_id: z.string().uuid('Select a member.').optional(),
     donation_date: z.string().min(1, 'Donation date is required.'),
     amount_inr: z.coerce
       .number({ message: 'Enter a valid amount.' })

@@ -27,7 +27,9 @@ export function DonationForm({
   onSubmit,
   isSubmitting,
 }: {
-  memberId: string
+  /** Omitted for an Admin-only anonymous donation (AnonymousDonationDialog) —
+   * every other caller always supplies a real member id. */
+  memberId?: string
   onSubmit: (values: DonationFormValues) => void
   isSubmitting: boolean
 }) {

@@ -54,7 +54,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       let query = supabase
         .from('donations')
         .select(
-          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members!inner(member_name, member_id, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
+          // member is a left join (not !inner) — an anonymous donation
+          // (member_id null) has no row to inner-join against and would
+          // otherwise vanish from this list/count/export entirely.
+          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members(member_name, member_id, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
           { count: 'exact' },
         )
         .eq('is_deleted', false)
@@ -77,25 +80,31 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
     if (req.method === 'POST') {
       const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string }>(req)
-      if (!values.member_id) return sendError(res, 400, 'member_id is required.')
 
-      if (profile.role !== 'ADMIN') {
-        const { data: member, error: memberError } = await supabase
-          .from('members')
-          .select('assigned_manager_id')
-          .eq('id', values.member_id)
-          .maybeSingle()
-        if (memberError) return sendSupabaseError(res, memberError)
-        if (!member || member.assigned_manager_id !== profile.managerId) {
-          return sendError(res, 403, 'You can only record donations for your own members.')
+      if (values.member_id) {
+        if (profile.role !== 'ADMIN') {
+          const { data: member, error: memberError } = await supabase
+            .from('members')
+            .select('assigned_manager_id')
+            .eq('id', values.member_id)
+            .maybeSingle()
+          if (memberError) return sendSupabaseError(res, memberError)
+          if (!member || member.assigned_manager_id !== profile.managerId) {
+            return sendError(res, 403, 'You can only record donations for your own members.')
+          }
         }
+      } else if (profile.role !== 'ADMIN') {
+        // No member_id — this is an anonymous donation. Only Admins may
+        // record one; this is the real enforcement boundary, not just the
+        // absence of the entry point in the Manager UI.
+        return sendError(res, 403, 'Only Admins can record a donation without a member.')
       }
 
       const [year, month] = values.donation_date.split('-').map(Number)
       const { data, error } = await supabase
         .from('donations')
         .insert({
-          member_id: values.member_id,
+          member_id: values.member_id ?? null,
           donation_date: values.donation_date,
           donation_month: month,
           donation_year: year,

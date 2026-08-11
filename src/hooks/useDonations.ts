@@ -31,7 +31,11 @@ export function useCreateDonation(recordedBy: string) {
   return useMutation({
     mutationFn: (values: DonationFormValues) => donationsService.createDonation(getToken, values, recordedBy),
     onSuccess: (_data, values) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.donations.forMember(values.member_id) })
+      // Anonymous donations (no member_id) have nothing member-specific to
+      // invalidate here.
+      if (values.member_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.donations.forMember(values.member_id) })
+      }
       queryClient.invalidateQueries({ queryKey: ['donations', 'admin-list'] })
       queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })

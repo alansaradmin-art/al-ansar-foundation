@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonationDialog'
+import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationDialog'
+import { AnonymousDonationBadge } from '@/components/StatusBadge'
 import { formatDate, formatINR } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import { PAYMENT_METHODS } from '@/schemas/donation.schema'
@@ -45,8 +47,8 @@ export default function AdminDonationsPage() {
     if (!data) return
     const csv = toCsv<DonationWithRelations>(data.rows, [
       { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
-      { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? '' },
-      { key: 'member_id', label: 'Member ID', value: (r) => r.member?.member_id ?? '' },
+      { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
+      { key: 'member_id', label: 'Member ID', value: (r) => r.member?.member_id ?? 'Anonymous' },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
       { key: 'ref', label: 'Transaction Reference', value: (r) => r.transaction_reference ?? '' },
@@ -93,6 +95,7 @@ export default function AdminDonationsPage() {
         <Button variant="outline" onClick={handleExport} disabled={!data || data.rows.length === 0} className="ml-auto">
           <Download className="size-4" /> Export CSV
         </Button>
+        <AnonymousDonationDialog />
       </div>
 
       {isLoading && <TableSkeleton cols={6} />}
@@ -118,8 +121,14 @@ export default function AdminDonationsPage() {
                 <tr key={donation.id} className="border-b last:border-0">
                   <td className="p-3 whitespace-nowrap">{formatDate(donation.donation_date)}</td>
                   <td className="p-3">
-                    <p>{donation.member?.member_name}</p>
-                    <p className="text-xs text-muted-foreground">{donation.member?.member_id}</p>
+                    {donation.member ? (
+                      <>
+                        <p>{donation.member.member_name}</p>
+                        <p className="text-xs text-muted-foreground">{donation.member.member_id}</p>
+                      </>
+                    ) : (
+                      <AnonymousDonationBadge />
+                    )}
                   </td>
                   <td className="p-3 font-medium tabular-nums">{formatINR(donation.amount_inr)}</td>
                   <td className="p-3">

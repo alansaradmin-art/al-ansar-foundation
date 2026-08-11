@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { CheckCircle2, Circle, CircleSlash, Clock, PhoneCall, XCircle, MoreHorizontal, IndianRupee } from 'lucide-react'
+import { CheckCircle2, Circle, CircleSlash, Clock, PhoneCall, XCircle, MoreHorizontal, IndianRupee, UserX } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FollowUpStatus, MemberStatus } from '@/types'
 
@@ -48,6 +48,14 @@ export function DonationStatusBadge({ received, label }: { received: boolean; la
   ) : (
     <Badge label={label ?? 'No Donation Recorded'} tone="neutral" icon={<Circle className="size-3.5" />} />
   )
+}
+
+/** A donation recorded with no member attached (Admin-only — see
+ * AnonymousDonationDialog.tsx). Neutral tone, same as every other
+ * non-alarming identity/state badge in this file — this is a normal,
+ * intentional record type, not a problem to flag. */
+export function AnonymousDonationBadge() {
+  return <Badge label="Anonymous Donation" tone="neutral" icon={<UserX className="size-3.5" />} />
 }
 
 const FOLLOW_UP_CONFIG: Record<FollowUpStatus, { label: string; tone: Tone; icon: ReactNode }> = {
