@@ -1,49 +1,32 @@
-import type { AppSupabaseClient } from '@/lib/supabase'
+import { apiClient, ApiError, type GetToken } from '@/lib/apiClient'
 import type { Manager, ManagerStatus } from '@/types'
 import type { ManagerFormValues } from '@/schemas/manager.schema'
 
 export async function listManagers(
-  client: AppSupabaseClient,
+  getToken: GetToken,
   params: { status?: ManagerStatus; search?: string } = {},
 ): Promise<Manager[]> {
-  let query = client.from('managers').select('*').order('full_name')
-  if (params.status) query = query.eq('status', params.status)
-  if (params.search?.trim()) {
-    const q = params.search.trim()
-    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+  const { rows } = await apiClient.get<{ rows: Manager[] }>('/api/managers', getToken, { ...params })
+  return rows
+}
+
+export async function getManagerById(getToken: GetToken, id: string): Promise<Manager | null> {
+  try {
+    return await apiClient.get<Manager>('/api/managers', getToken, { id })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null
+    throw error
   }
-  const { data, error } = await query
-  if (error) throw error
-  return data ?? []
 }
 
-export async function getManagerById(client: AppSupabaseClient, id: string): Promise<Manager | null> {
-  const { data, error } = await client.from('managers').select('*').eq('id', id).maybeSingle()
-  if (error) throw error
-  return data
+export async function createManager(getToken: GetToken, values: ManagerFormValues): Promise<Manager> {
+  return apiClient.post('/api/managers', getToken, values)
 }
 
-export async function createManager(client: AppSupabaseClient, values: ManagerFormValues): Promise<Manager> {
-  const { data, error } = await client.from('managers').insert(values).select('*').single()
-  if (error) throw error
-  return data
+export async function updateManager(getToken: GetToken, id: string, values: ManagerFormValues): Promise<Manager> {
+  return apiClient.put('/api/managers', getToken, values, { id })
 }
 
-export async function updateManager(
-  client: AppSupabaseClient,
-  id: string,
-  values: ManagerFormValues,
-): Promise<Manager> {
-  const { data, error } = await client.from('managers').update(values).eq('id', id).select('*').single()
-  if (error) throw error
-  return data
-}
-
-export async function setManagerStatus(
-  client: AppSupabaseClient,
-  id: string,
-  status: ManagerStatus,
-): Promise<void> {
-  const { error } = await client.from('managers').update({ status }).eq('id', id)
-  if (error) throw error
+export async function setManagerStatus(getToken: GetToken, id: string, status: ManagerStatus): Promise<void> {
+  await apiClient.patch('/api/managers', getToken, { status }, { id, action: 'status' })
 }

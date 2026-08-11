@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/clerk-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useSupabaseClient } from '@/contexts/SupabaseContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { getFollowUpPendingDay, setFollowUpPendingDay } from '@/services/settings'
 import { queryKeys } from '@/lib/queryKeys'
@@ -13,12 +13,12 @@ import { Button } from '@/components/ui/button'
 import { LoadingState } from '@/components/StateViews'
 
 export default function SettingsPage() {
-  const client = useSupabaseClient()
+  const { getToken } = useAuth()
   const { profile } = useProfile()
   const queryClient = useQueryClient()
   const { data: pendingDay, isLoading } = useQuery({
     queryKey: queryKeys.settings.pendingDay,
-    queryFn: () => getFollowUpPendingDay(client),
+    queryFn: () => getFollowUpPendingDay(getToken),
   })
 
   const [value, setValue] = useState<number>(20)
@@ -31,7 +31,7 @@ export default function SettingsPage() {
   async function handleSave() {
     setSaving(true)
     try {
-      await setFollowUpPendingDay(client, value, profile!.id)
+      await setFollowUpPendingDay(getToken, value, profile!.id)
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.pendingDay })
       toast.success('Setting saved.')
     } catch (error) {

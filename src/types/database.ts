@@ -160,7 +160,15 @@ export interface Database {
           new_value: Record<string, unknown> | null
           created_at: string
         }
-        Insert: Record<string, never>
+        // Written only by api/_lib/auditLog.ts using the service-role key —
+        // RLS still has no insert policy for authenticated/anon (0003_rls.sql),
+        // so this type being non-empty doesn't loosen who can actually write
+        // a row, only what the service-role-only caller is typed to send.
+        Insert: Partial<Database['public']['Tables']['audit_logs']['Row']> & {
+          action: string
+          entity_type: string
+          entity_id: string
+        }
         Update: Record<string, never>
         Relationships: []
       }
@@ -247,10 +255,6 @@ export interface Database {
       is_pending_followup_batch: {
         Args: { p_member_ids: string[]; p_month: number; p_year: number }
         Returns: { member_id: string; is_pending: boolean }[]
-      }
-      provision_my_profile: {
-        Args: { p_email: string; p_full_name: string }
-        Returns: Database['public']['Tables']['profiles']['Row'] | null
       }
     }
   }

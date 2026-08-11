@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '@clerk/clerk-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +16,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSetManagerStatus, useManagers } from '@/hooks/useManagers'
 import { useMembers, useReassignManager } from '@/hooks/useMembers'
-import { useSupabaseClient } from '@/contexts/SupabaseContext'
 import { countMembersForManager } from '@/services/members'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import { useQuery } from '@tanstack/react-query'
@@ -24,7 +24,7 @@ import type { Manager } from '@/types'
 export function ManagerStatusControl({ manager }: { manager: Manager }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reassignTarget, setReassignTarget] = useState('')
-  const client = useSupabaseClient()
+  const { getToken } = useAuth()
   const { mutate: setStatus, isPending: isTogglingStatus } = useSetManagerStatus()
   const { mutate: reassign, isPending: isReassigning } = useReassignManager()
   const { data: otherManagers = [] } = useManagers({ status: 'ACTIVE' })
@@ -32,7 +32,7 @@ export function ManagerStatusControl({ manager }: { manager: Manager }) {
 
   const { data: affectedCount } = useQuery({
     queryKey: ['manager-active-member-count', manager.id],
-    queryFn: () => countMembersForManager(client, manager.id),
+    queryFn: () => countMembersForManager(getToken, manager.id),
     enabled: confirmOpen,
   })
 

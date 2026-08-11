@@ -1,3 +1,5 @@
+import { ApiError } from './apiClient'
+
 interface ErrorLike {
   code?: string
   message?: string
@@ -5,10 +7,18 @@ interface ErrorLike {
 }
 
 /**
- * Maps known Postgres/PostgREST error shapes to the user-facing copy
- * specified for this app. Raw database errors must never reach a toast.
+ * Maps known Postgres/PostgREST error shapes (now forwarded through the API
+ * layer's 400 responses, see api/_lib/http.ts's sendSupabaseError) and the
+ * API's own crafted 401/403/404 messages to the user-facing copy specified
+ * for this app. Raw database errors must never reach a toast.
  */
 export function getFriendlyErrorMessage(error: unknown, fallback: string): string {
+  // The API layer's own 401/403/404 responses carry a message crafted for
+  // display already (e.g. "You can only record donations for your own
+  // members.") and no Postgres code — surface it directly rather than
+  // falling through to the generic fallback.
+  if (error instanceof ApiError && !error.code) return error.message || fallback
+
   const err = error as ErrorLike | undefined
   const code = err?.code
   const text = `${err?.message ?? ''} ${err?.details ?? ''}`.toLowerCase()
@@ -34,10 +44,6 @@ export function getFriendlyErrorMessage(error: unknown, fallback: string): strin
 
   if (code === '42P01' || code === 'PGRST205' || code === 'PGRST202') {
     return 'The database is not set up yet — run the SQL migrations in supabase/migrations against this Supabase project, then try again.'
-  }
-
-  if (text.includes('not authenticated')) {
-    return 'Supabase could not read your Clerk session (auth.jwt() is empty). Check Supabase → Authentication → Sign In / Providers → Third Party Auth is connected to Clerk, and that VITE_SUPABASE_URL/ANON_KEY match this project.'
   }
 
   return fallback

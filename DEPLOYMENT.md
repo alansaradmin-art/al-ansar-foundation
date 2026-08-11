@@ -25,24 +25,33 @@ earlier ones.
 
 ## 1. Architecture at a glance
 
-- **Clerk authenticates. Supabase authorizes.** Clerk only proves who signed in. The
-  `profiles.role` column in Postgres (`ADMIN` / `MANAGER`) is the only thing that decides
-  what they can see — enforced by Row-Level Security, not by the React app.
-- **No custom backend.** The browser talks to Supabase directly via `supabase-js`, using
-  Supabase's native "Third-Party Auth" trust relationship with Clerk so Postgres can read
-  `auth.jwt()->>'sub'` directly from the Clerk session token. This is why step 3.3 below
-  (connecting Clerk ↔ Supabase) is not optional — without it, every authenticated request
-  gets a 401 and nothing in the app works.
-- **Two ways a Clerk sign-in becomes a `profiles` row:**
-  1. **Self-provisioning (primary, works everywhere, including localhost):** the app itself
-     calls a Postgres function (`provision_my_profile`) the moment someone with no profile
-     yet signs in. No deployment required for this to work.
-  2. **Clerk webhook (production nicety):** `api/webhooks/clerk.ts`, the one Vercel
-     serverless function in this project, does the same matching server-side whenever Clerk
-     fires `user.created`/`user.updated`. Needs a public URL, so it only works once deployed.
+- **Clerk authenticates. A server-side API layer authorizes.** Clerk only proves who signed
+  in. The browser **never talks to Supabase directly** — Supabase's Third-Party Auth
+  integration with Clerk has been removed. Every screen instead calls a Vercel serverless
+  function under `api/*.ts`, which verifies the caller's Clerk session token itself
+  (`@clerk/backend`'s `verifyToken`), resolves their `profiles.role`/`manager_id` using the
+  Supabase **service-role key** (which bypasses Row-Level Security entirely), and enforces
+  who can see or write what **in TypeScript** — see `api/_lib/auth.ts`. Row-Level Security is
+  still enabled in Postgres as defense-in-depth (`0003_rls.sql`), but it is no longer what
+  actually protects anything, since the service role bypasses it by design; the API layer's
+  own checks are the real authorization boundary now.
+  ```
+  React/Vite  →  Clerk (proves identity)  →  api/*.ts  →  verify Clerk token + resolve role
+                                                        →  Supabase (service-role key)
+  ```
+- **`SUPABASE_SERVICE_ROLE_KEY` is required for local dev now, not just production.**
+  Self-provisioning (turning a Clerk sign-in into a `profiles` row) used to run entirely
+  client-side against Supabase directly, which worked on localhost with zero server-only
+  config. It now runs inside `api/profile.ts` (`getOrProvisionProfile` in `api/_lib/auth.ts`),
+  so local development needs `vercel dev` (not plain `vite`) plus the server-only variables
+  from §5 filled in — see §6.
 - **One custom login page**, not Clerk's prebuilt `<SignIn/>` — see `src/pages/LoginPage.tsx`.
   It adapts to whatever sign-in methods your Clerk instance has enabled (Google OAuth,
   password, or email code) rather than assuming one.
+- The Clerk webhook (`api/webhooks/clerk.ts`) still exists as a production nicety — it
+  provisions a `profiles` row the moment Clerk fires `user.created`/`user.updated`, slightly
+  ahead of the person's first API call — but nothing depends on it; `api/profile.ts`
+  self-provisions on first call regardless of whether the webhook ever fired.
 
 ---
 
@@ -83,6 +92,14 @@ either works, they're idempotent-safe with `create or replace`.
 | `0008_reprovision_on_email_conflict.sql` | Makes re-signup (after a deleted Clerk user) re-link instead of erroring                              |
 | `0009_auto_member_id.sql`                | Auto-generates `member_id` (`AF-0001`, ...)                                                           |
 | `0010_pending_followup_batch.sql`        | Batched pending-status lookup for list views                                                          |
+| `0011_drop_audit_triggers.sql`           | Removes the audit-log triggers (broken once nothing presents a Clerk JWT to Postgres — the API layer writes `audit_logs` itself now, see §1) |
+| `0012_drop_provision_my_profile.sql`     | Removes `provision_my_profile()` — **run this one last**, only after `api/profile.ts` is deployed and verified working (see the note below the table) |
+
+**`0012` has an ordering requirement the others don't**: if you're setting up a **brand-new**
+project, run all twelve in order, there's nothing to sequence around. If you're **migrating an
+existing deployment** off Supabase Third-Party Auth, don't run `0012` until the new API layer
+(`api/profile.ts` and friends) is deployed and you've confirmed sign-in works end-to-end — the
+old client-side code path calls this function on every sign-in until that cutover ships.
 
 **Note on the seed data:** the original manager list had both "Anwarul Haque" and
 "Mohammad Anwar" down for the same email (`anwar@gmail.com`). `0004_seed.sql` seeds Mohammad
@@ -97,30 +114,33 @@ npx supabase link --project-ref <your-project-ref>   # found in the Supabase das
 npx supabase db push
 ```
 
-### 3.3 Connect Clerk as a Third-Party Auth provider — critical step
+### 3.3 Third-Party Auth — not used, do not set this up
 
-This is the step that's easy to skip and hardest to diagnose if you do: without it, every
-request from the app returns **401 "Invalid JWT"**, and the app gets stuck showing
-"Account not set up yet" for everyone, because Postgres can't validate the token at all
-(that failure gets misread as "no profile found" if you're not looking at the network tab).
-
-1. Supabase Dashboard → **Authentication → Sign In / Providers → Third Party Auth**
-2. **Add provider** → choose **Clerk**
-3. You need your Clerk instance's domain for this — see step 4.3, they're two halves of the
-   same handshake. Do this after step 4.1–4.2 if it's easier.
+Earlier versions of this app connected Clerk to Supabase as a **Third-Party Auth** provider
+(Supabase Dashboard → Authentication → Sign In / Providers) so Postgres could read
+`auth.jwt()->>'sub'` directly from a Clerk session token presented by the browser. **This has
+been removed.** The browser no longer talks to Supabase at all — every request goes through
+`api/*.ts`, which authenticates the caller itself and talks to Supabase using the
+service-role key (§3.4), which doesn't need or use this connection. Skip this step entirely;
+if you're maintaining an older deployment that still has it configured, it's harmless to
+leave connected (nothing uses it) or you can remove it from Supabase Dashboard →
+Authentication → Third-Party Auth once you've verified the new API layer end-to-end.
 
 ### 3.4 Collect your keys
 
 Supabase Dashboard → **Project Settings → Data API**:
 
-- **Project URL** → `VITE_SUPABASE_URL`
-- **`anon` `public` key** → `VITE_SUPABASE_ANON_KEY` (safe to expose to the browser — RLS is
-  what actually protects data, not this key)
+- **Project URL** → `VITE_SUPABASE_URL` (despite the `VITE_` prefix, this is read **only** by
+  `api/*.ts` now — server-only, see §5. The name is kept for historical continuity; Node's
+  `process.env` reads it the same regardless of the prefix.)
 
 Supabase Dashboard → **Project Settings → API → Service Role**:
 
 - **`service_role` key** → `SUPABASE_SERVICE_ROLE_KEY` (server-only, never in a `VITE_` var,
-  never in the browser — this key bypasses RLS entirely)
+  never in the browser — this key bypasses RLS entirely, and is now the **only** thing that
+  connects to Supabase, from `api/*.ts`)
+
+There is no anon/public key to collect anymore — nothing in this project uses one.
 
 ### 3.5 Optional: dev/test seed data
 
@@ -150,11 +170,10 @@ don't need to touch app code when you change this:
   for each email and shows the matching step (password field, or a 6-digit code field)
   automatically.
 
-### 4.3 Connect Supabase (Third-Party Auth)
+### 4.3 Connect Supabase (Third-Party Auth) — not needed
 
-Clerk Dashboard → **Configure → Integrations** → find **Supabase** → activate it. This
-reveals a **Clerk domain** (looks like `https://your-app-name.clerk.accounts.dev`, or your
-custom domain in production). Copy that value into the Supabase side from step 3.3.
+This step no longer applies — see §3.3. Nothing in Clerk needs to know about Supabase; the
+two only meet inside `api/_lib/auth.ts`, server-side.
 
 ### 4.4 Collect your keys
 
@@ -187,30 +206,54 @@ Covered in [§9](#9-post-deploy-wiring), since it needs your live Vercel URL fir
 | Variable                       | Client or server        | Source                                            |
 | ------------------------------ | ----------------------- | ------------------------------------------------- |
 | `VITE_CLERK_PUBLISHABLE_KEY`   | Client (safe to expose) | Clerk → API Keys                                  |
-| `VITE_SUPABASE_URL`            | Client (safe to expose) | Supabase → Project Settings → Data API            |
-| `VITE_SUPABASE_ANON_KEY`       | Client (safe to expose) | Supabase → Project Settings → Data API            |
+| `VITE_CLERK_PROXY_URL`         | Client, production only (§9.3) | Clerk Dashboard → Domains                   |
+| `VITE_SUPABASE_URL`            | **Server-only** (`api/*.ts`) | Supabase → Project Settings → Data API        |
 | `SUPABASE_SERVICE_ROLE_KEY`    | **Server-only**         | Supabase → Project Settings → API → Service Role  |
-| `CLERK_SECRET_KEY`             | **Server-only**         | Clerk → API Keys                                  |
+| `CLERK_SECRET_KEY`             | **Server-only**         | Clerk → API Keys — verifies every `api/*.ts` request now (`api/_lib/auth.ts`), not just the webhook |
 | `CLERK_WEBHOOK_SIGNING_SECRET` | **Server-only**         | Clerk → Webhooks (set up in §9)                   |
+| `CLERK_PROXY_UPSTREAM`         | **Server-only**, optional (§9.3) | Clerk Dashboard → Domains → "Copy setup instructions" |
 | `FOUNDATION_ADMIN_EMAIL`       | **Server-only**         | You choose it — default `alansar.admin@gmail.com` |
 
 Anything **not** prefixed `VITE_` never reaches the browser bundle — Vite only inlines
-`VITE_*` variables at build time. This is why the four server-only variables above must
-never be renamed to start with `VITE_`.
+`VITE_*` variables at build time. `VITE_SUPABASE_URL` is the one deliberate exception to read
+carefully: it keeps its historical `VITE_` name, but is read **only** server-side now
+(`process.env`, inside `api/*.ts` — Node reads it the same regardless of the prefix; the
+prefix only controls what Vite inlines into the browser bundle). Nothing in `src/` reads it.
+There is no Supabase anon key anywhere in this project anymore — don't reintroduce
+`VITE_SUPABASE_ANON_KEY`.
 
 ---
 
 ## 6. Local development
 
+Use `npm run dev:api` (which runs `vercel dev`), not plain `npm run dev` (`vite`), to get
+sign-in and any real data working locally — this project's data access lives in `api/*.ts`,
+which plain `vite` never serves (there's no dev-server proxy for it). `vercel dev` runs the
+Vite dev server **and** every `api/*.ts` function together on one port.
+
 ```
 npm install
 cp .env.example .env.local
-# fill in the three VITE_ variables from §3.4 and §4.4
-npm run dev
+# fill in VITE_CLERK_PUBLISHABLE_KEY (§4.4), VITE_SUPABASE_URL and
+# SUPABASE_SERVICE_ROLE_KEY (§3.4), and CLERK_SECRET_KEY (§4.4) — all four
+# are required now, not optional, since api/_lib/auth.ts runs locally too
+npm run dev:api
 ```
 
-The four server-only variables aren't needed locally — self-provisioning (§3, §1) handles
-sign-in without the webhook, so nothing in local dev calls it.
+**Important:** `package.json`'s `dev` script must stay `vite`, not `vercel dev` — `vercel dev`
+determines what underlying dev server to proxy to by reading that same `dev` script (or the
+linked Vercel project's Development Command setting), and if it resolves back to `vercel dev`
+itself, it correctly refuses with `Error: vercel dev must not recursively invoke itself`.
+`dev:api` is the wrapper script that actually invokes `vercel dev`; `dev` is what `vercel dev`
+delegates *to*. Don't rename or merge these two.
+
+The first time you run `npm run dev:api`, `vercel dev` will prompt you to log in and may ask
+to link the local folder to a Vercel project (`vercel link`) — either link it to the real
+project or create a throwaway link if you'd rather not yet; it only affects `vercel dev`'s own
+bookkeeping (a local `.vercel/` folder, already gitignored), not what gets deployed.
+
+If you only need the frontend (no sign-in, no data — rare, mostly for pure UI work), plain
+`npm run dev` runs `vite` without the API layer, same as before this project had an API layer.
 
 ---
 
@@ -238,13 +281,20 @@ Vercel redeploys automatically on every push to `main` once connected (§8).
 build command and output directory (`dist`) are filled in correctly by default.
 
 `vercel.json` in the repo root adds the SPA rewrite rule so client-side routes (e.g.
-`/manager/members/...`) don't 404 on a hard refresh, while leaving `/api/webhooks/clerk`
-routed to the actual serverless function.
+`/manager/members/...`) don't 404 on a hard refresh, while leaving every file under `api/`
+(the whole data-access layer — `members.ts`, `donations.ts`, `followups.ts`, `managers.ts`,
+`dashboard.ts`, `settings.ts`, `audit-logs.ts`, `profile.ts`, plus `webhooks/clerk.ts` and
+`clerk-proxy.ts`) routed to their actual serverless functions, each a plain statically-named
+file dispatching on HTTP method + query params (see the note under §9.3 on why — a
+Next.js-style dynamic `[...path].ts` filename doesn't reliably deploy as a function on this
+project).
 
 ### 8.2 Add environment variables
 
-**Settings → Environment Variables**, add all seven from §5 — except leave
-`CLERK_WEBHOOK_SIGNING_SECRET` blank for now, you don't have it yet.
+**Settings → Environment Variables**, add every variable from §5 that you have a value for
+already — except leave `CLERK_WEBHOOK_SIGNING_SECRET` blank for now (you don't have it yet)
+and `VITE_CLERK_PROXY_URL`/`CLERK_PROXY_UPSTREAM` blank unless you already know you need the
+reverse proxy (§9.3 — most setups using a Development-instance key don't).
 
 ### 8.3 Deploy
 
@@ -390,6 +440,14 @@ Setup:
 - [ ] Deleting a Clerk user and having them sign up again re-links instead of erroring
       (tests `0008_reprovision_on_email_conflict.sql`)
 - [ ] Browser console has no errors on the main screens
+- [ ] A manager can only see their own members/donations/follow-ups — the Members list,
+      Donations list, Follow-ups list, Pending Follow-ups, and the member picker inside
+      "Record a donation" never show another manager's members (this is enforced by
+      `api/_lib/auth.ts`'s `resolveManagerScope`, not by anything in the browser — worth
+      actually checking with two manager test accounts, not just trusting the code)
+- [ ] Recording a donation as a manager for a member NOT assigned to them is rejected (403)
+- [ ] A brand-new sign-in (no `profiles` row yet) self-provisions correctly via `GET
+      /api/profile` — check the Network tab, not just that the app loads
 
 ---
 
@@ -414,15 +472,18 @@ against the `managers` table.
 ### Rotate the Supabase service role key or Clerk secret key
 
 Generate a new key in the respective dashboard, update the corresponding Vercel environment
-variable, redeploy. Nothing else references these keys — they're only read by
-`api/webhooks/clerk.ts` at request time via `process.env`.
+variable, redeploy. `SUPABASE_SERVICE_ROLE_KEY` is read by every `api/*.ts` file via
+`api/_lib/auth.ts`'s `getServiceRoleClient()`; `CLERK_SECRET_KEY` is read by
+`api/_lib/auth.ts` (verifying every request), `api/webhooks/clerk.ts`, and
+`api/clerk-proxy.ts`. Redeploy after rotating either — a running deployment doesn't pick up
+new environment variable values retroactively.
 
 ### Migrate to a brand-new Supabase project
 
-1. Create the new project and run through all of §3 against it (migrations, Third-Party
-   Auth, keys).
-2. Update `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` in
-   Vercel (and your local `.env.local`).
+1. Create the new project and run through all of §3 against it (migrations, keys — skip
+   §3.3, it's not used).
+2. Update `VITE_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel (and your local
+   `.env.local`).
 3. Redeploy.
 4. Existing Clerk users will self-provision fresh `profiles` rows in the new database on
    their next sign-in — no data carries over automatically. If you need historical
@@ -432,15 +493,16 @@ variable, redeploy. Nothing else references these keys — they're only read by
 
 ### Migrate to a brand-new Clerk application
 
-1. Create the new Clerk app, reconfigure sign-in methods (§4.2), reconnect it to Supabase's
-   Third-Party Auth (§3.3/§4.3), re-invite everyone (§4.5).
+1. Create the new Clerk app, reconfigure sign-in methods (§4.2), re-invite everyone (§4.5).
+   Skip §4.3 — there's nothing to reconnect.
 2. Update `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel and locally.
 3. Re-create the webhook (§9.1) against the new Clerk app — signing secrets are per-app and
    don't carry over.
 4. Everyone's `clerk_user_id` changes with a new Clerk app, so every `profiles` row needs to
    re-link. This happens automatically per-user on their next sign-in (same self-provisioning
-   flow as a fresh install) as long as the emails match what's already in `managers` /
-   `FOUNDATION_ADMIN_EMAIL` — no manual database work required, just re-inviting people.
+   flow as a fresh install, now running inside `api/profile.ts`) as long as the emails match
+   what's already in `managers` / `FOUNDATION_ADMIN_EMAIL` — no manual database work
+   required, just re-inviting people.
 
 ### Change the pending-follow-up cutoff day
 
@@ -455,9 +517,23 @@ the migrations actually run (`select * from managers;` should return 11 rows), (
 email in `managers.email` (or matches `FOUNDATION_ADMIN_EMAIL`) exactly, (3) is
 `managers.status` for them `ACTIVE`.
 
-**401 errors in the browser console / the app is stuck loading for everyone** — Supabase
-can't validate the Clerk JWT. Check §3.3/§4.3 (Third-Party Auth) is actually connected on
-both sides, and that `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` point at the right project.
+**401 errors in the browser console / the app is stuck loading for everyone** — the API
+layer (`api/_lib/auth.ts`) can't verify the caller's Clerk session token. Check: (1)
+`CLERK_SECRET_KEY` in Vercel matches the same Clerk instance as `VITE_CLERK_PUBLISHABLE_KEY`
+(a Development publishable key with a Production secret key, or vice versa, fails
+verification), (2) both are attached to the environment you're testing (Production vs
+Preview — Vercel scopes variables per environment), (3) if running locally, that you ran
+`npm run dev:api` (§6), not plain `npm run dev` — plain `vite` never serves `api/*.ts` at
+all, so every call 404s before it ever gets to the 401 check.
+
+**`Error: vercel dev must not recursively invoke itself`** — `package.json`'s `dev` script
+was changed to `vercel dev` instead of staying `vite`. See the note in §6 — `dev` must stay
+`vite` (what `vercel dev` proxies to); `dev:api` is the script that runs `vercel dev` itself.
+
+**500 errors from `api/*.ts`, or the app is stuck loading for everyone** — `VITE_SUPABASE_URL`
+or `SUPABASE_SERVICE_ROLE_KEY` is missing/wrong in Vercel's environment variables (or your
+local `.env.local` under `vercel dev`) — check Vercel's function logs for the exact error
+(`api/_lib/auth.ts`'s `getServiceRoleClient()` throws a specific message for this).
 
 **"This record already exists" when a deleted-and-recreated Clerk user signs in** — confirm
 migration `0008_reprovision_on_email_conflict.sql` has been applied; it makes re-signup
@@ -510,9 +586,24 @@ cast the _result_ instead.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET` are set
       only in Vercel's environment variables — never in a `VITE_` var, never committed to git
 - [ ] `.env.local` is gitignored (already is — verify with `git status` if unsure)
-- [ ] RLS is enabled on every table (it is, by `0003_rls.sql`) — a new table added later
-      needs its own policies or it's inaccessible by default, which is the safe failure mode
+- [ ] Every `api/*.ts` resource file (everything except `profile.ts`) calls `authenticate()`
+      from `api/_lib/auth.ts` before touching Supabase, and every admin-only operation calls
+      `requireAdmin()` — a new endpoint added later needs both, or it's reachable by any
+      signed-in user regardless of role
+- [ ] Manager-scoped reads/writes always derive the manager's own `manager_id` server-side
+      via `resolveManagerScope()` — never trust a `managerId` the client sent (a manager
+      passing another manager's id must never widen what they can see)
+- [ ] Every mutation that stamps "who did this" (`recorded_by`, `created_by`, `deleted_by`,
+      `updated_by`, `actor_profile_id`) sets it from the authenticated caller's own profile
+      id server-side — never from a client-supplied value in the request body
+- [ ] RLS is still enabled on every table (it is, by `0003_rls.sql`) as defense-in-depth, even
+      though the service role bypasses it — a new table added later still needs its own
+      policies for that defense-in-depth to mean anything
 - [ ] `audit_logs` has no `INSERT`/`UPDATE`/`DELETE` grant for any client role, including
-      Admin — only the security-definer trigger writes to it
+      Admin — only `api/_lib/auditLog.ts`, using the service-role key, ever writes to it
 - [ ] The Clerk webhook endpoint verifies the `svix` signature before touching the database
       (already implemented in `api/webhooks/clerk.ts`) — never disable that check
+- [ ] `getOrProvisionProfile()` (`api/_lib/auth.ts`) reads the caller's email from Clerk's
+      Backend API (`clerkClient.users.getUser`), never from anything the client sent in a
+      request body — a self-reported email would let someone provision themselves as ADMIN
+      by lying about it

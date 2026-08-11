@@ -1,4 +1,4 @@
-import type { AppSupabaseClient } from '@/lib/supabase'
+import { apiClient, type GetToken } from '@/lib/apiClient'
 
 export interface ManagerDashboardStats {
   total_members: number
@@ -11,16 +11,12 @@ export interface ManagerDashboardStats {
 }
 
 export async function getManagerDashboardStats(
-  client: AppSupabaseClient,
+  getToken: GetToken,
   managerId: string,
   month: number,
   year: number,
 ): Promise<ManagerDashboardStats> {
-  const { data, error } = await client
-    .rpc('manager_dashboard_stats', { p_manager_id: managerId, p_month: month, p_year: year })
-    .single()
-  if (error) throw error
-  return data
+  return apiClient.get('/api/dashboard', getToken, { type: 'manager', managerId, month, year })
 }
 
 export interface AdminDashboardStats {
@@ -36,14 +32,8 @@ export interface AdminDashboardStats {
   pending_followups: number
 }
 
-export async function getAdminDashboardStats(
-  client: AppSupabaseClient,
-  month: number,
-  year: number,
-): Promise<AdminDashboardStats> {
-  const { data, error } = await client.rpc('admin_dashboard_stats', { p_month: month, p_year: year }).single()
-  if (error) throw error
-  return data
+export async function getAdminDashboardStats(getToken: GetToken, month: number, year: number): Promise<AdminDashboardStats> {
+  return apiClient.get('/api/dashboard', getToken, { type: 'admin', month, year })
 }
 
 export interface ManagerWiseReportRow {
@@ -57,14 +47,13 @@ export interface ManagerWiseReportRow {
   pending_followups: number
 }
 
-export async function getManagerWiseReport(
-  client: AppSupabaseClient,
-  month: number,
-  year: number,
-): Promise<ManagerWiseReportRow[]> {
-  const { data, error } = await client.rpc('manager_wise_report', { p_month: month, p_year: year })
-  if (error) throw error
-  return data ?? []
+export async function getManagerWiseReport(getToken: GetToken, month: number, year: number): Promise<ManagerWiseReportRow[]> {
+  const { rows } = await apiClient.get<{ rows: ManagerWiseReportRow[] }>('/api/dashboard', getToken, {
+    type: 'managerWiseReport',
+    month,
+    year,
+  })
+  return rows
 }
 
 export interface MonthWiseReportRow {
@@ -76,8 +65,10 @@ export interface MonthWiseReportRow {
   pending_followups: number
 }
 
-export async function getMonthWiseReport(client: AppSupabaseClient, year: number): Promise<MonthWiseReportRow[]> {
-  const { data, error } = await client.rpc('month_wise_report', { p_year: year })
-  if (error) throw error
-  return data ?? []
+export async function getMonthWiseReport(getToken: GetToken, year: number): Promise<MonthWiseReportRow[]> {
+  const { rows } = await apiClient.get<{ rows: MonthWiseReportRow[] }>('/api/dashboard', getToken, {
+    type: 'monthWiseReport',
+    year,
+  })
+  return rows
 }

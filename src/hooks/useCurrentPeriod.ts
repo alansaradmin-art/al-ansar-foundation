@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
-import { useSupabaseClient } from '@/contexts/SupabaseContext'
 import { getCurrentPeriod } from '@/services/settings'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Period } from '@/types'
@@ -10,10 +10,10 @@ import type { Period } from '@/types'
  * "now" in IST (never the browser's clock) once it resolves.
  */
 export function usePeriodSelector() {
-  const client = useSupabaseClient()
+  const { getToken } = useAuth()
   const { data: serverPeriod } = useQuery({
     queryKey: queryKeys.settings.currentPeriod,
-    queryFn: () => getCurrentPeriod(client),
+    queryFn: () => getCurrentPeriod(getToken),
     staleTime: 5 * 60_000,
   })
 

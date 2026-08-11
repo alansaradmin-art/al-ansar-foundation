@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@clerk/clerk-react'
 import { toast } from 'sonner'
 import { ArrowLeft, Upload, CircleCheck, CircleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingState } from '@/components/StateViews'
 import { useManagers } from '@/hooks/useManagers'
-import { useSupabaseClient } from '@/contexts/SupabaseContext'
+import { apiClient } from '@/lib/apiClient'
 import { useQueryClient } from '@tanstack/react-query'
 import { parseCsv } from '@/lib/csv'
 import { getFriendlyErrorMessage } from '@/lib/errors'
@@ -24,7 +25,7 @@ interface PreviewRow {
 
 export default function ImportPage() {
   const navigate = useNavigate()
-  const client = useSupabaseClient()
+  const { getToken } = useAuth()
   const queryClient = useQueryClient()
   const { data: managers = [] } = useManagers()
 
@@ -64,11 +65,12 @@ export default function ImportPage() {
 
     const seenIds = new Set<string>()
     const fileMemberIds = mappedRows.map((r) => r.member_id).filter(Boolean)
-    const { data: existing } = await client
-      .from('members')
-      .select('member_id')
-      .in('member_id', fileMemberIds.length > 0 ? fileMemberIds : [''])
-    const existingIds = new Set((existing ?? []).map((m) => m.member_id))
+    const { existingIds: existingIdsList } = await apiClient.get<{ existingIds: string[] }>(
+      '/api/members',
+      getToken,
+      { action: 'checkIds', ids: fileMemberIds.join(',') },
+    )
+    const existingIds = new Set(existingIdsList)
 
     const rows: PreviewRow[] = mappedRows.map((raw) => {
       const errors: string[] = []
@@ -105,25 +107,29 @@ export default function ImportPage() {
     if (validRows.length === 0) return
     setIsImporting(true)
     try {
-      const { error } = await client.from('members').insert(
-        validRows.map((r) => ({
-          member_id: r.data.member_id,
-          member_name: r.data.member_name,
-          father_name: r.data.father_name || null,
-          mobile_number: r.data.mobile_number || null,
-          address: r.data.address || null,
-          added_by_type: r.data.added_by_name ? ('EXTERNAL_CONTACT' as const) : null,
-          added_by_name: r.data.added_by_name || null,
-          added_by_phone: r.data.added_by_phone || null,
-          reference_contact_type: r.data.reference_contact_name ? ('EXTERNAL_CONTACT' as const) : null,
-          reference_contact_name: r.data.reference_contact_name || null,
-          reference_contact_phone: r.data.reference_contact_phone || null,
-          reference_contact_relationship: r.data.reference_contact_relationship || null,
-          assigned_manager_id: r.managerId,
-          status: r.data.status ?? 'ACTIVE',
-        })),
+      await apiClient.post(
+        '/api/members',
+        getToken,
+        {
+          rows: validRows.map((r) => ({
+            member_id: r.data.member_id,
+            member_name: r.data.member_name,
+            father_name: r.data.father_name || null,
+            mobile_number: r.data.mobile_number || null,
+            address: r.data.address || null,
+            added_by_type: r.data.added_by_name ? ('EXTERNAL_CONTACT' as const) : null,
+            added_by_name: r.data.added_by_name || null,
+            added_by_phone: r.data.added_by_phone || null,
+            reference_contact_type: r.data.reference_contact_name ? ('EXTERNAL_CONTACT' as const) : null,
+            reference_contact_name: r.data.reference_contact_name || null,
+            reference_contact_phone: r.data.reference_contact_phone || null,
+            reference_contact_relationship: r.data.reference_contact_relationship || null,
+            assigned_manager_id: r.managerId,
+            status: r.data.status ?? 'ACTIVE',
+          })),
+        },
+        { action: 'import' },
       )
-      if (error) throw error
       setImportedCount(validRows.length)
       queryClient.invalidateQueries({ queryKey: ['members'] })
       setStep('done')
