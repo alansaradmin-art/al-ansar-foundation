@@ -303,11 +303,28 @@ Implemented`. This repo implements the proxy as an actual serverless function in
   deliberately loads its bootstrap script through the configured proxy too — confirmed from
   `@clerk/shared`'s source, not an assumption). Adds the `Clerk-Proxy-Url` header Clerk's
   proxy handshake expects and relays `Set-Cookie` headers back correctly (including multiple
-  cookies in one response, which naive proxies often drop).
-  The upstream host is **decoded from `VITE_CLERK_PUBLISHABLE_KEY` itself** at request time
-  (same algorithm Clerk's own SDK uses internally — see the comment in the file) rather than
-  a hardcoded hostname. Proxying only changes what the *browser* is told to talk to; the real
-  Clerk backend host is always encoded in the publishable key, proxy or not.
+  cookies in one response, which naive proxies often drop). Path/query are parsed straight
+  from the incoming request URL, not from Vercel's rewrite-injected route params, so the
+  proxy doesn't depend on any assumption about how the `/__clerk` → `/api/__clerk` rewrite
+  passes the wildcard segment through.
+  The proxy's **upstream host** — where it actually forwards requests to — is resolved in
+  priority order:
+  1. **`CLERK_PROXY_UPSTREAM`** (server-only env var) if set — the reliable source of truth.
+     Get the exact value from Clerk Dashboard → **Domains** → your proxy row → **"Copy setup
+     instructions"**. Set this whenever you have it; it always wins.
+  2. Otherwise, **decoded from `VITE_CLERK_PUBLISHABLE_KEY` itself** (same algorithm Clerk's
+     own SDK uses internally for *direct*, non-proxy mode — see the comment in the file). This
+     is a reasonable fallback but is **not guaranteed to equal the real proxy-mode upstream**
+     — Clerk's proxy target is account-specific and only reliably known via the dashboard.
+  Visit `https://<your-domain>/__clerk/__debug` (a safe, no-secret GET — never called by
+  Clerk itself) to see exactly what the deployed function resolved: the upstream it will
+  forward to, which of the two sources produced it, and the public proxy URL it's telling
+  Clerk to use. Check this *before* testing a real sign-in whenever `failed_to_load_clerk_js`
+  comes back — it tells you immediately whether the problem is "wrong upstream" (fix with
+  `CLERK_PROXY_UPSTREAM`) or something else (routing, keys, Clerk-side config).
+  If the upstream is simply unreachable (DNS/network failure), the proxy now returns a
+  `502` whose body states the exact upstream URL it tried and the underlying fetch error,
+  instead of a generic message — check the Network tab response body, not just the status.
 - `vercel.json` rewrites the *public* path `/__clerk/:path*` to the *internal* function path
   `/api/__clerk/:path*` — an internal rewrite, not an external one, so it has no method/body
   restriction:
@@ -318,16 +335,23 @@ Implemented`. This repo implements the proxy as an actual serverless function in
 Setup:
 
 1. Clerk Dashboard → **Domains** → confirms your `*.vercel.app` domain and shows the exact
-   **Clerk proxy URL** it expects (`https://<your-domain>/__clerk`).
-2. Set `VITE_CLERK_PROXY_URL` in Vercel to that exact value (e.g.
+   **Clerk proxy URL** it expects (`https://<your-domain>/__clerk`) — copy the **upstream**
+   value too (via "Copy setup instructions") if the dashboard shows one explicitly.
+2. Set `VITE_CLERK_PROXY_URL` in Vercel to that exact proxy URL (e.g.
    `https://al-ansar-foundation.vercel.app/__clerk`) — **production environment only**, leave
    it unset locally.
-3. Make sure `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel are the
+3. If Clerk's dashboard gave you an explicit upstream/Frontend API value, set
+   `CLERK_PROXY_UPSTREAM` in Vercel to it (server-only, e.g. `https://frontend-api.clerk.dev`
+   or whatever the dashboard shows — no trailing slash needed). If unsure, leave it unset
+   first and check `/__clerk/__debug` after deploying — add it only if the decoded fallback
+   turns out wrong.
+4. Make sure `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel are the
    **Production** instance's keys, not the Development ones — a Development key never needs
    a proxy, so setting `VITE_CLERK_PROXY_URL` alongside a dev key does nothing useful.
    `CLERK_SECRET_KEY` is also read directly by `api/__clerk/[...path].ts` now, server-side only.
-4. Redeploy, then click **Verify proxy** in Clerk Dashboard → Domains, and specifically test
-   a real sign-in (not just that the page loads) — the original bug only showed up on POST.
+5. Redeploy, check `https://<your-domain>/__clerk/__debug` resolves the upstream you expect,
+   then click **Verify proxy** in Clerk Dashboard → Domains, and specifically test a real
+   sign-in (not just that the page loads) — the original bug only showed up on POST.
 
 ---
 
@@ -437,6 +461,14 @@ the direct `clerk.<domain>` CNAME can never resolve. Two ways to fix it:
 - **If you specifically want the Production instance:** set up the reverse proxy instead —
   see §9.3 — rather than a direct custom domain, unless you also own a real domain to point
   at Clerk's DNS requirements (§8.4).
+
+If you already set up the proxy (§9.3) and still see this error, the proxy is very likely
+forwarding to the wrong upstream — the key-decode fallback can resolve to the same
+non-existent `clerk.<your-domain>` host that caused the error in the first place, since that's
+exactly what a Production key configured for a domain-you-don't-own decodes to. Visit
+`https://<your-domain>/__clerk/__debug` to see what upstream the proxy actually resolved, and
+set `CLERK_PROXY_UPSTREAM` (§9.3, step 3) to override it with the real value from Clerk
+Dashboard → Domains → "Copy setup instructions" if it looks wrong.
 
 Verify what a key resolves to before deploying it:
 ```
