@@ -1,6 +1,6 @@
-import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope } from './_lib/auth'
-import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http'
-import { logInsert, logUpdate } from './_lib/auditLog'
+import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope } from './_lib/auth.js'
+import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
+import { logInsert, logUpdate } from './_lib/auditLog.js'
 import type { Database, PaymentMethod } from '../src/types/database'
 
 type DonationInsert = Database['public']['Tables']['donations']['Insert']

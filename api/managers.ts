@@ -1,6 +1,6 @@
-import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth'
-import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http'
-import { logInsert, logUpdate } from './_lib/auditLog'
+import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth.js'
+import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
+import { logInsert, logUpdate } from './_lib/auditLog.js'
 import type { Database, ManagerStatus } from '../src/types/database'
 
 type ManagerRow = Database['public']['Tables']['managers']['Row']

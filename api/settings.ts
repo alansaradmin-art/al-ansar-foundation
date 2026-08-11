@@ -1,5 +1,5 @@
-import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth'
-import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http'
+import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth.js'
+import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const profile = await authenticate(req, res)

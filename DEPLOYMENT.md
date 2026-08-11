@@ -539,14 +539,30 @@ local `.env.local` under `vercel dev`) — check Vercel's function logs for the 
 (plain text, not JSON) — even a request with no `Authorization` header at all** — the
 function is crashing at *import time*, before any of this repo's own request-handling code
 runs (a genuine auth/validation failure from this app's own code always returns a proper
-JSON `{error:{...}}` body, never Vercel's generic crash page). `@clerk/backend` requires
-**Node ≥ 20.9.0** (`node_modules/@clerk/backend/package.json`'s `engines` field) — if the
-Vercel project is running on an older Node runtime, importing it crashes every function that
-imports `api/_lib/auth.ts` (which is all of them except `api/clerk-proxy.ts`) before the
-handler body executes at all. Fixed by `package.json`'s `"engines": {"node": ">=20.9.0"}` —
-but also double-check Vercel Dashboard → **Settings → General → Node.js Version** is set to
-20.x or newer and redeploy; on some projects the dashboard setting takes precedence over
-`package.json`'s `engines` field rather than the other way around.
+JSON `{error:{...}}` body, never Vercel's generic crash page). The HTTP response never shows
+the actual error for this — you have to pull it from Vercel's logs directly:
+```
+npx vercel login          # if not already authenticated
+npx vercel logs https://<your-domain>
+```
+then trigger the failing request again in another terminal/tab while `vercel logs` is
+tailing — the real stack trace appears there even though the browser only ever sees the
+generic crash page.
+
+**Root cause hit during this app's own migration to the API layer, in case it recurs**: every
+`api/*.ts` file imports local sibling files with an *extensionless* specifier
+(`from './_lib/auth'`), which is normal, idiomatic TypeScript — but this project has `"type":
+"module"` in `package.json`, and Vercel does **not** bundle each function into a single file;
+it transpiles each `.ts` file individually and lets Node's native ESM loader resolve the
+`import` statements at runtime. Node's ESM loader (unlike CommonJS `require`, and unlike a
+bundler) refuses to resolve an extensionless relative specifier — the actual error was
+`Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/api/_lib/http' imported from
+/var/task/api/profile.js`. **Every relative import of a runtime value (not a `import type`-only
+import, which is erased entirely and needs no extension) between files under `api/` must use
+an explicit `.js` extension**, even though the source file is `.ts` — e.g. `from
+'./_lib/auth.js'`, not `from './_lib/auth'`. This is why `api/clerk-proxy.ts` and
+`api/webhooks/clerk.ts` were unaffected — neither has any relative import to another local
+file, only to `node_modules` packages, which resolve differently.
 
 **"This record already exists" when a deleted-and-recreated Clerk user signs in** — confirm
 migration `0008_reprovision_on_email_conflict.sql` has been applied; it makes re-signup

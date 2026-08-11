@@ -1,6 +1,6 @@
-import { authenticate, getServiceRoleClient, resolveManagerScope, sendForbiddenUnlessManager } from './_lib/auth'
-import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http'
-import { logInsert } from './_lib/auditLog'
+import { authenticate, getServiceRoleClient, resolveManagerScope, sendForbiddenUnlessManager } from './_lib/auth.js'
+import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
+import { logInsert } from './_lib/auditLog.js'
 import type { Database, FollowUpStatus } from '../src/types/database'
 
 type FollowupInsert = Database['public']['Tables']['monthly_followups']['Insert']

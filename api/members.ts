@@ -1,4 +1,4 @@
-import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope } from './_lib/auth'
+import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope } from './_lib/auth.js'
 import {
   type ApiRequest,
   type ApiResponse,
@@ -7,8 +7,8 @@ import {
   sendError,
   sendJson,
   sendSupabaseError,
-} from './_lib/http'
-import { logInsert, logUpdate } from './_lib/auditLog'
+} from './_lib/http.js'
+import { logInsert, logUpdate } from './_lib/auditLog.js'
 import type { Database, MemberStatus } from '../src/types/database'
 
 type MemberRow = Database['public']['Tables']['members']['Row']

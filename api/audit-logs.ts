@@ -1,5 +1,5 @@
-import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth'
-import { type ApiRequest, type ApiResponse, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http'
+import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth.js'
+import { type ApiRequest, type ApiResponse, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'GET') return sendError(res, 405, 'Method not allowed.')

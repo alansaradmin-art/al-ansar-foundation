@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createClerkClient, verifyToken } from '@clerk/backend'
 import type { Database } from '../../src/types/database'
-import { type ApiRequest, type ApiResponse, firstValue, sendError } from './http'
+import { type ApiRequest, type ApiResponse, firstValue, sendError } from './http.js'
 
 // No default export — Vercel only turns a file into a route when it
 // default-exports a handler, so this file is never treated as an endpoint.
