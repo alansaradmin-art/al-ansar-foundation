@@ -1,0 +1,28 @@
+import { UserCog } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LoadingState } from '@/components/StateViews'
+import { ContactBlock } from './ContactBlock'
+import { useManager } from '@/hooks/useManagers'
+
+export function AssignedManagerCard({ managerId }: { managerId: string | null }) {
+  const { data: manager, isLoading } = useManager(managerId ?? undefined)
+
+  if (!managerId) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Assigned Manager</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <LoadingState label="Loading manager…" />
+        ) : manager ? (
+          <ContactBlock label="Manager" name={manager.full_name} phone={manager.phone} icon={UserCog} tone="info" />
+        ) : (
+          <p className="text-sm text-muted-foreground">Manager details unavailable.</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

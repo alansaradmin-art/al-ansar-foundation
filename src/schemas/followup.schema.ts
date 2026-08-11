@@ -1,0 +1,26 @@
+import { z } from 'zod'
+import { optionalPhoneSchema } from './common.schema'
+
+export const FOLLOW_UP_STATUSES = ['NOT_STARTED', 'COMPLETED', 'NOT_INTERESTED', 'CALLBACK_REQUIRED', 'OTHER'] as const
+export const FOLLOW_UP_METHODS = ['PHONE', 'WHATSAPP', 'IN_PERSON', 'OTHER'] as const
+export const CONTACTED_PERSON_TYPES = ['MEMBER', 'ADDED_BY', 'REFERENCE_CONTACT', 'OTHER'] as const
+
+export const followupFormSchema = z
+  .object({
+    member_id: z.string().uuid('Select a member.'),
+    follow_up_date: z.string().min(1, 'Follow-up date is required.'),
+    follow_up_status: z.enum(FOLLOW_UP_STATUSES),
+    follow_up_method: z.enum(FOLLOW_UP_METHODS).optional(),
+    contacted_person_type: z.enum(CONTACTED_PERSON_TYPES),
+    contacted_person_name: z.string().trim().optional().or(z.literal('')),
+    contacted_person_phone: optionalPhoneSchema,
+    contacted_person_relationship: z.string().trim().optional().or(z.literal('')),
+    remarks: z.string().trim().optional().or(z.literal('')),
+  })
+  .superRefine((data, ctx) => {
+    if (data.contacted_person_type === 'OTHER' && !data.contacted_person_name) {
+      ctx.addIssue({ code: 'custom', path: ['contacted_person_name'], message: 'Enter the contact’s name.' })
+    }
+  })
+
+export type FollowupFormValues = z.infer<typeof followupFormSchema>
