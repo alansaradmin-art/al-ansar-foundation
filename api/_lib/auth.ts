@@ -17,7 +17,10 @@ export function getServiceRoleClient(): SupabaseClient<Database> {
   const url = process.env.VITE_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !serviceRoleKey) {
-    throw new Error('Server misconfigured: VITE_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing.')
+    const missing = [!url && 'VITE_SUPABASE_URL', !serviceRoleKey && 'SUPABASE_SERVICE_ROLE_KEY'].filter(Boolean).join(', ')
+    throw new Error(
+      `Server misconfigured: ${missing} missing from this deployment's environment variables. Set it in Vercel → Settings → Environment Variables (attached to the environment you're testing) and redeploy.`,
+    )
   }
   cachedSupabase = createClient<Database>(url, serviceRoleKey)
   return cachedSupabase
