@@ -13,7 +13,31 @@ export const config = {
   api: { bodyParser: false },
 }
 
-const CLERK_FRONTEND_API = 'https://frontend-api.clerk.dev'
+// The real Clerk backend host is encoded in the Publishable Key itself —
+// confirmed straight from Clerk's own SDK source
+// (node_modules/@clerk/shared/dist/runtime/keys-*.js, parsePublishableKey):
+// `isomorphicAtob(key.split('_')[2])`, trailing `$` stripped. Proxying only
+// changes what the *browser* is told to talk to (via VITE_CLERK_PROXY_URL);
+// it never changes what the real upstream is — so this proxy has to decode
+// the same key the frontend uses, not guess at a fixed hostname. (An
+// earlier version of this file hardcoded frontend-api.clerk.dev, which was
+// never verified and is very likely wrong for this instance — this is why
+// /npm/@clerk/clerk-js@5/... 404'd.)
+function resolveClerkFrontendApi(): string {
+  const publishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY ?? ''
+  const encoded = publishableKey.split('_')[2]
+  if (!encoded) {
+    throw new Error('VITE_CLERK_PUBLISHABLE_KEY is missing or malformed — cannot resolve Clerk Frontend API host.')
+  }
+  const decoded = Buffer.from(encoded, 'base64').toString('utf8')
+  const host = decoded.endsWith('$') ? decoded.slice(0, -1) : decoded
+  if (!host.includes('.')) {
+    throw new Error(`Decoded an invalid Clerk Frontend API host ("${host}") from VITE_CLERK_PUBLISHABLE_KEY.`)
+  }
+  return `https://${host}`
+}
+
+const CLERK_FRONTEND_API = resolveClerkFrontendApi()
 
 // Headers that must never be forwarded as-is — either they describe this
 // hop specifically (host, content-length) and would be wrong for the next

@@ -298,9 +298,16 @@ like `/v1/client/sign_ins` (i.e. every actual sign-in attempt) come back `501 No
 Implemented`. This repo implements the proxy as an actual serverless function instead:
 
 - `api/__clerk/[...path].ts` — forwards any method (GET/POST/PUT/PATCH/DELETE/OPTIONS), the
-  full body, headers, and cookies to `https://frontend-api.clerk.dev`, adding the
-  `Clerk-Proxy-Url` header Clerk's proxy handshake expects and relaying `Set-Cookie` headers
-  back correctly (including multiple cookies in one response, which naive proxies often drop).
+  full body, headers, and cookies. This covers both `/__clerk/v1/*` (the actual Frontend API
+  calls) **and** `/__clerk/npm/@clerk/clerk-js@.../dist/clerk.browser.js` (Clerk's own SDK
+  deliberately loads its bootstrap script through the configured proxy too — confirmed from
+  `@clerk/shared`'s source, not an assumption). Adds the `Clerk-Proxy-Url` header Clerk's
+  proxy handshake expects and relays `Set-Cookie` headers back correctly (including multiple
+  cookies in one response, which naive proxies often drop).
+  The upstream host is **decoded from `VITE_CLERK_PUBLISHABLE_KEY` itself** at request time
+  (same algorithm Clerk's own SDK uses internally — see the comment in the file) rather than
+  a hardcoded hostname. Proxying only changes what the *browser* is told to talk to; the real
+  Clerk backend host is always encoded in the publishable key, proxy or not.
 - `vercel.json` rewrites the *public* path `/__clerk/:path*` to the *internal* function path
   `/api/__clerk/:path*` — an internal rewrite, not an external one, so it has no method/body
   restriction:
