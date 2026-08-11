@@ -71,18 +71,18 @@ Open **SQL Editor** in the Supabase dashboard and run each file in `supabase/mig
 in numeric order. Paste-and-run one at a time, or concatenate them into a single paste —
 either works, they're idempotent-safe with `create or replace`.
 
-| File | What it does |
-|---|---|
-| `0001_schema.sql` | Creates all 7 tables, indexes, constraints |
-| `0002_functions.sql` | `current_profile()`, `is_admin()`, `is_pending_followup()`, audit-log triggers, `updated_at` triggers |
-| `0003_rls.sql` | Row-Level Security policies — the real authorization boundary |
-| `0004_seed.sql` | Seeds `app_settings` (pending-followup cutoff day) and the 11 managers |
-| `0005_donation_id_sequence.sql` | Auto-generates `donation_id` (`D000001`, ...) |
-| `0006_dashboard_functions.sql` | Server-side aggregation for dashboards/reports |
-| `0007_self_provisioning.sql` | `provision_my_profile()` — client-callable self-provisioning |
-| `0008_reprovision_on_email_conflict.sql` | Makes re-signup (after a deleted Clerk user) re-link instead of erroring |
-| `0009_auto_member_id.sql` | Auto-generates `member_id` (`AF-0001`, ...) |
-| `0010_pending_followup_batch.sql` | Batched pending-status lookup for list views |
+| File                                     | What it does                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `0001_schema.sql`                        | Creates all 7 tables, indexes, constraints                                                            |
+| `0002_functions.sql`                     | `current_profile()`, `is_admin()`, `is_pending_followup()`, audit-log triggers, `updated_at` triggers |
+| `0003_rls.sql`                           | Row-Level Security policies — the real authorization boundary                                         |
+| `0004_seed.sql`                          | Seeds `app_settings` (pending-followup cutoff day) and the 11 managers                                |
+| `0005_donation_id_sequence.sql`          | Auto-generates `donation_id` (`D000001`, ...)                                                         |
+| `0006_dashboard_functions.sql`           | Server-side aggregation for dashboards/reports                                                        |
+| `0007_self_provisioning.sql`             | `provision_my_profile()` — client-callable self-provisioning                                          |
+| `0008_reprovision_on_email_conflict.sql` | Makes re-signup (after a deleted Clerk user) re-link instead of erroring                              |
+| `0009_auto_member_id.sql`                | Auto-generates `member_id` (`AF-0001`, ...)                                                           |
+| `0010_pending_followup_batch.sql`        | Batched pending-status lookup for list views                                                          |
 
 **Note on the seed data:** the original manager list had both "Anwarul Haque" and
 "Mohammad Anwar" down for the same email (`anwar@gmail.com`). `0004_seed.sql` seeds Mohammad
@@ -112,11 +112,13 @@ request from the app returns **401 "Invalid JWT"**, and the app gets stuck showi
 ### 3.4 Collect your keys
 
 Supabase Dashboard → **Project Settings → Data API**:
+
 - **Project URL** → `VITE_SUPABASE_URL`
 - **`anon` `public` key** → `VITE_SUPABASE_ANON_KEY` (safe to expose to the browser — RLS is
   what actually protects data, not this key)
 
 Supabase Dashboard → **Project Settings → API → Service Role**:
+
 - **`service_role` key** → `SUPABASE_SERVICE_ROLE_KEY` (server-only, never in a `VITE_` var,
   never in the browser — this key bypasses RLS entirely)
 
@@ -157,12 +159,14 @@ custom domain in production). Copy that value into the Supabase side from step 3
 ### 4.4 Collect your keys
 
 Clerk Dashboard → **API Keys**:
+
 - **Publishable key** → `VITE_CLERK_PUBLISHABLE_KEY`
 - **Secret key** → `CLERK_SECRET_KEY` (server-only; used by the webhook function)
 
 ### 4.5 Invite users
 
 Clerk Dashboard → **Users** → **Invite**. Invite:
+
 - The Foundation Admin, at exactly the email in `FOUNDATION_ADMIN_EMAIL` (default
   `alansar.admin@gmail.com`)
 - Each of the 11 managers, at exactly the email already sitting in the `managers` table
@@ -180,15 +184,15 @@ Covered in [§9](#9-post-deploy-wiring), since it needs your live Vercel URL fir
 
 ## 5. Environment variables reference
 
-| Variable | Client or server | Source |
-|---|---|---|
-| `VITE_CLERK_PUBLISHABLE_KEY` | Client (safe to expose) | Clerk → API Keys |
-| `VITE_SUPABASE_URL` | Client (safe to expose) | Supabase → Project Settings → Data API |
-| `VITE_SUPABASE_ANON_KEY` | Client (safe to expose) | Supabase → Project Settings → Data API |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** | Supabase → Project Settings → API → Service Role |
-| `CLERK_SECRET_KEY` | **Server-only** | Clerk → API Keys |
-| `CLERK_WEBHOOK_SIGNING_SECRET` | **Server-only** | Clerk → Webhooks (set up in §9) |
-| `FOUNDATION_ADMIN_EMAIL` | **Server-only** | You choose it — default `alansar.admin@gmail.com` |
+| Variable                       | Client or server        | Source                                            |
+| ------------------------------ | ----------------------- | ------------------------------------------------- |
+| `VITE_CLERK_PUBLISHABLE_KEY`   | Client (safe to expose) | Clerk → API Keys                                  |
+| `VITE_SUPABASE_URL`            | Client (safe to expose) | Supabase → Project Settings → Data API            |
+| `VITE_SUPABASE_ANON_KEY`       | Client (safe to expose) | Supabase → Project Settings → Data API            |
+| `SUPABASE_SERVICE_ROLE_KEY`    | **Server-only**         | Supabase → Project Settings → API → Service Role  |
+| `CLERK_SECRET_KEY`             | **Server-only**         | Clerk → API Keys                                  |
+| `CLERK_WEBHOOK_SIGNING_SECRET` | **Server-only**         | Clerk → Webhooks (set up in §9)                   |
+| `FOUNDATION_ADMIN_EMAIL`       | **Server-only**         | You choose it — default `alansar.admin@gmail.com` |
 
 Anything **not** prefixed `VITE_` never reaches the browser bundle — Vite only inlines
 `VITE_*` variables at build time. This is why the four server-only variables above must
@@ -263,7 +267,7 @@ successful deploy.
 ### 9.1 Clerk webhook
 
 1. Clerk Dashboard → **Webhooks** → **Add Endpoint**
-2. URL: `https://<your-domain>/api/webhooks/clerk`
+2. URL: `https://al-ansar-foundation.vercel.app/api/webhooks/clerk`
 3. Subscribe to `user.created` and `user.updated`
 4. Copy the **Signing Secret** → Vercel → **Settings → Environment Variables** → add as
    `CLERK_WEBHOOK_SIGNING_SECRET`
@@ -302,6 +306,7 @@ always why.
 ```sql
 update app_settings set value = '"newemail@example.com"' where key = 'FOUNDATION_ADMIN_EMAIL';
 ```
+
 Also update the `FOUNDATION_ADMIN_EMAIL` environment variable in Vercel (used by the
 webhook) and redeploy. The old admin's `profiles` row isn't automatically changed — update
 or delete it manually in the `profiles` table if the person is actually leaving the role.
@@ -370,11 +375,27 @@ is set and you redeployed after adding it (§9.1).
 
 **Google sign-in redirect fails in production only** — see §9.2.
 
+**Console shows `failed_to_load_clerk_js` and the browser is requesting something like
+`https://clerk.<your-vercel-domain>.vercel.app/npm/@clerk/clerk-js@5/dist/clerk.browser.js`**
+— `@clerk/clerk-react` derives the Frontend API host it loads `clerk.browser.js` from by
+decoding the Publishable Key itself (unless a `domain`/`proxyUrl` prop or `VITE_CLERK_JS_URL`
+env var overrides it — this app sets neither). This exact failure means the
+`VITE_CLERK_PUBLISHABLE_KEY` set in Vercel is a **Production**-instance key that was
+configured with a custom domain of `*.vercel.app` — which you don't own DNS for, so the
+required `clerk.<domain>` CNAME can never resolve. Fix: in Vercel, replace
+`VITE_CLERK_PUBLISHABLE_KEY` with your Clerk **Development**-instance key (works on any host,
+zero DNS setup — same key already used in local `.env.local`) and redeploy, unless you've
+set up a real custom domain you own with the DNS records Clerk's dashboard requires for a
+Production instance (§8.4). Verify what a key resolves to before deploying it:
+```
+node -e "console.log(Buffer.from(process.argv[1].replace(/^pk_(test|live)_/, ''), 'base64').toString('utf8'))" "<paste the key>"
+```
+
 **A SQL migration errors on `generate_series`/`smallint` type mismatches** if you're writing
 new ones — Postgres won't implicitly narrow `integer` to `smallint` for function argument
 resolution; cast explicitly (see the comments in `0006_dashboard_functions.sql` for a worked
 example) and avoid casting `generate_series()`'s arguments directly (ambiguous overload) —
-cast the *result* instead.
+cast the _result_ instead.
 
 ---
 
