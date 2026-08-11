@@ -12,9 +12,12 @@
 // proxy external destinations as a GET-only passthrough, which is why an
 // earlier version of this setup 501'd on POST /v1/client/sign_ins).
 
-export const config = {
-  api: { bodyParser: false },
-}
+// No `config.api.bodyParser` export here — that's a Next.js Pages Router
+// convention and does nothing on this project (a plain Vite app, not
+// Next.js). Vercel's generic Node.js Function runtime never auto-parses the
+// request body for non-Next projects; `req` below is always the raw,
+// unconsumed stream, which is exactly what the manual read further down
+// needs.
 
 // Where this proxy forwards to is genuinely hard to determine from outside
 // Clerk's dashboard for a Production instance running in proxy mode (no
