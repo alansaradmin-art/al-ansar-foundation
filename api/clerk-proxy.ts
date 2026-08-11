@@ -7,18 +7,21 @@
 // node_modules/@clerk/shared/dist/runtime/loadClerkJsScript-*.js — so this
 // one function has to correctly handle both.
 //
-// vercel.json rewrites the public /__clerk/:path* to this function
-// internally (NOT to an external URL — Vercel's declarative rewrites only
-// proxy external destinations as a GET-only passthrough, which is why an
-// earlier version of this setup 501'd on POST /v1/client/sign_ins).
+// This is a plain, statically-named function (NOT api/__clerk/[...path].ts,
+// Vercel's Next.js-style dynamic catch-all convention) — that convention
+// stopped working on this project (every /__clerk/* request 404'd at
+// Vercel's platform level, before ever reaching this code, even once a
+// deployment was confirmed to include it: removing vercel.json's SPA
+// catch-all broke /login as expected, proving the deploy was live, while
+// /__clerk/__debug kept 404ing in that same deploy). vercel.json instead
+// captures the wildcard segment as a query-string parameter, Vercel's
+// oldest and most universally-documented rewrite mechanism, independent of
+// any framework-specific file-routing convention:
+//   { "source": "/__clerk/:path*", "destination": "/api/clerk-proxy?path=:path*" }
 
-// No `config.api.bodyParser` export here — that's a Next.js Pages Router
-// convention and does nothing on this project (a plain Vite app, not
-// Next.js). Vercel's generic Node.js Function runtime never auto-parses the
-// request body for non-Next projects; `req` below is always the raw,
-// unconsumed stream, which is exactly what the manual read further down
-// needs.
-
+// The real Clerk backend host is encoded in the Publishable Key itself, or
+// can be overridden explicitly. See CLERK_PROXY_UPSTREAM below.
+//
 // Where this proxy forwards to is genuinely hard to determine from outside
 // Clerk's dashboard for a Production instance running in proxy mode (no
 // custom domain owned). Two sources, in priority order:
@@ -31,7 +34,7 @@
 //    node_modules/@clerk/shared/dist/runtime/keys-*.js). This is Clerk's
 //    documented mechanism for finding the Frontend API host in *direct*
 //    (non-proxy) mode, and may or may not equal the real proxy-mode
-//    upstream — verify with GET /__clerk-debug (see below) before trusting it.
+//    upstream — verify with GET /__clerk/__debug (see below) before trusting it.
 function resolveClerkFrontendApi(): string {
   const override = process.env.CLERK_PROXY_UPSTREAM
   if (override) return override.replace(/\/+$/, '')
@@ -61,6 +64,7 @@ interface IncomingRequest extends AsyncIterable<Buffer> {
   method?: string
   url?: string
   headers: Record<string, string | string[] | undefined>
+  query?: Record<string, string | string[] | undefined>
   socket?: { remoteAddress?: string }
 }
 
@@ -74,15 +78,25 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
-// Parsed straight from req.url rather than Vercel's rewrite-injected query
-// params — this only assumes req.url is whatever this function was actually
-// invoked with, which holds regardless of how the /__clerk → /api/__clerk
-// rewrite passes parameters through, removing one whole axis of "is the
-// dynamic route wired up the way I assumed" uncertainty.
-function upstreamPathAndQuery(req: IncomingRequest): string {
-  const raw = req.url ?? '/'
-  const withoutPrefix = raw.replace(/^\/api\/__clerk/, '').replace(/^\/__clerk/, '')
-  return withoutPrefix || '/'
+// The wildcard segment Vercel captured from /__clerk/:path* arrives as the
+// `path` query param (per vercel.json's destination, `?path=:path*`) — a
+// single string with any internal slashes already joined, e.g. for
+// /__clerk/npm/@clerk/clerk-js@5/dist/clerk.browser.js it's
+// "npm/@clerk/clerk-js@5/dist/clerk.browser.js". Any *other* query params on
+// the original request (real Clerk API calls do carry their own, e.g.
+// _clerk_js_version) are forwarded too — everything except `path` itself.
+function buildUpstreamUrl(req: IncomingRequest): string {
+  const pathParam = firstValue(req.query?.path) ?? ''
+  const upstreamPath = `/${pathParam}`
+
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(req.query ?? {})) {
+    if (key === 'path') continue
+    if (Array.isArray(value)) value.forEach((v) => search.append(key, v))
+    else if (value !== undefined) search.append(key, value)
+  }
+  const qs = search.toString()
+  return `${CLERK_FRONTEND_API}${upstreamPath}${qs ? `?${qs}` : ''}`
 }
 
 function buildForwardedHeaders(req: IncomingRequest, proxyPublicUrl: string): Headers {
@@ -119,12 +133,12 @@ export default async function handler(req: IncomingRequest, res: ServerResponse)
   const host = firstValue(req.headers['x-forwarded-host']) ?? firstValue(req.headers.host) ?? ''
   const proto = firstValue(req.headers['x-forwarded-proto']) ?? 'https'
   const proxyPublicUrl = `${proto}://${host}/__clerk`
-  const pathAndQuery = upstreamPathAndQuery(req)
+  const pathParam = firstValue(req.query?.path) ?? ''
 
   // Safe, no-secret self-check: GET /__clerk/__debug shows exactly what
   // this function resolved, without needing a real Clerk request to fail
   // first. Visit https://<your-domain>/__clerk/__debug directly.
-  if (pathAndQuery.startsWith('/__debug')) {
+  if (pathParam === '__debug') {
     res.statusCode = 200
     res.setHeader('content-type', 'application/json')
     res.end(
@@ -135,6 +149,7 @@ export default async function handler(req: IncomingRequest, res: ServerResponse)
             upstreamSource: process.env.CLERK_PROXY_UPSTREAM ? 'CLERK_PROXY_UPSTREAM override' : 'decoded from VITE_CLERK_PUBLISHABLE_KEY',
             proxyPublicUrl,
             requestUrl: req.url,
+            resolvedPathParam: pathParam,
           },
           null,
           2,
@@ -145,7 +160,7 @@ export default async function handler(req: IncomingRequest, res: ServerResponse)
   }
 
   const method = req.method ?? 'GET'
-  const upstreamUrl = `${CLERK_FRONTEND_API}${pathAndQuery}`
+  const upstreamUrl = buildUpstreamUrl(req)
   const headers = buildForwardedHeaders(req, proxyPublicUrl)
 
   let body: Buffer | undefined

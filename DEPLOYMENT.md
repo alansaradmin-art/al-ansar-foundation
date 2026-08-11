@@ -286,30 +286,6 @@ always why.
 Skip this whole section if you're using a Clerk **Development**-instance key in production
 (§12, "failed_to_load_clerk_js") — that's the simpler path and needs no proxy.
 
-**If every `/__clerk/*` URL 404s** (checked via `curl -i`, response has
-`X-Vercel-Error: NOT_FOUND` and Vercel's own generic "The page could not be found" body,
-*not* JSON or a proxy-generated error) — that's Vercel's platform saying no function is bound
-to that route at all, which is a deployment problem, not a bug in the proxy code itself.
-Confirmed by testing the *direct* function path too: `https://<your-domain>/api/__clerk/__debug`
-404s identically to `https://<your-domain>/__clerk/__debug` — both bypass and go-through-rewrite
-give the exact same platform 404, and a known-working function on the same project
-(`/api/webhooks/clerk`) correctly returns `405 Method Not Allowed` on GET. That combination
-means `api/__clerk/[...path].ts` — verified present and correctly named in the GitHub repo via
-the GitHub API — was never actually included in whatever deployment is currently live. Check,
-in order:
-1. Vercel Dashboard → **Deployments** — is there a deployment newer than the commit that added
-   this file, and does its commit SHA match the tip of `main` on GitHub? If the latest
-   deployment is older, GitHub auto-deploy isn't triggering — check **Settings → Git** that the
-   repo/branch is actually connected, then either push an empty commit or click **Redeploy**.
-2. If a matching deployment exists, open its **Build Logs** and search for `__clerk` — a
-   function that fails to bundle can be silently dropped from an otherwise-successful
-   deployment rather than failing the whole build.
-3. Confirm `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `VITE_CLERK_PROXY_URL`, and (if
-   set) `CLERK_PROXY_UPSTREAM` are all attached to the **Production** environment specifically
-   in Vercel's environment variable settings — Vercel scopes variables per environment
-   (Production/Preview/Development), so a value only saved under Preview never reaches the
-   production domain.
-
 A Clerk **Production** instance normally needs a `clerk.<domain>` DNS record, which you
 can't add under a shared domain like `*.vercel.app` since you don't control its DNS. Clerk's
 alternative for exactly this case is a reverse proxy: your own app forwards a specific path
@@ -321,16 +297,22 @@ Vercel's `rewrites` only proxy external destinations as a simple GET passthrough
 like `/v1/client/sign_ins` (i.e. every actual sign-in attempt) come back `501 Not
 Implemented`. This repo implements the proxy as an actual serverless function instead:
 
-- `api/__clerk/[...path].ts` — forwards any method (GET/POST/PUT/PATCH/DELETE/OPTIONS), the
-  full body, headers, and cookies. This covers both `/__clerk/v1/*` (the actual Frontend API
-  calls) **and** `/__clerk/npm/@clerk/clerk-js@.../dist/clerk.browser.js` (Clerk's own SDK
-  deliberately loads its bootstrap script through the configured proxy too — confirmed from
-  `@clerk/shared`'s source, not an assumption). Adds the `Clerk-Proxy-Url` header Clerk's
-  proxy handshake expects and relays `Set-Cookie` headers back correctly (including multiple
-  cookies in one response, which naive proxies often drop). Path/query are parsed straight
-  from the incoming request URL, not from Vercel's rewrite-injected route params, so the
-  proxy doesn't depend on any assumption about how the `/__clerk` → `/api/__clerk` rewrite
-  passes the wildcard segment through.
+- `api/clerk-proxy.ts` — a plain, statically-named function (**not**
+  `api/__clerk/[...path].ts`, Vercel's Next.js-style dynamic catch-all filename convention —
+  that stopped working on this project: every `/__clerk/*` request 404'd at Vercel's platform
+  level, confirmed even in a deployment proven to be live, since removing `vercel.json`'s SPA
+  catch-all correctly broke `/login` in that same deploy while `/__clerk/__debug` kept
+  404ing). Forwards any method (GET/POST/PUT/PATCH/DELETE/OPTIONS), the full body, headers,
+  and cookies. This covers both `/__clerk/v1/*` (the actual Frontend API calls) **and**
+  `/__clerk/npm/@clerk/clerk-js@.../dist/clerk.browser.js` (Clerk's own SDK deliberately loads
+  its bootstrap script through the configured proxy too — confirmed from `@clerk/shared`'s
+  source, not an assumption). Adds the `Clerk-Proxy-Url` header Clerk's proxy handshake
+  expects and relays `Set-Cookie` headers back correctly (including multiple cookies in one
+  response, which naive proxies often drop).
+  The wildcard path segment is read from the `path` **query parameter** (`req.query.path`),
+  not from the request URL or a dynamic filename — Vercel's oldest and most
+  universally-documented rewrite mechanism (`destination: "...?param=:capture"`), independent
+  of any framework-specific file-routing convention.
   The proxy's **upstream host** — where it actually forwards requests to — is resolved in
   priority order:
   1. **`CLERK_PROXY_UPSTREAM`** (server-only env var) if set — the reliable source of truth.
@@ -346,21 +328,31 @@ Implemented`. This repo implements the proxy as an actual serverless function in
   Clerk to use. Check this *before* testing a real sign-in whenever `failed_to_load_clerk_js`
   comes back — it tells you immediately whether the problem is "wrong upstream" (fix with
   `CLERK_PROXY_UPSTREAM`) or something else (routing, keys, Clerk-side config).
-  If the upstream is simply unreachable (DNS/network failure), the proxy now returns a
-  `502` whose body states the exact upstream URL it tried and the underlying fetch error,
-  instead of a generic message — check the Network tab response body, not just the status.
-- `vercel.json` rewrites the *public* path `/__clerk/:path*` to the *internal* function path
-  `/api/__clerk/:path*` — an internal rewrite, not an external one, so it has no method/body
-  restriction:
+  If the upstream is simply unreachable (DNS/network failure), the proxy returns a `502`
+  whose body states the exact upstream URL it tried and the underlying fetch error, instead
+  of a generic message — check the Network tab response body, not just the status.
+- `vercel.json` rewrites the *public* path `/__clerk/:path*` to the function, passing the
+  captured wildcard through as a query parameter:
   ```json
-  { "source": "/__clerk/:path*", "destination": "/api/__clerk/:path*" }
+  { "source": "/__clerk/:path*", "destination": "/api/clerk-proxy?path=:path*" }
   ```
-  **`vercel.json` currently contains only this one rewrite rule**, with the SPA catch-all
-  (`"/((?!api/|__clerk/).*)" → "/index.html"`) temporarily removed to rule it out while
-  diagnosing a platform-level 404 on every `/__clerk/*` route. **Restore the SPA catch-all
-  once `/__clerk/__debug` is confirmed working** — without it, refreshing or deep-linking
-  directly to any client-side route (e.g. `/admin/members`) 404s instead of loading the app,
-  since there's no longer a fallback rewrite to `index.html` for unmatched paths.
+  This is an internal rewrite (not to an external URL), so it has no method/body restriction,
+  and it sits *before* the SPA catch-all rule in the rewrites array — Vercel evaluates
+  rewrites in order, so `/__clerk/*` always matches this rule first regardless of the catch-all
+  below it.
+
+**If every `/__clerk/*` URL 404s** with Vercel's own generic "The page could not be found"
+body and an `X-Vercel-Error: NOT_FOUND` header (not JSON or a proxy-generated error) — that
+means Vercel isn't routing to the function at all. Rule out a stale deployment first: compare
+the live site's `assets/index-*.js` filename (view source, or `curl`) against your latest
+local build — if they differ, or if a change you know should affect behavior (like removing
+the SPA catch-all) doesn't show up live, no new deployment has actually run. Check Vercel
+Dashboard → **Deployments** for one matching your latest commit SHA, and **Settings → Git**
+that the repo/branch is actually connected. If a fresh deployment *is* confirmed live and
+`/__clerk/*` still 404s, also confirm `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`,
+`VITE_CLERK_PROXY_URL`, and (if set) `CLERK_PROXY_UPSTREAM` are attached to the **Production**
+environment specifically — Vercel scopes variables per environment, so a value only saved
+under Preview never reaches the production domain.
 
 Setup:
 
@@ -378,7 +370,7 @@ Setup:
 4. Make sure `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel are the
    **Production** instance's keys, not the Development ones — a Development key never needs
    a proxy, so setting `VITE_CLERK_PROXY_URL` alongside a dev key does nothing useful.
-   `CLERK_SECRET_KEY` is also read directly by `api/__clerk/[...path].ts` now, server-side only.
+   `CLERK_SECRET_KEY` is also read directly by `api/clerk-proxy.ts` now, server-side only.
 5. Redeploy, check `https://<your-domain>/__clerk/__debug` resolves the upstream you expect,
    then click **Verify proxy** in Clerk Dashboard → Domains, and specifically test a real
    sign-in (not just that the page loads) — the original bug only showed up on POST.
