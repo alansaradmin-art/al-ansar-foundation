@@ -292,25 +292,35 @@ alternative for exactly this case is a reverse proxy: your own app forwards a sp
 (`/__clerk/*`) to Clerk's Frontend API, and Clerk's client-side JS is told to talk to that
 path instead of a `clerk.<domain>` host directly.
 
+**Important:** this must be a real proxy, not a declarative rewrite to an external URL.
+Vercel's `rewrites` only proxy external destinations as a simple GET passthrough — POSTs
+like `/v1/client/sign_ins` (i.e. every actual sign-in attempt) come back `501 Not
+Implemented`. This repo implements the proxy as an actual serverless function instead:
+
+- `api/__clerk/[...path].ts` — forwards any method (GET/POST/PUT/PATCH/DELETE/OPTIONS), the
+  full body, headers, and cookies to `https://frontend-api.clerk.dev`, adding the
+  `Clerk-Proxy-Url` header Clerk's proxy handshake expects and relaying `Set-Cookie` headers
+  back correctly (including multiple cookies in one response, which naive proxies often drop).
+- `vercel.json` rewrites the *public* path `/__clerk/:path*` to the *internal* function path
+  `/api/__clerk/:path*` — an internal rewrite, not an external one, so it has no method/body
+  restriction:
+  ```json
+  { "source": "/__clerk/:path*", "destination": "/api/__clerk/:path*" }
+  ```
+
+Setup:
+
 1. Clerk Dashboard → **Domains** → confirms your `*.vercel.app` domain and shows the exact
    **Clerk proxy URL** it expects (`https://<your-domain>/__clerk`).
-2. This repo's `vercel.json` already has the rewrite rule forwarding `/__clerk/*` to Clerk's
-   Frontend API, ordered before the SPA catch-all so it isn't swallowed by it:
-   ```json
-   { "source": "/__clerk/:path*", "destination": "https://frontend-api.clerk.dev/:path*" }
-   ```
-3. Set `VITE_CLERK_PROXY_URL` in Vercel to the exact value Clerk's dashboard showed in step 1
-   (e.g. `https://al-ansar-foundation.vercel.app/__clerk`) — **production environment only**,
-   leave it unset locally.
-4. Make sure `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel are the
+2. Set `VITE_CLERK_PROXY_URL` in Vercel to that exact value (e.g.
+   `https://al-ansar-foundation.vercel.app/__clerk`) — **production environment only**, leave
+   it unset locally.
+3. Make sure `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel are the
    **Production** instance's keys, not the Development ones — a Development key never needs
    a proxy, so setting `VITE_CLERK_PROXY_URL` alongside a dev key does nothing useful.
-5. Redeploy, then click **Verify proxy** in Clerk Dashboard → Domains to confirm the rewrite
-   is actually reaching Clerk correctly.
-6. If verification fails: `vercel.json`'s declarative rewrite can't inject the
-   `Clerk-Proxy-Url` header some Clerk proxy configurations expect. The fallback is a real
-   serverless function at `api/__clerk/[...path].ts` that manually forwards the request with
-   that header added — ask for this to be built if step 5 doesn't pass.
+   `CLERK_SECRET_KEY` is also read directly by `api/__clerk/[...path].ts` now, server-side only.
+4. Redeploy, then click **Verify proxy** in Clerk Dashboard → Domains, and specifically test
+   a real sign-in (not just that the page loads) — the original bug only showed up on POST.
 
 ---
 
