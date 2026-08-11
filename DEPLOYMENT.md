@@ -535,6 +535,19 @@ or `SUPABASE_SERVICE_ROLE_KEY` is missing/wrong in Vercel's environment variable
 local `.env.local` under `vercel dev`) — check Vercel's function logs for the exact error
 (`api/_lib/auth.ts`'s `getServiceRoleClient()` throws a specific message for this).
 
+**Every `api/*.ts` endpoint returns Vercel's generic `FUNCTION_INVOCATION_FAILED` page
+(plain text, not JSON) — even a request with no `Authorization` header at all** — the
+function is crashing at *import time*, before any of this repo's own request-handling code
+runs (a genuine auth/validation failure from this app's own code always returns a proper
+JSON `{error:{...}}` body, never Vercel's generic crash page). `@clerk/backend` requires
+**Node ≥ 20.9.0** (`node_modules/@clerk/backend/package.json`'s `engines` field) — if the
+Vercel project is running on an older Node runtime, importing it crashes every function that
+imports `api/_lib/auth.ts` (which is all of them except `api/clerk-proxy.ts`) before the
+handler body executes at all. Fixed by `package.json`'s `"engines": {"node": ">=20.9.0"}` —
+but also double-check Vercel Dashboard → **Settings → General → Node.js Version** is set to
+20.x or newer and redeploy; on some projects the dashboard setting takes precedence over
+`package.json`'s `engines` field rather than the other way around.
+
 **"This record already exists" when a deleted-and-recreated Clerk user signs in** — confirm
 migration `0008_reprovision_on_email_conflict.sql` has been applied; it makes re-signup
 re-link instead of erroring on the `profiles.email` unique constraint.
