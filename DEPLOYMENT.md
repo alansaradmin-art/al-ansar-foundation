@@ -281,6 +281,37 @@ Clerk Dashboard → **Configure → Domains** (naming may vary slightly by Clerk
 sign-in throws a redirect-mismatch error in production but works locally, this is almost
 always why.
 
+### 9.3 Clerk reverse proxy — only if using a Production instance on `*.vercel.app`
+
+Skip this whole section if you're using a Clerk **Development**-instance key in production
+(§12, "failed_to_load_clerk_js") — that's the simpler path and needs no proxy.
+
+A Clerk **Production** instance normally needs a `clerk.<domain>` DNS record, which you
+can't add under a shared domain like `*.vercel.app` since you don't control its DNS. Clerk's
+alternative for exactly this case is a reverse proxy: your own app forwards a specific path
+(`/__clerk/*`) to Clerk's Frontend API, and Clerk's client-side JS is told to talk to that
+path instead of a `clerk.<domain>` host directly.
+
+1. Clerk Dashboard → **Domains** → confirms your `*.vercel.app` domain and shows the exact
+   **Clerk proxy URL** it expects (`https://<your-domain>/__clerk`).
+2. This repo's `vercel.json` already has the rewrite rule forwarding `/__clerk/*` to Clerk's
+   Frontend API, ordered before the SPA catch-all so it isn't swallowed by it:
+   ```json
+   { "source": "/__clerk/:path*", "destination": "https://frontend-api.clerk.dev/:path*" }
+   ```
+3. Set `VITE_CLERK_PROXY_URL` in Vercel to the exact value Clerk's dashboard showed in step 1
+   (e.g. `https://al-ansar-foundation.vercel.app/__clerk`) — **production environment only**,
+   leave it unset locally.
+4. Make sure `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel are the
+   **Production** instance's keys, not the Development ones — a Development key never needs
+   a proxy, so setting `VITE_CLERK_PROXY_URL` alongside a dev key does nothing useful.
+5. Redeploy, then click **Verify proxy** in Clerk Dashboard → Domains to confirm the rewrite
+   is actually reaching Clerk correctly.
+6. If verification fails: `vercel.json`'s declarative rewrite can't inject the
+   `Clerk-Proxy-Url` header some Clerk proxy configurations expect. The fallback is a real
+   serverless function at `api/__clerk/[...path].ts` that manually forwards the request with
+   that header added — ask for this to be built if step 5 doesn't pass.
+
 ---
 
 ## 10. Verification checklist
@@ -378,15 +409,19 @@ is set and you redeployed after adding it (§9.1).
 **Console shows `failed_to_load_clerk_js` and the browser is requesting something like
 `https://clerk.<your-vercel-domain>.vercel.app/npm/@clerk/clerk-js@5/dist/clerk.browser.js`**
 — `@clerk/clerk-react` derives the Frontend API host it loads `clerk.browser.js` from by
-decoding the Publishable Key itself (unless a `domain`/`proxyUrl` prop or `VITE_CLERK_JS_URL`
-env var overrides it — this app sets neither). This exact failure means the
-`VITE_CLERK_PUBLISHABLE_KEY` set in Vercel is a **Production**-instance key that was
-configured with a custom domain of `*.vercel.app` — which you don't own DNS for, so the
-required `clerk.<domain>` CNAME can never resolve. Fix: in Vercel, replace
-`VITE_CLERK_PUBLISHABLE_KEY` with your Clerk **Development**-instance key (works on any host,
-zero DNS setup — same key already used in local `.env.local`) and redeploy, unless you've
-set up a real custom domain you own with the DNS records Clerk's dashboard requires for a
-Production instance (§8.4). Verify what a key resolves to before deploying it:
+decoding the Publishable Key itself, unless a `proxyUrl`/`domain` prop overrides it (this
+app's `ClerkProvider` passes `proxyUrl` from `VITE_CLERK_PROXY_URL` when it's set — see
+§9.3). This means the `VITE_CLERK_PUBLISHABLE_KEY` set in Vercel is a **Production**-instance
+key that was configured with `*.vercel.app` as its domain — which you don't own DNS for, so
+the direct `clerk.<domain>` CNAME can never resolve. Two ways to fix it:
+- **Simpler:** in Vercel, replace `VITE_CLERK_PUBLISHABLE_KEY` with your Clerk
+  **Development**-instance key (works on any host, zero setup — same key already used in
+  local `.env.local`) and redeploy.
+- **If you specifically want the Production instance:** set up the reverse proxy instead —
+  see §9.3 — rather than a direct custom domain, unless you also own a real domain to point
+  at Clerk's DNS requirements (§8.4).
+
+Verify what a key resolves to before deploying it:
 ```
 node -e "console.log(Buffer.from(process.argv[1].replace(/^pk_(test|live)_/, ''), 'base64').toString('utf8'))" "<paste the key>"
 ```
