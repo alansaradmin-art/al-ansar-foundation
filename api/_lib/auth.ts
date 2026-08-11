@@ -103,7 +103,14 @@ export async function getOrProvisionProfile(clerkUserId: string): Promise<Caller
 
   const clerkUser = await getClerkClient().users.getUser(clerkUserId)
   const email = clerkUser.primaryEmailAddress?.emailAddress?.toLowerCase().trim()
-  if (!email) return null
+  if (!email) {
+    console.error('[getOrProvisionProfile] no primaryEmailAddress on Clerk user', {
+      clerkUserId,
+      emailAddresses: clerkUser.emailAddresses?.map((e) => ({ id: e.id, email: e.emailAddress })),
+      primaryEmailAddressId: (clerkUser as unknown as { primaryEmailAddressId?: string | null }).primaryEmailAddressId,
+    })
+    return null
+  }
   const fullName = clerkUser.fullName?.trim() || ''
 
   const { data: adminEmailSetting, error: settingsError } = await supabase
@@ -113,6 +120,7 @@ export async function getOrProvisionProfile(clerkUserId: string): Promise<Caller
     .maybeSingle()
   if (settingsError) throw settingsError
   const adminEmail = typeof adminEmailSetting?.value === 'string' ? adminEmailSetting.value.toLowerCase().trim() : ''
+  console.error('[getOrProvisionProfile] comparing', { email, adminEmail, rawAdminSetting: adminEmailSetting })
 
   if (email === adminEmail) {
     const { data: provisioned, error: upsertError } = await supabase
@@ -163,6 +171,7 @@ export async function getOrProvisionProfile(clerkUserId: string): Promise<Caller
 
   // No match: leave unprovisioned. Admin needs to add/correct this email in
   // the managers table (or the FOUNDATION_ADMIN_EMAIL setting).
+  console.error('[getOrProvisionProfile] no admin or manager match, leaving unprovisioned', { email, adminEmail })
   return null
 }
 
