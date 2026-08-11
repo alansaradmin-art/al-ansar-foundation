@@ -30,3 +30,9 @@ export function formatDate(dateStr: string): string {
   if (!year || !month || !day) return dateStr
   return `${day} ${monthName(month).slice(0, 3)} ${year}`
 }
+
+/** ISO timestamp -> "10 Aug 2026, 3:20 pm" (always Asia/Kolkata, regardless
+ * of the viewer's own timezone — every timestamp in this app is IST). */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
+}
