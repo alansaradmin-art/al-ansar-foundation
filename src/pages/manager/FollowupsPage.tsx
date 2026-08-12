@@ -52,7 +52,12 @@ export default function ManagerFollowupsPage() {
               className="block space-y-1.5 rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-accent/40"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="font-medium">{f.member?.member_name ?? 'Unknown member'}</p>
+                <div>
+                  <p className="font-medium">{f.member?.member_name ?? 'Unknown member'}</p>
+                  {f.member?.father_name && (
+                    <p className="text-xs text-muted-foreground">{f.member.father_name}</p>
+                  )}
+                </div>
                 <FollowupStatusBadge status={f.follow_up_status} />
               </div>
               <p className="text-xs text-muted-foreground">{formatDate(f.follow_up_date)}</p>

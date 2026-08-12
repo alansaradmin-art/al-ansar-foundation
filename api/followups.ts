@@ -61,7 +61,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
       let query = supabase
         .from('monthly_followups')
-        .select('*, member:members(member_name, member_id), manager:managers(full_name)', { count: 'exact' })
+        .select('*, member:members(member_name, member_id, father_name), manager:managers(full_name)', { count: 'exact' })
         .order('follow_up_date', { ascending: false })
 
       if (month) query = query.eq('month', Number(month))

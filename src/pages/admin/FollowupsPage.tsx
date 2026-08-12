@@ -99,6 +99,9 @@ export default function AdminFollowupsPage() {
                     <Link to={`/admin/members/${f.member_id}`} className="hover:underline">
                       {f.member?.member_name}
                     </Link>
+                    {f.member?.father_name && (
+                      <p className="text-xs text-muted-foreground">{f.member.father_name}</p>
+                    )}
                   </td>
                   <td className="p-3 text-muted-foreground">{f.manager?.full_name}</td>
                   <td className="p-3">

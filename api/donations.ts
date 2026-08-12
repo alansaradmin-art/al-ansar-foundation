@@ -58,7 +58,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           // member is a left join (not !inner) — an anonymous donation
           // (member_id null) has no row to inner-join against and would
           // otherwise vanish from this list/count/export entirely.
-          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members(member_name, member_id, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
+          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members(member_name, member_id, father_name, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
           { count: 'exact' },
         )
         .eq('is_deleted', false)

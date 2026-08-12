@@ -115,7 +115,7 @@ export default function AdminMembersPage() {
               <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-3 font-medium">Name</th>
-                  <th className="p-3 font-medium">Member ID</th>
+                  <th className="p-3 font-medium">Father's Name</th>
                   <th className="p-3 font-medium">Mobile</th>
                   <th className="p-3 font-medium">Manager</th>
                   <th className="p-3 font-medium">Status</th>

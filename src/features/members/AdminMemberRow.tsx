@@ -32,6 +32,7 @@ function StatusButton({ member }: { member: Member }) {
 }
 
 export function AdminMemberCard({ member, managerName }: { member: Member; managerName?: string }) {
+  const subline = [member.father_name, member.mobile_number].filter(Boolean).join(' · ')
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
@@ -39,10 +40,7 @@ export function AdminMemberCard({ member, managerName }: { member: Member; manag
           <Link to={`/admin/members/${member.id}`} className="font-medium hover:underline">
             {member.member_name}
           </Link>
-          <p className="text-xs text-muted-foreground">
-            {member.member_id}
-            {member.mobile_number ? ` · ${member.mobile_number}` : ''}
-          </p>
+          {subline && <p className="text-xs text-muted-foreground">{subline}</p>}
           {managerName && <p className="text-xs text-muted-foreground">Manager: {managerName}</p>}
         </div>
         <MemberStatusBadge status={member.status} />
@@ -64,7 +62,7 @@ export function AdminMemberTableRow({ member, managers }: { member: Member; mana
           {member.member_name}
         </Link>
       </td>
-      <td className="p-3 text-muted-foreground">{member.member_id}</td>
+      <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
       <td className="p-3 text-muted-foreground">{member.mobile_number || '—'}</td>
       <td className="p-3 text-muted-foreground">{managerName || '—'}</td>
       <td className="p-3">

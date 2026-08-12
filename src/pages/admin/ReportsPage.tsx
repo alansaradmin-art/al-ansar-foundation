@@ -68,16 +68,16 @@ export default function ReportsPage() {
 
   function exportDonationReport() {
     if (!donationReport || !period) return
-    type FlatRow = DonationReportRow & { memberLabel: string; memberIdLabel: string }
+    type FlatRow = DonationReportRow & { memberLabel: string; fatherNameLabel: string }
     const flatRows: FlatRow[] = [
       ...donationReport.members.flatMap((m) =>
-        m.donations.map((d) => ({ ...d, memberLabel: m.memberName, memberIdLabel: m.memberDisplayId })),
+        m.donations.map((d) => ({ ...d, memberLabel: m.memberName, fatherNameLabel: m.memberFatherName ?? '' })),
       ),
-      ...donationReport.anonymous.donations.map((d) => ({ ...d, memberLabel: 'Anonymous', memberIdLabel: 'Anonymous' })),
+      ...donationReport.anonymous.donations.map((d) => ({ ...d, memberLabel: 'Anonymous', fatherNameLabel: '' })),
     ]
     const csv = toCsv<FlatRow>(flatRows, [
       { key: 'member', label: 'Member Name', value: (r) => r.memberLabel },
-      { key: 'member_id', label: 'Member ID', value: (r) => r.memberIdLabel },
+      { key: 'father_name', label: "Father's Name", value: (r) => r.fatherNameLabel },
       { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'date', label: 'Donation Date', value: (r) => r.donation_date },

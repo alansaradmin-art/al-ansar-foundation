@@ -139,12 +139,12 @@ export function AuditLogEntry({ log }: { log: AuditLogWithActor }) {
               {log.memberRowId ? (
                 <Link to={`/admin/members/${log.memberRowId}`} className="hover:underline">
                   {log.memberName}
-                  {log.memberDisplayId ? ` (${log.memberDisplayId})` : ''}
+                  {log.memberFatherName ? ` (${log.memberFatherName})` : ''}
                 </Link>
               ) : (
                 <>
                   {log.memberName}
-                  {log.memberDisplayId ? ` (${log.memberDisplayId})` : ''}
+                  {log.memberFatherName ? ` (${log.memberFatherName})` : ''}
                 </>
               )}
             </p>

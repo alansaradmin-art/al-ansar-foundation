@@ -36,7 +36,7 @@ export interface AdminDonationFilters {
 }
 
 export type DonationWithRelations = Donation & {
-  member: { member_name: string; member_id: string; assigned_manager_id: string | null } | null
+  member: { member_name: string; member_id: string; father_name: string | null; assigned_manager_id: string | null } | null
   recorder: { full_name: string } | null
 }
 

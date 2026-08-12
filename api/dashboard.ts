@@ -69,7 +69,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const { data, error } = await supabase
         .from('donations')
         .select(
-          'id, donation_id, donation_date, donation_type, amount_inr, payment_method, transaction_reference, member_id, member:members(id, member_name, member_id)',
+          'id, donation_id, donation_date, donation_type, amount_inr, payment_method, transaction_reference, member_id, member:members(id, member_name, member_id, father_name)',
         )
         .eq('donation_month', month)
         .eq('donation_year', year)
@@ -81,7 +81,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const summary = { totalCount: rows.length, totalAmount: 0, zakat: 0, sadaqah: 0, fitra: 0, generalOrOther: 0 }
       const membersById = new Map<
         string,
-        { memberId: string; memberName: string; memberDisplayId: string; total: number; donations: DonationReportRow[] }
+        {
+          memberId: string
+          memberName: string
+          memberDisplayId: string
+          memberFatherName: string | null
+          total: number
+          donations: DonationReportRow[]
+        }
       >()
       const anonymous = { total: 0, donations: [] as DonationReportRow[] }
 
@@ -103,7 +110,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           transaction_reference: row.transaction_reference,
         }
 
-        const member = row.member as unknown as { id: string; member_name: string; member_id: string } | null
+        const member = row.member as unknown as { id: string; member_name: string; member_id: string; father_name: string | null } | null
         if (member) {
           const existing = membersById.get(member.id)
           if (existing) {
@@ -114,6 +121,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
               memberId: member.id,
               memberName: member.member_name,
               memberDisplayId: member.member_id,
+              memberFatherName: member.father_name,
               total: amount,
               donations: [reportRow],
             })
@@ -124,7 +132,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       }
 
-      const members = [...membersById.values()].sort((a, b) => a.memberName.localeCompare(b.memberName))
+      // Newest first: the underlying query is already donation_date desc,
+      // so each member's donations[] already has their most recent donation
+      // this month at index 0 (insertion order is preserved) — sort the
+      // member groups by that instead of alphabetically by name.
+      const members = [...membersById.values()].sort((a, b) =>
+        b.donations[0].donation_date.localeCompare(a.donations[0].donation_date),
+      )
       return sendJson(res, 200, { summary, members, anonymous })
     }
 

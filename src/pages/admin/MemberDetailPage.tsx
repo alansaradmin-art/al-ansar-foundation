@@ -39,7 +39,7 @@ export default function AdminMemberDetailPage() {
             <h1 className="truncate font-display text-lg font-semibold leading-tight">{member.member_name}</h1>
             <MemberStatusBadge status={member.status} />
           </div>
-          <p className="text-xs text-muted-foreground">{member.member_id}</p>
+          {member.father_name && <p className="text-xs text-muted-foreground">{member.father_name}</p>}
         </div>
         <MemberFormDialog member={member} />
       </div>

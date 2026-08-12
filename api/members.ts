@@ -48,9 +48,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const limit = Number(readQueryParam(req, 'limit') ?? '10')
       let query = supabase
         .from('members')
-        .select('id, member_id, member_name, mobile_number')
+        .select('id, member_id, member_name, father_name, mobile_number')
         .eq('status', 'ACTIVE')
-        .order('member_name')
+        .order('updated_at', { ascending: false })
         .limit(limit)
       const managerScope = resolveManagerScope(profile)
       if (managerScope) query = query.eq('assigned_manager_id', managerScope)
@@ -100,7 +100,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const from = (page - 1) * pageSize
       const to = from + pageSize - 1
 
-      let query = supabase.from('members').select('*', { count: 'exact' }).order('member_name')
+      let query = supabase.from('members').select('*', { count: 'exact' }).order('updated_at', { ascending: false })
       const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
       if (managerScope) query = query.eq('assigned_manager_id', managerScope)
       if (status) query = query.eq('status', status as MemberStatus)

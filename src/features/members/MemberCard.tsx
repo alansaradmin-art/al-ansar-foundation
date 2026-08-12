@@ -34,7 +34,7 @@ export function MemberCard({
           <p className="truncate font-medium leading-tight">{member.member_name}</p>
           {member.status === 'INACTIVE' && <MemberStatusBadge status="INACTIVE" />}
         </div>
-        <p className="text-xs text-muted-foreground">{member.member_id}</p>
+        {member.father_name && <p className="text-xs text-muted-foreground">{member.father_name}</p>}
         {member.mobile_number && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <Phone className="size-3" />

@@ -24,7 +24,9 @@ export async function getMemberById(getToken: GetToken, id: string): Promise<Mem
 }
 
 export async function searchMembersForPicker(getToken: GetToken, query: string, limit = 10) {
-  const { rows } = await apiClient.get<{ rows: Pick<Member, 'id' | 'member_id' | 'member_name' | 'mobile_number'>[] }>(
+  const { rows } = await apiClient.get<{
+    rows: Pick<Member, 'id' | 'member_id' | 'member_name' | 'father_name' | 'mobile_number'>[]
+  }>(
     '/api/members',
     getToken,
     { action: 'picker', search: query, limit },

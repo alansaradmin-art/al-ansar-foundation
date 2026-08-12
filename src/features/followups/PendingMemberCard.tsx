@@ -19,7 +19,9 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
             <Link to={memberHref} className="hover:underline">
               {member.member_name}
             </Link>
-            <span className="ml-2 text-xs font-normal text-muted-foreground">{member.member_id}</span>
+            {member.father_name && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">{member.father_name}</span>
+            )}
           </p>
           <PendingFollowupBadge />
         </div>

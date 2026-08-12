@@ -30,6 +30,7 @@ export function DonationListItem({ donation, memberHref }: { donation: DonationW
           {donation.member?.member_name ?? 'Unknown member'}
         </Link>
         <p className="text-xs text-muted-foreground">
+          {donation.member?.father_name ? `${donation.member.father_name} · ` : ''}
           {formatDate(donation.donation_date)} · {DONATION_TYPE_LABELS[donation.donation_type]} ·{' '}
           {PAYMENT_LABELS[donation.payment_method]}
           {donation.transaction_reference ? ` · Ref: ${donation.transaction_reference}` : ''}

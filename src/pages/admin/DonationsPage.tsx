@@ -58,7 +58,7 @@ export default function AdminDonationsPage() {
     const csv = toCsv<DonationWithRelations>(data.rows, [
       { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
       { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
-      { key: 'member_id', label: 'Member ID', value: (r) => r.member?.member_id ?? 'Anonymous' },
+      { key: 'father_name', label: "Father's Name", value: (r) => r.member?.father_name ?? '' },
       { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
@@ -149,7 +149,9 @@ export default function AdminDonationsPage() {
                     {donation.member ? (
                       <>
                         <p>{donation.member.member_name}</p>
-                        <p className="text-xs text-muted-foreground">{donation.member.member_id}</p>
+                        {donation.member.father_name && (
+                          <p className="text-xs text-muted-foreground">{donation.member.father_name}</p>
+                        )}
                       </>
                     ) : (
                       <AnonymousDonationBadge />

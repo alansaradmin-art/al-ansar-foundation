@@ -19,6 +19,7 @@ export type AuditLogWithActor = AuditLog & {
   actor: { full_name: string; email: string; role: Role } | null
   memberName: string | null
   memberDisplayId: string | null
+  memberFatherName: string | null
   memberRowId: string | null
   managerName: string | null
 }

@@ -50,7 +50,7 @@ export interface AdminFollowupFilters {
 }
 
 export type FollowupWithRelations = MonthlyFollowup & {
-  member: { member_name: string; member_id: string } | null
+  member: { member_name: string; member_id: string; father_name: string | null } | null
   manager: { full_name: string } | null
 }
 

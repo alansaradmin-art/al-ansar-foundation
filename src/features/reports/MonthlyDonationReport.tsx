@@ -48,7 +48,7 @@ function MemberDonationCard({ member }: { member: DonationReportMemberGroup }) {
               {member.memberName}
             </Link>
           </CardTitle>
-          <p className="text-xs text-muted-foreground">{member.memberDisplayId}</p>
+          {member.memberFatherName && <p className="text-xs text-muted-foreground">{member.memberFatherName}</p>}
         </div>
         <span className="shrink-0 font-display text-lg font-semibold tabular-nums text-primary">
           {formatINR(member.total)}

@@ -8,6 +8,7 @@ interface EnrichedAuditRow extends AuditRow {
   actor: { full_name: string; email: string; role: string } | null
   memberName: string | null
   memberDisplayId: string | null
+  memberFatherName: string | null
   memberRowId: string | null
   managerName: string | null
 }
@@ -109,8 +110,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
     const [membersResult, managersResult] = await Promise.all([
       memberIds.size > 0
-        ? supabase.from('members').select('id, member_name, member_id').in('id', [...memberIds])
-        : Promise.resolve({ data: [] as { id: string; member_name: string; member_id: string }[], error: null }),
+        ? supabase.from('members').select('id, member_name, member_id, father_name').in('id', [...memberIds])
+        : Promise.resolve({
+            data: [] as { id: string; member_name: string; member_id: string; father_name: string | null }[],
+            error: null,
+          }),
       managerIds.size > 0
         ? supabase.from('managers').select('id, full_name').in('id', [...managerIds])
         : Promise.resolve({ data: [] as { id: string; full_name: string }[], error: null }),
@@ -164,6 +168,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         actor: (row as unknown as { actor: EnrichedAuditRow['actor'] }).actor,
         memberName: member?.member_name ?? null,
         memberDisplayId: member?.member_id ?? null,
+        memberFatherName: member?.father_name ?? null,
         memberRowId: memberRowId ?? null,
         managerName: manager?.full_name ?? null,
       }
