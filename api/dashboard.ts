@@ -68,16 +68,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { rows: data ?? [] })
     }
 
-    if (type === 'attentionMembers') {
+    if (type === 'memberGrowthTrend') {
       if (!requireAdmin(res, profile)) return
-      const month = Number(readQueryParam(req, 'month'))
       const year = Number(readQueryParam(req, 'year'))
-      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
-      const { data, error } = await supabase.rpc('members_needing_attention', {
-        p_manager_id: managerScope ?? null,
-        p_month: month,
-        p_year: year,
-      })
+      const { data, error } = await supabase.rpc('member_growth_trend', { p_year: year })
       if (error) return sendSupabaseError(res, error)
       return sendJson(res, 200, { rows: data ?? [] })
     }

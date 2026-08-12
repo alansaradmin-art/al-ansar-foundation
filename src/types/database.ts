@@ -279,6 +279,14 @@ export interface Database {
           no_recent_donation: boolean
         }[]
       }
+      member_growth_trend: {
+        Args: { p_year: number }
+        Returns: {
+          month: number
+          year: number
+          new_members: number
+        }[]
+      }
     }
   }
 }

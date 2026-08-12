@@ -2,23 +2,19 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, UserCheck, UserX, UserCog, Wallet, IndianRupee, Receipt, CheckCircle2, Clock } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useAdminDashboard, useAttentionMembers, useManagerWiseReport, useMonthWiseReport } from '@/hooks/useDashboard'
-import { useAuditLogs } from '@/hooks/useAuditLogs'
-import { useManagers } from '@/hooks/useManagers'
+import { useAdminDashboard, useMemberGrowthTrend, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
 import { CardListSkeleton, StatGridSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { ErrorState, EmptyState } from '@/components/StateViews'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
-import { MemberStatusBadge, NoRecentDonationBadge, PendingFollowupBadge } from '@/components/StatusBadge'
-import { findActionTypeOption } from '@/features/auditLogs/ActionTypeOptions'
-import { formatDateTime, formatINR, formatPeriod } from '@/lib/format'
+import { formatINR, formatPeriod, monthName } from '@/lib/format'
 import { DONATION_TYPES } from '@/schemas/donation.schema'
+import type { MemberGrowthRow } from '@/services/dashboard'
 import type { DonationType } from '@/types'
 
 const DONATION_TYPE_LABELS: Record<string, string> = {
@@ -29,28 +25,35 @@ const DONATION_TYPE_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
-const ACTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  members_created: 'secondary',
-  members_updated: 'outline',
-  donations_created: 'secondary',
-  donations_updated: 'destructive',
-  monthly_followups_created: 'secondary',
-  managers_created: 'secondary',
-  managers_updated: 'outline',
-}
+const TOP_DONORS_LIMIT = 5
 
-const ATTENTION_PREVIEW_LIMIT = 8
+function MemberGrowthChart({ rows }: { rows: MemberGrowthRow[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.new_members))
+
+  return (
+    <div className="flex items-end gap-2 overflow-x-auto pb-2" role="img" aria-label="New members per month">
+      {rows.map((row) => (
+        <div key={row.month} className="flex w-14 shrink-0 flex-col items-center gap-1.5">
+          <span className="text-[11px] tabular-nums text-muted-foreground">{row.new_members > 0 ? row.new_members : ''}</span>
+          <div className="flex h-32 w-full items-end rounded-md bg-muted/40">
+            <div
+              className="w-full rounded-md bg-primary"
+              style={{ height: `${(row.new_members / max) * 100}%`, minHeight: row.new_members > 0 ? 4 : 0 }}
+            />
+          </div>
+          <span className="text-[11px] text-muted-foreground">{monthName(row.month).slice(0, 3)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function AdminDashboardPage() {
   const { period, setPeriod } = usePeriodSelector()
-  const [managerId, setManagerId] = useState('ALL')
   const [donationType, setDonationType] = useState<DonationType | 'ALL'>('ALL')
-
-  const scopedManagerId = managerId === 'ALL' ? undefined : managerId
   const scopedDonationType = donationType === 'ALL' ? undefined : donationType
 
   const { data: stats, isLoading, isError, refetch } = useAdminDashboard(period?.month, period?.year)
-  const { data: managers = [] } = useManagers()
 
   const {
     data: monthRows,
@@ -60,28 +63,24 @@ export default function AdminDashboardPage() {
   } = useMonthWiseReport(period?.year, scopedDonationType)
 
   const {
-    data: managerRows,
-    isLoading: isManagerLoading,
-    isError: isManagerError,
-    refetch: refetchManager,
-  } = useManagerWiseReport(period?.month, period?.year, scopedDonationType)
+    data: growthRows,
+    isLoading: isGrowthLoading,
+    isError: isGrowthError,
+    refetch: refetchGrowth,
+  } = useMemberGrowthTrend(period?.year)
 
   const {
-    data: attentionMembers,
-    isLoading: isAttentionLoading,
-    isError: isAttentionError,
-    refetch: refetchAttention,
-  } = useAttentionMembers(period?.month, period?.year, scopedManagerId)
-
-  const {
-    data: recentActivity,
-    isLoading: isActivityLoading,
-    isError: isActivityError,
-    refetch: refetchActivity,
-  } = useAuditLogs({ page: 1, pageSize: 5 })
+    data: donationReport,
+    isLoading: isDonationReportLoading,
+    isError: isDonationReportError,
+    refetch: refetchDonationReport,
+  } = useMonthlyDonationReport(period?.month, period?.year)
 
   const totalCollection = monthRows?.reduce((sum, r) => sum + r.donation_amount, 0) ?? 0
-  const attentionPreview = attentionMembers?.slice(0, ATTENTION_PREVIEW_LIMIT) ?? []
+  const topDonors = [...(donationReport?.members ?? [])].sort((a, b) => b.total - a.total).slice(0, TOP_DONORS_LIMIT)
+  const donorCount = donationReport?.members.length ?? 0
+  const donatedRate = stats && stats.active_members > 0 ? (donorCount / stats.active_members) * 100 : 0
+  const followupRate = stats && stats.active_members > 0 ? (stats.completed_followups / stats.active_members) * 100 : 0
 
   return (
     <div className="space-y-5">
@@ -172,19 +171,6 @@ export default function AdminDashboardPage() {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={managerId} onValueChange={setManagerId}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All managers" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All managers</SelectItem>
-            {managers.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.full_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={donationType} onValueChange={(v) => setDonationType(v as DonationType | 'ALL')}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All donation types" />
@@ -216,7 +202,19 @@ export default function AdminDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Manager-wise Summary</CardTitle>
+          <CardTitle>Member Growth Trend</CardTitle>
+          <CardDescription>{period && `New members added in ${period.year}`}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isGrowthLoading && <TableSkeleton rows={1} cols={12} />}
+          {isGrowthError && <ErrorState message="Unable to load member growth." onRetry={refetchGrowth} />}
+          {growthRows && <MemberGrowthChart rows={growthRows} />}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Donors This Period</CardTitle>
           <CardDescription>{period && formatPeriod(period.month, period.year)}</CardDescription>
           <CardAction>
             <Button variant="ghost" size="sm" asChild>
@@ -224,102 +222,67 @@ export default function AdminDashboardPage() {
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent>
-          {isManagerLoading && <TableSkeleton cols={5} />}
-          {isManagerError && <ErrorState message="Unable to load the manager summary." onRetry={refetchManager} />}
-          {managerRows && managerRows.length === 0 && <EmptyState title="No managers found." />}
-          {managerRows && managerRows.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="p-3 font-medium">Manager</th>
-                    <th className="p-3 font-medium">Members</th>
-                    <th className="p-3 font-medium">Donations</th>
-                    <th className="p-3 font-medium">Amount</th>
-                    <th className="p-3 font-medium">Pending</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {managerRows.map((row) => (
-                    <tr key={row.manager_id} className="border-b last:border-0">
-                      <td className="p-3 font-medium">{row.manager_name}</td>
-                      <td className="p-3 tabular-nums">{row.assigned_members}</td>
-                      <td className="p-3 tabular-nums">{row.donation_count}</td>
-                      <td className="p-3 tabular-nums">{formatINR(row.donation_amount)}</td>
-                      <td className="p-3 tabular-nums">{row.pending_followups}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Members Requiring Attention</CardTitle>
-          <CardDescription>Pending follow-up, inactive, or no donation in the last 3 months</CardDescription>
-        </CardHeader>
         <CardContent className="space-y-2">
-          {isAttentionLoading && <CardListSkeleton count={4} />}
-          {isAttentionError && <ErrorState message="Unable to load this list." onRetry={refetchAttention} />}
-          {attentionMembers && attentionMembers.length === 0 && (
-            <EmptyState title="No members currently need attention." />
+          {isDonationReportLoading && <CardListSkeleton count={TOP_DONORS_LIMIT} />}
+          {isDonationReportError && (
+            <ErrorState message="Unable to load top donors." onRetry={refetchDonationReport} />
           )}
-          {attentionPreview.map((m) => (
+          {donationReport && topDonors.length === 0 && (
+            <EmptyState title="No donations recorded for this month." />
+          )}
+          {topDonors.map((m, i) => (
             <Link
-              key={m.id}
-              to={`/admin/members/${m.id}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-3 shadow-sm transition-colors hover:bg-accent/40"
+              key={m.memberId}
+              to={`/admin/members/${m.memberId}`}
+              className="flex items-center justify-between gap-2 rounded-xl border bg-card p-3 shadow-sm transition-colors hover:bg-accent/40"
             >
-              <div className="min-w-0">
-                <p className="font-medium">{m.member_name}</p>
-                <p className="text-xs text-muted-foreground">{[m.father_name, m.manager_name].filter(Boolean).join(' · ')}</p>
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gold/25 text-xs font-semibold text-gold-foreground">
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{m.memberName}</p>
+                  {m.memberFatherName && <p className="truncate text-xs text-muted-foreground">{m.memberFatherName}</p>}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {m.is_pending_followup && <PendingFollowupBadge />}
-                {m.is_inactive && <MemberStatusBadge status={m.status} />}
-                {m.no_recent_donation && <NoRecentDonationBadge />}
-              </div>
+              <span className="shrink-0 font-display font-semibold tabular-nums">{formatINR(m.total)}</span>
             </Link>
           ))}
-          {attentionMembers && attentionMembers.length > ATTENTION_PREVIEW_LIMIT && (
-            <p className="pt-1 text-center text-xs text-muted-foreground">
-              Showing {ATTENTION_PREVIEW_LIMIT} of {attentionMembers.length}
-            </p>
-          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardAction>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/admin/audit-logs">View all</Link>
-            </Button>
-          </CardAction>
+          <CardTitle>Engagement Snapshot</CardTitle>
+          <CardDescription>{period && `${formatPeriod(period.month, period.year)} — share of active members`}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {isActivityLoading && <CardListSkeleton count={5} />}
-          {isActivityError && <ErrorState message="Unable to load recent activity." onRetry={refetchActivity} />}
-          {recentActivity && recentActivity.rows.length === 0 && <EmptyState title="No activity recorded yet." />}
-          {recentActivity?.rows.map((log) => (
-            <div
-              key={log.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-3 shadow-sm"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <Badge variant={ACTION_BADGE_VARIANT[log.action] ?? 'outline'}>
-                  {findActionTypeOption(log.action)?.label ?? log.action}
-                </Badge>
-                <p className="truncate text-sm">{log.memberName ?? log.actor?.full_name ?? 'System'}</p>
+        <CardContent className="space-y-4">
+          {(isLoading || isDonationReportLoading) && <CardListSkeleton count={2} />}
+          {(isError || isDonationReportError) && (
+            <ErrorState message="Unable to load engagement figures." onRetry={refetch} />
+          )}
+          {stats && donationReport && (
+            <>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Donated this month</span>
+                  <span className="font-medium tabular-nums">{donatedRate.toFixed(0)}%</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, donatedRate)}%` }} />
+                </div>
               </div>
-              <span className="whitespace-nowrap text-xs text-muted-foreground">{formatDateTime(log.created_at)}</span>
-            </div>
-          ))}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Follow-up completed this month</span>
+                  <span className="font-medium tabular-nums">{followupRate.toFixed(0)}%</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, followupRate)}%` }} />
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

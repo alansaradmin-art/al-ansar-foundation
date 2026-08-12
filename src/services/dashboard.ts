@@ -89,32 +89,16 @@ export async function getMonthWiseReport(
   return rows
 }
 
-export interface AttentionMember {
-  id: string
-  member_id: string
-  member_name: string
-  father_name: string | null
-  mobile_number: string | null
-  assigned_manager_id: string | null
-  manager_name: string | null
-  status: 'ACTIVE' | 'INACTIVE'
-  updated_at: string
-  is_pending_followup: boolean
-  is_inactive: boolean
-  no_recent_donation: boolean
+export interface MemberGrowthRow {
+  month: number
+  year: number
+  new_members: number
 }
 
-export async function getAttentionMembers(
-  getToken: GetToken,
-  month: number,
-  year: number,
-  managerId?: string,
-): Promise<AttentionMember[]> {
-  const { rows } = await apiClient.get<{ rows: AttentionMember[] }>('/api/dashboard', getToken, {
-    type: 'attentionMembers',
-    month,
+export async function getMemberGrowthTrend(getToken: GetToken, year: number): Promise<MemberGrowthRow[]> {
+  const { rows } = await apiClient.get<{ rows: MemberGrowthRow[] }>('/api/dashboard', getToken, {
+    type: 'memberGrowthTrend',
     year,
-    ...(managerId ? { managerId } : {}),
   })
   return rows
 }

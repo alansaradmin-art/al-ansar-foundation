@@ -30,8 +30,7 @@ export const queryKeys = {
       ['reports', 'manager-wise', month, year, donationType] as const,
     monthWiseReport: (year: number, donationType?: string) => ['reports', 'month-wise', year, donationType] as const,
     monthlyDonationReport: (month: number, year: number) => ['reports', 'monthly-donation', month, year] as const,
-    attentionMembers: (managerId: string | undefined, month: number, year: number) =>
-      ['dashboard', 'attention-members', managerId, month, year] as const,
+    memberGrowthTrend: (year: number) => ['dashboard', 'member-growth', year] as const,
   },
   settings: {
     currentPeriod: ['settings', 'current-period'] as const,

@@ -40,12 +40,12 @@ export function useMonthWiseReport(year: number | undefined, donationType?: Dona
   })
 }
 
-export function useAttentionMembers(month: number | undefined, year: number | undefined, managerId: string | undefined) {
+export function useMemberGrowthTrend(year: number | undefined) {
   const { getToken } = useAuth()
   return useQuery({
-    queryKey: queryKeys.dashboard.attentionMembers(managerId, month ?? 0, year ?? 0),
-    queryFn: () => dashboardService.getAttentionMembers(getToken, month!, year!, managerId),
-    enabled: month != null && year != null,
+    queryKey: queryKeys.dashboard.memberGrowthTrend(year ?? 0),
+    queryFn: () => dashboardService.getMemberGrowthTrend(getToken, year!),
+    enabled: year != null,
   })
 }
 
