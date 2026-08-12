@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const PAYMENT_METHODS = ['CASH', 'UPI', 'ONLINE', 'BANK_TRANSFER', 'OTHER'] as const
+export const DONATION_TYPES = ['ZAKAT', 'SADAQAH', 'FITRA', 'GENERAL', 'OTHER'] as const
 
 const REFERENCE_REQUIRED_METHODS = new Set(['UPI', 'ONLINE', 'BANK_TRANSFER'])
 
@@ -16,6 +17,7 @@ export const donationFormSchema = z
     amount_inr: z.coerce
       .number({ message: 'Enter a valid amount.' })
       .positive('Amount must be greater than ₹0.'),
+    donation_type: z.enum(DONATION_TYPES, { message: 'Select a donation type.' }),
     payment_method: z.enum(PAYMENT_METHODS),
     transaction_reference: z.string().trim().optional().or(z.literal('')),
     notes: z.string().trim().optional().or(z.literal('')),

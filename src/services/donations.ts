@@ -1,5 +1,5 @@
 import { apiClient, type GetToken } from '@/lib/apiClient'
-import type { Donation, PaginatedResult, PaymentMethod } from '@/types'
+import type { Donation, DonationType, PaginatedResult, PaymentMethod } from '@/types'
 import type { DonationFormValues } from '@/schemas/donation.schema'
 
 export async function listDonationsForMember(getToken: GetToken, memberId: string): Promise<Donation[]> {
@@ -28,6 +28,7 @@ export interface AdminDonationFilters {
   managerId?: string
   memberId?: string
   paymentMethod?: PaymentMethod
+  donationType?: DonationType
   dateFrom?: string
   dateTo?: string
   page?: number

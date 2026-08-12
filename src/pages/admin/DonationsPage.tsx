@@ -15,8 +15,8 @@ import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationD
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
 import { formatDate, formatINR } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
-import { PAYMENT_METHODS } from '@/schemas/donation.schema'
-import type { PaymentMethod } from '@/types'
+import { DONATION_TYPES, PAYMENT_METHODS } from '@/schemas/donation.schema'
+import type { DonationType, PaymentMethod } from '@/types'
 import type { DonationWithRelations } from '@/services/donations'
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -27,10 +27,19 @@ const PAYMENT_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
+const DONATION_TYPE_LABELS: Record<string, string> = {
+  ZAKAT: 'Zakat',
+  SADAQAH: 'Sadaqah/Sadka',
+  FITRA: 'Fitra',
+  GENERAL: 'General Donation',
+  OTHER: 'Other',
+}
+
 export default function AdminDonationsPage() {
   const { period, setPeriod } = usePeriodSelector()
   const [managerId, setManagerId] = useState('ALL')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | 'ALL'>('ALL')
+  const [donationType, setDonationType] = useState<DonationType | 'ALL'>('ALL')
   const [page, setPage] = useState(1)
 
   const { data: managers = [] } = useManagers()
@@ -39,6 +48,7 @@ export default function AdminDonationsPage() {
     year: period?.year,
     managerId: managerId === 'ALL' ? undefined : managerId,
     paymentMethod: paymentMethod === 'ALL' ? undefined : paymentMethod,
+    donationType: donationType === 'ALL' ? undefined : donationType,
     page,
     pageSize: 25,
   })
@@ -49,6 +59,7 @@ export default function AdminDonationsPage() {
       { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
       { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
       { key: 'member_id', label: 'Member ID', value: (r) => r.member?.member_id ?? 'Anonymous' },
+      { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
       { key: 'ref', label: 'Transaction Reference', value: (r) => r.transaction_reference ?? '' },
@@ -92,13 +103,26 @@ export default function AdminDonationsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={donationType} onValueChange={(v) => setDonationType(v as DonationType | 'ALL')}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All types</SelectItem>
+            {DONATION_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {DONATION_TYPE_LABELS[t]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button variant="outline" onClick={handleExport} disabled={!data || data.rows.length === 0} className="ml-auto">
           <Download className="size-4" /> Export CSV
         </Button>
         <AnonymousDonationDialog />
       </div>
 
-      {isLoading && <TableSkeleton cols={6} />}
+      {isLoading && <TableSkeleton cols={7} />}
       {isError && <ErrorState message="Unable to load donations. Please try again." onRetry={refetch} />}
       {data && data.rows.length === 0 && <EmptyState title="No donations recorded for this month." />}
 
@@ -109,6 +133,7 @@ export default function AdminDonationsPage() {
               <tr>
                 <th className="p-3 font-medium">Date</th>
                 <th className="p-3 font-medium">Member</th>
+                <th className="p-3 font-medium">Type</th>
                 <th className="p-3 font-medium">Amount</th>
                 <th className="p-3 font-medium">Method</th>
                 <th className="p-3 font-medium">Reference</th>
@@ -129,6 +154,9 @@ export default function AdminDonationsPage() {
                     ) : (
                       <AnonymousDonationBadge />
                     )}
+                  </td>
+                  <td className="p-3">
+                    <Badge variant="secondary">{DONATION_TYPE_LABELS[donation.donation_type]}</Badge>
                   </td>
                   <td className="p-3 font-medium tabular-nums">{formatINR(donation.amount_inr)}</td>
                   <td className="p-3">

@@ -12,6 +12,14 @@ const PAYMENT_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
+const DONATION_TYPE_LABELS: Record<string, string> = {
+  ZAKAT: 'Zakat',
+  SADAQAH: 'Sadaqah/Sadka',
+  FITRA: 'Fitra',
+  GENERAL: 'General Donation',
+  OTHER: 'Other',
+}
+
 function DonationRow({ donation: d }: { donation: Donation }) {
   return (
     <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
@@ -21,7 +29,7 @@ function DonationRow({ donation: d }: { donation: Donation }) {
       <div className="min-w-0 flex-1">
         <p className="font-medium">{formatDate(d.donation_date)}</p>
         <p className="text-sm text-muted-foreground">
-          {PAYMENT_LABELS[d.payment_method]}
+          {DONATION_TYPE_LABELS[d.donation_type]} · {PAYMENT_LABELS[d.payment_method]}
           {d.transaction_reference ? ` · Ref: ${d.transaction_reference}` : ''}
         </p>
         {d.notes && <p className="text-sm text-muted-foreground">{d.notes}</p>}

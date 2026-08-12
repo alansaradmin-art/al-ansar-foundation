@@ -38,3 +38,12 @@ export function useMonthWiseReport(year: number | undefined) {
     enabled: year != null,
   })
 }
+
+export function useMonthlyDonationReport(month: number | undefined, year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.monthlyDonationReport(month ?? 0, year ?? 0),
+    queryFn: () => dashboardService.getMonthlyDonationReport(getToken, month!, year!),
+    enabled: month != null && year != null,
+  })
+}

@@ -12,6 +12,7 @@ export type ManagerStatus = 'ACTIVE' | 'INACTIVE'
 export type MemberStatus = 'ACTIVE' | 'INACTIVE'
 export type ContactType = 'REGISTERED_MEMBER' | 'MANAGER' | 'EXTERNAL_CONTACT'
 export type PaymentMethod = 'CASH' | 'UPI' | 'ONLINE' | 'BANK_TRANSFER' | 'OTHER'
+export type DonationType = 'ZAKAT' | 'SADAQAH' | 'FITRA' | 'GENERAL' | 'OTHER'
 export type FollowUpStatus = 'NOT_STARTED' | 'COMPLETED' | 'NOT_INTERESTED' | 'CALLBACK_REQUIRED' | 'OTHER'
 export type FollowUpMethod = 'PHONE' | 'WHATSAPP' | 'IN_PERSON' | 'OTHER'
 export type ContactedPersonType = 'MEMBER' | 'ADDED_BY' | 'REFERENCE_CONTACT' | 'OTHER'
@@ -96,6 +97,7 @@ export interface Database {
           donation_year: number
           amount_inr: number
           payment_method: PaymentMethod
+          donation_type: DonationType
           transaction_reference: string | null
           notes: string | null
           recorded_by: string
@@ -112,6 +114,7 @@ export interface Database {
           donation_year: number
           amount_inr: number
           payment_method: PaymentMethod
+          donation_type: DonationType
           recorded_by: string
         }
         Update: Partial<Database['public']['Tables']['donations']['Row']>

@@ -5,13 +5,21 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { donationFormSchema, PAYMENT_METHODS, type DonationFormValues } from '@/schemas/donation.schema'
+import { donationFormSchema, DONATION_TYPES, PAYMENT_METHODS, type DonationFormValues } from '@/schemas/donation.schema'
 
 const PAYMENT_LABELS: Record<(typeof PAYMENT_METHODS)[number], string> = {
   CASH: 'Cash',
   UPI: 'UPI',
   ONLINE: 'Online',
   BANK_TRANSFER: 'Bank Transfer',
+  OTHER: 'Other',
+}
+
+const DONATION_TYPE_LABELS: Record<(typeof DONATION_TYPES)[number], string> = {
+  ZAKAT: 'Zakat',
+  SADAQAH: 'Sadaqah/Sadka',
+  FITRA: 'Fitra',
+  GENERAL: 'General Donation',
   OTHER: 'Other',
 }
 
@@ -39,6 +47,7 @@ export function DonationForm({
       member_id: memberId,
       donation_date: todayISO(),
       amount_inr: 0,
+      donation_type: 'GENERAL',
       payment_method: 'CASH',
       transaction_reference: '',
       notes: '',
@@ -78,6 +87,31 @@ export function DonationForm({
                   <Input type="number" inputMode="decimal" min="0.01" step="0.01" className="pl-7" {...field} />
                 </div>
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="donation_type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Donation Type</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {DONATION_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {DONATION_TYPE_LABELS[type]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

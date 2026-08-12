@@ -1,7 +1,7 @@
 import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
-import type { Database, PaymentMethod } from '../src/types/database'
+import type { Database, DonationType, PaymentMethod } from '../src/types/database'
 
 type DonationInsert = Database['public']['Tables']['donations']['Insert']
 
@@ -44,6 +44,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const year = readQueryParam(req, 'year')
       const memberId = readQueryParam(req, 'memberId')
       const paymentMethod = readQueryParam(req, 'paymentMethod')
+      const donationType = readQueryParam(req, 'donationType')
       const dateFrom = readQueryParam(req, 'dateFrom')
       const dateTo = readQueryParam(req, 'dateTo')
       const page = Number(readQueryParam(req, 'page') ?? '1')
@@ -57,7 +58,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           // member is a left join (not !inner) — an anonymous donation
           // (member_id null) has no row to inner-join against and would
           // otherwise vanish from this list/count/export entirely.
-          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members(member_name, member_id, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
+          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members(member_name, member_id, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
           { count: 'exact' },
         )
         .eq('is_deleted', false)
@@ -67,6 +68,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (year) query = query.eq('donation_year', Number(year))
       if (memberId) query = query.eq('member_id', memberId)
       if (paymentMethod) query = query.eq('payment_method', paymentMethod as PaymentMethod)
+      if (donationType) query = query.eq('donation_type', donationType as DonationType)
       if (dateFrom) query = query.gte('donation_date', dateFrom)
       if (dateTo) query = query.lte('donation_date', dateTo)
 
@@ -110,6 +112,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           donation_year: year,
           amount_inr: values.amount_inr!,
           payment_method: values.payment_method!,
+          donation_type: values.donation_type!,
           transaction_reference: values.transaction_reference || null,
           notes: values.notes || null,
           // Always the caller's own profile id — never trust a client-supplied

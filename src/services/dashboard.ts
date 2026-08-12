@@ -1,4 +1,5 @@
 import { apiClient, type GetToken } from '@/lib/apiClient'
+import type { DonationType, PaymentMethod } from '@/types'
 
 export interface ManagerDashboardStats {
   total_members: number
@@ -71,4 +72,43 @@ export async function getMonthWiseReport(getToken: GetToken, year: number): Prom
     year,
   })
   return rows
+}
+
+export interface DonationReportRow {
+  id: string
+  donation_id: string
+  donation_date: string
+  donation_type: DonationType
+  amount_inr: number
+  payment_method: PaymentMethod
+  transaction_reference: string | null
+}
+
+export interface DonationReportMemberGroup {
+  memberId: string
+  memberName: string
+  memberDisplayId: string
+  total: number
+  donations: DonationReportRow[]
+}
+
+export interface MonthlyDonationReport {
+  summary: {
+    totalCount: number
+    totalAmount: number
+    zakat: number
+    sadaqah: number
+    fitra: number
+    generalOrOther: number
+  }
+  members: DonationReportMemberGroup[]
+  anonymous: { total: number; donations: DonationReportRow[] }
+}
+
+export async function getMonthlyDonationReport(
+  getToken: GetToken,
+  month: number,
+  year: number,
+): Promise<MonthlyDonationReport> {
+  return apiClient.get('/api/dashboard', getToken, { type: 'monthlyDonationReport', month, year })
 }

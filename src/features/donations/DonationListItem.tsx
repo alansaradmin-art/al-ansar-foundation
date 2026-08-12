@@ -11,6 +11,14 @@ const PAYMENT_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
+const DONATION_TYPE_LABELS: Record<string, string> = {
+  ZAKAT: 'Zakat',
+  SADAQAH: 'Sadaqah/Sadka',
+  FITRA: 'Fitra',
+  GENERAL: 'General Donation',
+  OTHER: 'Other',
+}
+
 export function DonationListItem({ donation, memberHref }: { donation: DonationWithRelations; memberHref: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
@@ -22,7 +30,8 @@ export function DonationListItem({ donation, memberHref }: { donation: DonationW
           {donation.member?.member_name ?? 'Unknown member'}
         </Link>
         <p className="text-xs text-muted-foreground">
-          {formatDate(donation.donation_date)} · {PAYMENT_LABELS[donation.payment_method]}
+          {formatDate(donation.donation_date)} · {DONATION_TYPE_LABELS[donation.donation_type]} ·{' '}
+          {PAYMENT_LABELS[donation.payment_method]}
           {donation.transaction_reference ? ` · Ref: ${donation.transaction_reference}` : ''}
         </p>
       </div>

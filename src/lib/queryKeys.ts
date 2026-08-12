@@ -27,6 +27,7 @@ export const queryKeys = {
     admin: (month: number, year: number) => ['dashboard', 'admin', month, year] as const,
     managerWiseReport: (month: number, year: number) => ['reports', 'manager-wise', month, year] as const,
     monthWiseReport: (year: number) => ['reports', 'month-wise', year] as const,
+    monthlyDonationReport: (month: number, year: number) => ['reports', 'monthly-donation', month, year] as const,
   },
   settings: {
     currentPeriod: ['settings', 'current-period'] as const,

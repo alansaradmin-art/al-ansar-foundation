@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useManagerWiseReport, useMonthWiseReport } from '@/hooks/useDashboard'
+import { useManagerWiseReport, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
@@ -10,9 +10,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
+import { MonthlyDonationReport } from '@/features/reports/MonthlyDonationReport'
 import { formatINR, formatPeriod, monthName } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
-import type { ManagerWiseReportRow, MonthWiseReportRow } from '@/services/dashboard'
+import type { ManagerWiseReportRow, MonthWiseReportRow, DonationReportRow } from '@/services/dashboard'
+
+const DONATION_TYPE_LABELS: Record<string, string> = {
+  ZAKAT: 'Zakat',
+  SADAQAH: 'Sadaqah/Sadka',
+  FITRA: 'Fitra',
+  GENERAL: 'General Donation',
+  OTHER: 'Other',
+}
+
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: 'Cash',
+  UPI: 'UPI',
+  ONLINE: 'Online',
+  BANK_TRANSFER: 'Bank Transfer',
+  OTHER: 'Other',
+}
 
 export default function ReportsPage() {
   const { period, setPeriod } = usePeriodSelector()
@@ -20,6 +37,7 @@ export default function ReportsPage() {
 
   const { data: managerRows, isLoading: isManagerLoading } = useManagerWiseReport(period?.month, period?.year)
   const { data: monthRows, isLoading: isMonthLoading } = useMonthWiseReport(year)
+  const { data: donationReport, isLoading: isDonationReportLoading } = useMonthlyDonationReport(period?.month, period?.year)
 
   function exportManagerReport() {
     if (!managerRows || !period) return
@@ -48,6 +66,27 @@ export default function ReportsPage() {
     downloadCsv(`month-wise-report-${year}.csv`, csv)
   }
 
+  function exportDonationReport() {
+    if (!donationReport || !period) return
+    type FlatRow = DonationReportRow & { memberLabel: string; memberIdLabel: string }
+    const flatRows: FlatRow[] = [
+      ...donationReport.members.flatMap((m) =>
+        m.donations.map((d) => ({ ...d, memberLabel: m.memberName, memberIdLabel: m.memberDisplayId })),
+      ),
+      ...donationReport.anonymous.donations.map((d) => ({ ...d, memberLabel: 'Anonymous', memberIdLabel: 'Anonymous' })),
+    ]
+    const csv = toCsv<FlatRow>(flatRows, [
+      { key: 'member', label: 'Member Name', value: (r) => r.memberLabel },
+      { key: 'member_id', label: 'Member ID', value: (r) => r.memberIdLabel },
+      { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
+      { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
+      { key: 'date', label: 'Donation Date', value: (r) => r.donation_date },
+      { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
+      { key: 'ref', label: 'Transaction Reference', value: (r) => r.transaction_reference ?? '' },
+    ])
+    downloadCsv(`monthly-donation-report-${period.year}-${period.month}.csv`, csv)
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader title="Reports" description="Manager performance and month-over-month donation trends" />
@@ -56,6 +95,7 @@ export default function ReportsPage() {
         <TabsList>
           <TabsTrigger value="manager">Manager-wise</TabsTrigger>
           <TabsTrigger value="month">Month-wise</TabsTrigger>
+          <TabsTrigger value="donations">Donation Report</TabsTrigger>
         </TabsList>
 
         <TabsContent value="manager" className="space-y-4">
@@ -145,6 +185,18 @@ export default function ReportsPage() {
               </div>
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="donations" className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {period && <PeriodSelector period={period} onChange={setPeriod} />}
+            <Button variant="outline" onClick={exportDonationReport} disabled={!donationReport?.summary.totalCount}>
+              <Download className="size-4" /> Export CSV
+            </Button>
+          </div>
+
+          {isDonationReportLoading && <TableSkeleton cols={3} />}
+          {donationReport && <MonthlyDonationReport data={donationReport} />}
         </TabsContent>
       </Tabs>
     </div>

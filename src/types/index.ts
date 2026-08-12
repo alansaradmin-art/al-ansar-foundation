@@ -13,6 +13,7 @@ export type {
   MemberStatus,
   ContactType,
   PaymentMethod,
+  DonationType,
   FollowUpStatus,
   FollowUpMethod,
   ContactedPersonType,
