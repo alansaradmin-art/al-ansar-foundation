@@ -227,7 +227,7 @@ export interface Database {
         }[]
       }
       manager_wise_report: {
-        Args: { p_month: number; p_year: number }
+        Args: { p_month: number; p_year: number; p_donation_type?: string | null }
         Returns: {
           manager_id: string
           manager_name: string
@@ -240,7 +240,7 @@ export interface Database {
         }[]
       }
       month_wise_report: {
-        Args: { p_year: number }
+        Args: { p_year: number; p_donation_type?: string | null }
         Returns: {
           month: number
           year: number
@@ -257,6 +257,23 @@ export interface Database {
       is_pending_followup_batch: {
         Args: { p_member_ids: string[]; p_month: number; p_year: number }
         Returns: { member_id: string; is_pending: boolean }[]
+      }
+      members_needing_attention: {
+        Args: { p_manager_id: string | null; p_month: number; p_year: number; p_limit?: number }
+        Returns: {
+          id: string
+          member_id: string
+          member_name: string
+          father_name: string | null
+          mobile_number: string | null
+          assigned_manager_id: string | null
+          manager_name: string | null
+          status: string
+          updated_at: string
+          is_pending_followup: boolean
+          is_inactive: boolean
+          no_recent_donation: boolean
+        }[]
       }
     }
   }

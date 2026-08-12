@@ -46,7 +46,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (!requireAdmin(res, profile)) return
       const month = Number(readQueryParam(req, 'month'))
       const year = Number(readQueryParam(req, 'year'))
-      const { data, error } = await supabase.rpc('manager_wise_report', { p_month: month, p_year: year })
+      const donationType = readQueryParam(req, 'donationType')
+      const { data, error } = await supabase.rpc('manager_wise_report', {
+        p_month: month,
+        p_year: year,
+        p_donation_type: donationType ?? null,
+      })
       if (error) return sendSupabaseError(res, error)
       return sendJson(res, 200, { rows: data ?? [] })
     }
@@ -54,7 +59,25 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (type === 'monthWiseReport') {
       if (!requireAdmin(res, profile)) return
       const year = Number(readQueryParam(req, 'year'))
-      const { data, error } = await supabase.rpc('month_wise_report', { p_year: year })
+      const donationType = readQueryParam(req, 'donationType')
+      const { data, error } = await supabase.rpc('month_wise_report', {
+        p_year: year,
+        p_donation_type: donationType ?? null,
+      })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (type === 'attentionMembers') {
+      if (!requireAdmin(res, profile)) return
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
+      const { data, error } = await supabase.rpc('members_needing_attention', {
+        p_manager_id: managerScope ?? null,
+        p_month: month,
+        p_year: year,
+      })
       if (error) return sendSupabaseError(res, error)
       return sendJson(res, 200, { rows: data ?? [] })
     }

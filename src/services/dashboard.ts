@@ -48,11 +48,17 @@ export interface ManagerWiseReportRow {
   pending_followups: number
 }
 
-export async function getManagerWiseReport(getToken: GetToken, month: number, year: number): Promise<ManagerWiseReportRow[]> {
+export async function getManagerWiseReport(
+  getToken: GetToken,
+  month: number,
+  year: number,
+  donationType?: DonationType,
+): Promise<ManagerWiseReportRow[]> {
   const { rows } = await apiClient.get<{ rows: ManagerWiseReportRow[] }>('/api/dashboard', getToken, {
     type: 'managerWiseReport',
     month,
     year,
+    ...(donationType ? { donationType } : {}),
   })
   return rows
 }
@@ -66,10 +72,45 @@ export interface MonthWiseReportRow {
   pending_followups: number
 }
 
-export async function getMonthWiseReport(getToken: GetToken, year: number): Promise<MonthWiseReportRow[]> {
+export async function getMonthWiseReport(
+  getToken: GetToken,
+  year: number,
+  donationType?: DonationType,
+): Promise<MonthWiseReportRow[]> {
   const { rows } = await apiClient.get<{ rows: MonthWiseReportRow[] }>('/api/dashboard', getToken, {
     type: 'monthWiseReport',
     year,
+    ...(donationType ? { donationType } : {}),
+  })
+  return rows
+}
+
+export interface AttentionMember {
+  id: string
+  member_id: string
+  member_name: string
+  father_name: string | null
+  mobile_number: string | null
+  assigned_manager_id: string | null
+  manager_name: string | null
+  status: 'ACTIVE' | 'INACTIVE'
+  updated_at: string
+  is_pending_followup: boolean
+  is_inactive: boolean
+  no_recent_donation: boolean
+}
+
+export async function getAttentionMembers(
+  getToken: GetToken,
+  month: number,
+  year: number,
+  managerId?: string,
+): Promise<AttentionMember[]> {
+  const { rows } = await apiClient.get<{ rows: AttentionMember[] }>('/api/dashboard', getToken, {
+    type: 'attentionMembers',
+    month,
+    year,
+    ...(managerId ? { managerId } : {}),
   })
   return rows
 }

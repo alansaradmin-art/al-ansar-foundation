@@ -2,6 +2,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import * as dashboardService from '@/services/dashboard'
+import type { DonationType } from '@/types'
 
 export function useManagerDashboard(managerId: string | undefined, month: number | undefined, year: number | undefined) {
   const { getToken } = useAuth()
@@ -21,21 +22,30 @@ export function useAdminDashboard(month: number | undefined, year: number | unde
   })
 }
 
-export function useManagerWiseReport(month: number | undefined, year: number | undefined) {
+export function useManagerWiseReport(month: number | undefined, year: number | undefined, donationType?: DonationType) {
   const { getToken } = useAuth()
   return useQuery({
-    queryKey: queryKeys.dashboard.managerWiseReport(month ?? 0, year ?? 0),
-    queryFn: () => dashboardService.getManagerWiseReport(getToken, month!, year!),
+    queryKey: queryKeys.dashboard.managerWiseReport(month ?? 0, year ?? 0, donationType),
+    queryFn: () => dashboardService.getManagerWiseReport(getToken, month!, year!, donationType),
     enabled: month != null && year != null,
   })
 }
 
-export function useMonthWiseReport(year: number | undefined) {
+export function useMonthWiseReport(year: number | undefined, donationType?: DonationType) {
   const { getToken } = useAuth()
   return useQuery({
-    queryKey: queryKeys.dashboard.monthWiseReport(year ?? 0),
-    queryFn: () => dashboardService.getMonthWiseReport(getToken, year!),
+    queryKey: queryKeys.dashboard.monthWiseReport(year ?? 0, donationType),
+    queryFn: () => dashboardService.getMonthWiseReport(getToken, year!, donationType),
     enabled: year != null,
+  })
+}
+
+export function useAttentionMembers(month: number | undefined, year: number | undefined, managerId: string | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.attentionMembers(managerId, month ?? 0, year ?? 0),
+    queryFn: () => dashboardService.getAttentionMembers(getToken, month!, year!, managerId),
+    enabled: month != null && year != null,
   })
 }
 

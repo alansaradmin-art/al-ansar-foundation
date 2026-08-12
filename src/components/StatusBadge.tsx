@@ -89,3 +89,11 @@ export function PendingFollowupBadge({ label = 'Follow-up Required' }: { label?:
 export function FollowupNotDueBadge() {
   return <Badge label="Follow-up not completed" tone="neutral" icon={<Circle className="size-3.5" />} />
 }
+
+/** Active member with no donation in the trailing 3-month window (see
+ * members_needing_attention() in supabase/migrations) — an Admin Dashboard
+ * "needs attention" signal, warning tone like PendingFollowupBadge since
+ * it's also a to-do rather than a fault. */
+export function NoRecentDonationBadge() {
+  return <Badge label="No Recent Donation" tone="warning" icon={<IndianRupee className="size-3.5" />} />
+}
