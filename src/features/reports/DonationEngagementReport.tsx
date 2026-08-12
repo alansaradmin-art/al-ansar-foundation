@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateRangePicker, type DateRangeValue } from '@/components/DateRangePicker'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import type { DonationEngagementParams, DonationEngagementRow } from '@/services/dashboard'
 
@@ -28,7 +28,15 @@ const PRESET_LABELS: Record<Preset, string> = {
   CUSTOM: 'Custom Range',
 }
 
-type SortKey = 'memberName' | 'fatherName' | 'managerName' | 'donated' | 'totalAmount' | 'donationCount' | 'latestDonationDate'
+type SortKey =
+  | 'memberName'
+  | 'fatherName'
+  | 'mobileNumber'
+  | 'managerName'
+  | 'donated'
+  | 'totalAmount'
+  | 'donationCount'
+  | 'latestDonationDate'
 const PAGE_SIZE = 25
 
 function toISO(date: Date): string {
@@ -66,6 +74,8 @@ function compareRows(a: DonationEngagementRow, b: DonationEngagementRow, key: So
       return (a.latestDonationDate ?? '').localeCompare(b.latestDonationDate ?? '')
     case 'fatherName':
       return (a.fatherName ?? '').localeCompare(b.fatherName ?? '')
+    case 'mobileNumber':
+      return (a.mobileNumber ?? '').localeCompare(b.mobileNumber ?? '')
     case 'managerName':
       return (a.managerName ?? '').localeCompare(b.managerName ?? '')
     default:
@@ -113,7 +123,10 @@ function EngagementRowCard({ row }: { row: DonationEngagementRow }) {
           <Link to={`/admin/members/${row.memberId}`} className="font-medium hover:underline">
             {row.memberName}
           </Link>
-          {row.fatherName && <p className="text-xs text-muted-foreground">{row.fatherName}</p>}
+          {(() => {
+            const subline = [row.fatherName, formatMobileNumber(row.mobileNumber)].filter(Boolean).join(' · ')
+            return subline && <p className="text-xs text-muted-foreground">{subline}</p>
+          })()}
           <p className="mt-0.5 text-xs text-muted-foreground">
             {row.managerName ?? <UnassignedManagerBadge />}
           </p>
@@ -155,6 +168,7 @@ export function DonationEngagementReport() {
           (r) =>
             r.memberName.toLowerCase().includes(q) ||
             (r.fatherName ?? '').toLowerCase().includes(q) ||
+            (r.mobileNumber ?? '').toLowerCase().includes(q) ||
             (r.managerName ?? '').toLowerCase().includes(q),
         )
     const sorted = [...searched].sort((a, b) => compareRows(a, b, sortKey) * (sortDir === 'asc' ? 1 : -1))
@@ -186,6 +200,7 @@ export function DonationEngagementReport() {
     const csv = toCsv<DonationEngagementRow>(filtered, [
       { key: 'member', label: 'Member Name', value: (r) => r.memberName },
       { key: 'father', label: "Father's Name", value: (r) => r.fatherName ?? '' },
+      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.mobileNumber) },
       { key: 'manager', label: 'Manager', value: (r) => r.managerName ?? 'Unassigned' },
       { key: 'status', label: 'Donation Status', value: (r) => (r.donated ? 'Donated' : 'Not Donated') },
       { key: 'amount', label: 'Total Amount (INR)', value: (r) => r.totalAmount },
@@ -263,7 +278,7 @@ export function DonationEngagementReport() {
               setSearch(e.target.value)
               setPage(1)
             }}
-            placeholder="Search by member, father's name, or manager…"
+            placeholder="Search by member, father's name, mobile, or manager…"
             className="pl-9"
           />
         </div>
@@ -290,6 +305,13 @@ export function DonationEngagementReport() {
                   <SortableHeader
                     label="Father's Name"
                     sortKey="fatherName"
+                    activeKey={sortKey}
+                    dir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Mobile"
+                    sortKey="mobileNumber"
                     activeKey={sortKey}
                     dir={sortDir}
                     onSort={handleSort}
@@ -334,6 +356,7 @@ export function DonationEngagementReport() {
                       </Link>
                     </td>
                     <td className="p-3 text-muted-foreground">{row.fatherName || '—'}</td>
+                    <td className="p-3 text-muted-foreground">{formatMobileNumber(row.mobileNumber) || '—'}</td>
                     <td className="p-3 text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</td>
                     <td className="p-3">
                       <DonationStatusBadge received={row.donated} label={row.donated ? 'Donated' : 'Not Donated'} />

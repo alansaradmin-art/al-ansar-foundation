@@ -293,6 +293,7 @@ export interface Database {
           member_id: string
           member_name: string
           father_name: string | null
+          mobile_number: string | null
           member_display_id: string
           assigned_manager_id: string | null
           manager_name: string | null

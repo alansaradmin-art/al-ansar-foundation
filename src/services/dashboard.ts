@@ -93,6 +93,7 @@ export interface DonationEngagementRow {
   memberId: string
   memberName: string
   fatherName: string | null
+  mobileNumber: string | null
   memberDisplayId: string
   assignedManagerId: string | null
   managerName: string | null
@@ -117,6 +118,7 @@ export async function getDonationEngagementReport(
       member_id: string
       member_name: string
       father_name: string | null
+      mobile_number: string | null
       member_display_id: string
       assigned_manager_id: string | null
       manager_name: string | null
@@ -135,6 +137,7 @@ export async function getDonationEngagementReport(
     memberId: r.member_id,
     memberName: r.member_name,
     fatherName: r.father_name,
+    mobileNumber: r.mobile_number,
     memberDisplayId: r.member_display_id,
     assignedManagerId: r.assigned_manager_id,
     managerName: r.manager_name,
