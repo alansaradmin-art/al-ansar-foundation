@@ -52,13 +52,28 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const from = (page - 1) * pageSize
       const to = from + pageSize - 1
 
+      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
+
+      // A left join (not !inner) when unscoped — an anonymous donation
+      // (member_id null) has no row to inner-join against and would
+      // otherwise vanish from this list/count/export entirely. But a
+      // filter on a *left*-joined embedded column only nulls out the
+      // embedded object for non-matching rows — per PostgREST's documented
+      // semantics it does NOT exclude the parent `donations` row. So when
+      // a manager scope applies, the embed must be !inner or
+      // `.eq('member.assigned_manager_id', ...)` below is a no-op and
+      // every manager can see every other manager's donations (and bypass
+      // it entirely via ?memberId=<any id>). !inner also correctly drops
+      // anonymous donations from a manager-scoped view, which is right —
+      // they belong to no manager.
+      const memberEmbed = managerScope
+        ? 'member:members!inner(member_name, member_id, father_name, assigned_manager_id)'
+        : 'member:members(member_name, member_id, father_name, assigned_manager_id)'
+
       let query = supabase
         .from('donations')
         .select(
-          // member is a left join (not !inner) — an anonymous donation
-          // (member_id null) has no row to inner-join against and would
-          // otherwise vanish from this list/count/export entirely.
-          'id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, recorded_by, is_deleted, created_at, member:members(member_name, member_id, father_name, assigned_manager_id), recorder:profiles!donations_recorded_by_fkey(full_name)',
+          `id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, recorded_by, is_deleted, created_at, ${memberEmbed}, recorder:profiles!donations_recorded_by_fkey(full_name)`,
           { count: 'exact' },
         )
         .eq('is_deleted', false)
@@ -72,7 +87,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (dateFrom) query = query.gte('donation_date', dateFrom)
       if (dateTo) query = query.lte('donation_date', dateTo)
 
-      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
       if (managerScope) query = query.eq('member.assigned_manager_id', managerScope)
 
       const { data, error, count } = await query.range(from, to)
