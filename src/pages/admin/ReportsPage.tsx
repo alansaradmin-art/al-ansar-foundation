@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
 import { MonthlyDonationReport } from '@/features/reports/MonthlyDonationReport'
-import { formatINR, formatPeriod, monthName } from '@/lib/format'
+import { formatINR, formatMobileNumber, formatPeriod, monthName } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import type { ManagerWiseReportRow, MonthWiseReportRow, DonationReportRow } from '@/services/dashboard'
 
@@ -75,7 +75,7 @@ export default function ReportsPage() {
           ...d,
           memberLabel: m.memberName,
           fatherNameLabel: m.memberFatherName ?? '',
-          mobileLabel: m.memberMobileNumber ?? '',
+          mobileLabel: formatMobileNumber(m.memberMobileNumber),
         })),
       ),
       ...donationReport.anonymous.donations.map((d) => ({ ...d, memberLabel: 'Anonymous', fatherNameLabel: '', mobileLabel: '' })),

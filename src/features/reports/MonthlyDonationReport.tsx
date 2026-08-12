@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/StateViews'
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import type { DonationReportMemberGroup, DonationReportRow, MonthlyDonationReport as MonthlyDonationReportData } from '@/services/dashboard'
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -39,7 +39,7 @@ function DonationRow({ donation: d }: { donation: DonationReportRow }) {
 }
 
 function MemberDonationCard({ member }: { member: DonationReportMemberGroup }) {
-  const subline = [member.memberFatherName, member.memberMobileNumber].filter(Boolean).join(' · ')
+  const subline = [member.memberFatherName, formatMobileNumber(member.memberMobileNumber)].filter(Boolean).join(' · ')
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">

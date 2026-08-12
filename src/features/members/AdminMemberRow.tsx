@@ -6,6 +6,7 @@ import { AssignManagerDialog } from './AssignManagerDialog'
 import { MemberStatusBadge, UnassignedManagerBadge } from '@/components/StatusBadge'
 import { useSetMemberStatus } from '@/hooks/useMembers'
 import { getFriendlyErrorMessage } from '@/lib/errors'
+import { formatMobileNumber } from '@/lib/format'
 import type { Member, Manager } from '@/types'
 
 function StatusButton({ member }: { member: Member }) {
@@ -33,7 +34,7 @@ function StatusButton({ member }: { member: Member }) {
 }
 
 export function AdminMemberCard({ member, managerName }: { member: Member; managerName?: string }) {
-  const subline = [member.father_name, member.mobile_number].filter(Boolean).join(' · ')
+  const subline = [member.father_name, formatMobileNumber(member.mobile_number)].filter(Boolean).join(' · ')
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
@@ -67,7 +68,7 @@ export function AdminMemberTableRow({ member, managers }: { member: Member; mana
         </Link>
       </td>
       <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
-      <td className="p-3 text-muted-foreground">{member.mobile_number || '—'}</td>
+      <td className="p-3 text-muted-foreground">{formatMobileNumber(member.mobile_number) || '—'}</td>
       <td className="p-3 text-muted-foreground">{managerName || <UnassignedManagerBadge />}</td>
       <td className="p-3">
         <MemberStatusBadge status={member.status} />

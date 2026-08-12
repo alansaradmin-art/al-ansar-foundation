@@ -7,7 +7,7 @@ import {
   PendingFollowupBadge,
   FollowupNotDueBadge,
 } from '@/components/StatusBadge'
-import { formatINR } from '@/lib/format'
+import { formatINR, formatMobileNumber } from '@/lib/format'
 import type { Member } from '@/types'
 import type { MemberPeriodSummary } from '@/services/memberPeriod'
 
@@ -38,7 +38,7 @@ export function MemberCard({
         {member.mobile_number && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <Phone className="size-3" />
-            {member.mobile_number}
+            {formatMobileNumber(member.mobile_number)}
           </p>
         )}
 

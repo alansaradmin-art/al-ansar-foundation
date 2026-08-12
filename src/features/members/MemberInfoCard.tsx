@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatMobileNumber } from '@/lib/format'
 import type { Member } from '@/types'
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
@@ -18,7 +19,7 @@ export function MemberInfoCard({ member }: { member: Member }) {
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4">
         <Field label="Father Name" value={member.father_name} />
-        <Field label="Mobile" value={member.mobile_number} />
+        <Field label="Mobile" value={formatMobileNumber(member.mobile_number)} />
         <Field label="Address" value={member.address} />
       </CardContent>
     </Card>

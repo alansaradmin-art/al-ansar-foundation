@@ -15,7 +15,7 @@ import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonatio
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
 import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationDialog'
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import { DONATION_TYPES, PAYMENT_METHODS } from '@/schemas/donation.schema'
 import type { DonationType, PaymentMethod } from '@/types'
@@ -61,7 +61,7 @@ export default function AdminDonationsPage() {
       { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
       { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
       { key: 'father_name', label: "Father's Name", value: (r) => r.member?.father_name ?? '' },
-      { key: 'mobile', label: 'Mobile Number', value: (r) => r.member?.mobile_number ?? '' },
+      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.member?.mobile_number) },
       { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
@@ -154,7 +154,7 @@ export default function AdminDonationsPage() {
                       <>
                         <p>{donation.member.member_name}</p>
                         {(() => {
-                          const subline = [donation.member.father_name, donation.member.mobile_number]
+                          const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
                             .filter(Boolean)
                             .join(' · ')
                           return subline && <p className="text-xs text-muted-foreground">{subline}</p>

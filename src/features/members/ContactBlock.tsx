@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatMobileNumber } from '@/lib/format'
 import { ContactActions } from './ContactActions'
 
 const TONE_CHIP: Record<'primary' | 'gold' | 'info', string> = {
@@ -32,7 +33,7 @@ export function ContactBlock({
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <p className="font-medium leading-tight">{name || 'Not provided'}</p>
         {relationship && <p className="text-sm text-muted-foreground">{relationship}</p>}
-        <p className="text-sm text-muted-foreground">{phone || 'No phone on file'}</p>
+        <p className="text-sm text-muted-foreground">{formatMobileNumber(phone) || 'No phone on file'}</p>
         <ContactActions phone={phone} name={name ?? undefined} size="sm" />
       </div>
     </div>

@@ -36,3 +36,14 @@ export function formatDate(dateStr: string): string {
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
 }
+
+/** Strips a leading country code (e.g. "+91", "0091") from a stored mobile
+ * number for display — Indian mobile numbers are always exactly 10 digits,
+ * so anything beyond the last 10 digits is a country/trunk prefix, not part
+ * of the number itself. "+919167463126" -> "9167463126". Display only —
+ * never used for tel:/wa.me links, which need the full number. */
+export function formatMobileNumber(phone: string | null | undefined): string {
+  if (!phone) return ''
+  const digits = phone.replace(/\D/g, '')
+  return digits.length > 10 ? digits.slice(-10) : digits
+}
