@@ -93,13 +93,20 @@ either works, they're idempotent-safe with `create or replace`.
 | `0009_auto_member_id.sql`                | Auto-generates `member_id` (`AF-0001`, ...)                                                           |
 | `0010_pending_followup_batch.sql`        | Batched pending-status lookup for list views                                                          |
 | `0011_drop_audit_triggers.sql`           | Removes the audit-log triggers (broken once nothing presents a Clerk JWT to Postgres — the API layer writes `audit_logs` itself now, see §1) |
-| `0012_drop_provision_my_profile.sql`     | Removes `provision_my_profile()` — **run this one last**, only after `api/profile.ts` is deployed and verified working (see the note below the table) |
+| `0012_drop_provision_my_profile.sql`     | Removes `provision_my_profile()` — **run this one last relative to the cutover below**, only after `api/profile.ts` is deployed and verified working (see the note below the table) |
+| `0013_nullable_donation_member.sql`      | Drops `NOT NULL` on `donations.member_id` — enables Admin-only anonymous donations                     |
+| `0014_donation_type.sql`                 | Adds the mandatory `donation_type` column (Zakat/Sadaqah/Fitra/General/Other)                          |
+| `0015_pending_followups_recency_sort.sql`| `list_pending_followups()` now orders by `updated_at desc` instead of member name                     |
+| `0016_dashboard_attention_and_type_filter.sql` | Adds an optional donation-type filter to the report RPCs, plus `members_needing_attention()` for the Admin Dashboard |
+| `0017_manager_dashboard_donation_types.sql` | Adds a per-manager donation-type breakdown to `manager_dashboard_stats()` (drop+recreate — its return columns changed) |
 
 **`0012` has an ordering requirement the others don't**: if you're setting up a **brand-new**
-project, run all twelve in order, there's nothing to sequence around. If you're **migrating an
-existing deployment** off Supabase Third-Party Auth, don't run `0012` until the new API layer
+project, run all seventeen in order, there's nothing to sequence around. If you're **migrating
+an existing deployment** off Supabase Third-Party Auth, don't run `0012` until the new API layer
 (`api/profile.ts` and friends) is deployed and you've confirmed sign-in works end-to-end — the
-old client-side code path calls this function on every sign-in until that cutover ships.
+old client-side code path calls this function on every sign-in until that cutover ships. Every
+migration after `0012` (`0013`–`0017`) is a normal, unordered feature addition — run them
+whenever you pull the corresponding code, no special sequencing needed.
 
 **Note on the seed data:** the original manager list had both "Anwarul Haque" and
 "Mohammad Anwar" down for the same email (`anwar@gmail.com`). `0004_seed.sql` seeds Mohammad

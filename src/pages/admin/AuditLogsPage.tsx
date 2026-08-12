@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { useAuditLogs, useAuditLogActors } from '@/hooks/useAuditLogs'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateRangePicker, type DateRangeValue } from '@/components/DateRangePicker'
 import { MemberPicker } from '@/features/members/MemberPicker'
@@ -188,24 +188,7 @@ export default function AuditLogsPage() {
         </div>
       )}
 
-      {data && data.count > PAGE_SIZE && (
-        <div className="flex items-center justify-between pt-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {Math.ceil(data.count / PAGE_SIZE)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= Math.ceil(data.count / PAGE_SIZE)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {data && <Pagination page={page} pageSize={PAGE_SIZE} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

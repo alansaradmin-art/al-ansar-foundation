@@ -8,6 +8,7 @@ import { MembersFilterBar } from '@/features/members/MembersFilterBar'
 import { AdminMemberCard, AdminMemberTableRow } from '@/features/members/AdminMemberRow'
 import { MemberFormDialog } from '@/features/members/MemberFormDialog'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/Pagination'
 import { CardListSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { Button } from '@/components/ui/button'
@@ -150,22 +151,7 @@ export default function AdminMembersPage() {
         </>
       )}
 
-      {data && data.count > 20 && (
-        <div className="flex items-center justify-between pt-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(data.count / 20)}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= Math.ceil(data.count / 20)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {data && <Pagination page={page} pageSize={20} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

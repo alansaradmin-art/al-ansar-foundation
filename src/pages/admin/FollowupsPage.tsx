@@ -5,10 +5,10 @@ import { useAdminFollowups } from '@/hooks/useFollowups'
 import { useManagers } from '@/hooks/useManagers'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { FollowupStatusBadge } from '@/components/StatusBadge'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatDate } from '@/lib/format'
 import { FOLLOW_UP_STATUSES } from '@/schemas/followup.schema'
@@ -117,22 +117,7 @@ export default function AdminFollowupsPage() {
         </div>
       )}
 
-      {data && data.count > 25 && (
-        <div className="flex items-center justify-between pt-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(data.count / 25)}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= Math.ceil(data.count / 25)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {data && <Pagination page={page} pageSize={25} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }
