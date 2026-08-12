@@ -86,7 +86,7 @@ export default function MemberDetailPage() {
         </TabsContent>
       </Tabs>
 
-      <div className="fixed inset-x-0 bottom-16 z-10 flex gap-2 border-t bg-background/95 p-3 shadow-[0_-4px_12px_-6px_rgb(0_0_0/0.1)] backdrop-blur">
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex gap-2 border-t bg-background/95 p-3 shadow-[0_-4px_12px_-6px_rgb(0_0_0/0.1)] backdrop-blur">
         <AddDonationDialog memberId={member.id} />
         <AddFollowupDialog member={member} />
       </div>
