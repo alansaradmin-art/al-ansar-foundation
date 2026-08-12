@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonationDialog'
+import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
 import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationDialog'
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
 import { formatDate, formatINR } from '@/lib/format'
@@ -120,6 +121,7 @@ export default function AdminDonationsPage() {
         <Button variant="outline" onClick={handleExport} disabled={!data || data.rows.length === 0} className="ml-auto">
           <Download className="size-4" /> Export CSV
         </Button>
+        <RecordDonationDialog />
         <AnonymousDonationDialog />
       </div>
 
