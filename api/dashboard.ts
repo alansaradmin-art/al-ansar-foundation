@@ -76,6 +76,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { rows: data ?? [] })
     }
 
+    if (type === 'donationEngagement') {
+      if (!requireAdmin(res, profile)) return
+      const neverDonated = readQueryParam(req, 'neverDonated') === 'true'
+      const dateFrom = readQueryParam(req, 'dateFrom')
+      const dateTo = readQueryParam(req, 'dateTo')
+      const { data, error } = await supabase.rpc('donation_engagement_report', {
+        p_date_from: neverDonated ? null : (dateFrom ?? null),
+        p_date_to: neverDonated ? null : (dateTo ?? null),
+        p_never_donated: neverDonated,
+      })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
     if (type === 'monthlyDonationReport') {
       if (!requireAdmin(res, profile)) return
       const month = Number(readQueryParam(req, 'month'))

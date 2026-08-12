@@ -2,6 +2,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import * as dashboardService from '@/services/dashboard'
+import type { DonationEngagementParams } from '@/services/dashboard'
 import type { DonationType } from '@/types'
 
 export function useManagerDashboard(managerId: string | undefined, month: number | undefined, year: number | undefined) {
@@ -46,6 +47,18 @@ export function useMemberGrowthTrend(year: number | undefined) {
     queryKey: queryKeys.dashboard.memberGrowthTrend(year ?? 0),
     queryFn: () => dashboardService.getMemberGrowthTrend(getToken, year!),
     enabled: year != null,
+  })
+}
+
+/** params === undefined means "not ready yet" (e.g. Custom Range selected
+ * but no range picked) — the query stays disabled until a caller has a
+ * real filter to send. */
+export function useDonationEngagementReport(params: DonationEngagementParams | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.donationEngagement(params ?? {}),
+    queryFn: () => dashboardService.getDonationEngagementReport(getToken, params!),
+    enabled: !!params,
   })
 }
 

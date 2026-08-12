@@ -287,6 +287,21 @@ export interface Database {
           new_members: number
         }[]
       }
+      donation_engagement_report: {
+        Args: { p_date_from: string | null; p_date_to: string | null; p_never_donated?: boolean }
+        Returns: {
+          member_id: string
+          member_name: string
+          father_name: string | null
+          member_display_id: string
+          assigned_manager_id: string | null
+          manager_name: string | null
+          donated: boolean
+          donation_count: number
+          total_amount: number
+          latest_donation_date: string | null
+        }[]
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
 import { MonthlyDonationReport } from '@/features/reports/MonthlyDonationReport'
+import { DonationEngagementReport } from '@/features/reports/DonationEngagementReport'
 import { formatINR, formatMobileNumber, formatPeriod, monthName } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import type { ManagerWiseReportRow, MonthWiseReportRow, DonationReportRow } from '@/services/dashboard'
@@ -102,6 +103,7 @@ export default function ReportsPage() {
           <TabsTrigger value="manager">Manager-wise</TabsTrigger>
           <TabsTrigger value="month">Month-wise</TabsTrigger>
           <TabsTrigger value="donations">Donation Report</TabsTrigger>
+          <TabsTrigger value="engagement">Donation Engagement</TabsTrigger>
         </TabsList>
 
         <TabsContent value="manager" className="space-y-4">
@@ -203,6 +205,10 @@ export default function ReportsPage() {
 
           {isDonationReportLoading && <TableSkeleton cols={3} />}
           {donationReport && <MonthlyDonationReport data={donationReport} />}
+        </TabsContent>
+
+        <TabsContent value="engagement" className="space-y-4">
+          <DonationEngagementReport />
         </TabsContent>
       </Tabs>
     </div>

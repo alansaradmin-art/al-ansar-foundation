@@ -89,6 +89,62 @@ export async function getMonthWiseReport(
   return rows
 }
 
+export interface DonationEngagementRow {
+  memberId: string
+  memberName: string
+  fatherName: string | null
+  memberDisplayId: string
+  assignedManagerId: string | null
+  managerName: string | null
+  donated: boolean
+  donationCount: number
+  totalAmount: number
+  latestDonationDate: string | null
+}
+
+export interface DonationEngagementParams {
+  dateFrom?: string
+  dateTo?: string
+  neverDonated?: boolean
+}
+
+export async function getDonationEngagementReport(
+  getToken: GetToken,
+  params: DonationEngagementParams = {},
+): Promise<DonationEngagementRow[]> {
+  const { rows } = await apiClient.get<{
+    rows: {
+      member_id: string
+      member_name: string
+      father_name: string | null
+      member_display_id: string
+      assigned_manager_id: string | null
+      manager_name: string | null
+      donated: boolean
+      donation_count: number
+      total_amount: number
+      latest_donation_date: string | null
+    }[]
+  }>('/api/dashboard', getToken, {
+    type: 'donationEngagement',
+    ...(params.neverDonated ? { neverDonated: 'true' } : {}),
+    ...(params.dateFrom ? { dateFrom: params.dateFrom } : {}),
+    ...(params.dateTo ? { dateTo: params.dateTo } : {}),
+  })
+  return rows.map((r) => ({
+    memberId: r.member_id,
+    memberName: r.member_name,
+    fatherName: r.father_name,
+    memberDisplayId: r.member_display_id,
+    assignedManagerId: r.assigned_manager_id,
+    managerName: r.manager_name,
+    donated: r.donated,
+    donationCount: r.donation_count,
+    totalAmount: r.total_amount,
+    latestDonationDate: r.latest_donation_date,
+  }))
+}
+
 export interface MemberGrowthRow {
   month: number
   year: number
