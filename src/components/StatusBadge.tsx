@@ -97,3 +97,10 @@ export function FollowupNotDueBadge() {
 export function NoRecentDonationBadge() {
   return <Badge label="No Recent Donation" tone="warning" icon={<IndianRupee className="size-3.5" />} />
 }
+
+/** A member with no assigned_manager_id — warning tone like every other
+ * "needs action" badge in this file, not destructive/red: this is a to-do
+ * for Admin, not a fault in the member's record. */
+export function UnassignedManagerBadge() {
+  return <Badge label="Unassigned" tone="warning" icon={<UserX className="size-3.5" />} />
+}

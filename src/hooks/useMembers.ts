@@ -24,6 +24,14 @@ export function useMember(id: string | undefined) {
   })
 }
 
+export function useUnassignedMembersCount() {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.members.unassignedCount,
+    queryFn: () => membersService.getUnassignedMembersCount(getToken),
+  })
+}
+
 export function useMemberPicker(query: string) {
   const { getToken } = useAuth()
   return useQuery({

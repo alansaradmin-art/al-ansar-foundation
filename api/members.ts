@@ -73,6 +73,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { count: count ?? 0 })
     }
 
+    if (req.method === 'GET' && action === 'unassignedCount') {
+      if (!requireAdmin(res, profile)) return
+      const { count, error } = await supabase
+        .from('members')
+        .select('id', { count: 'exact', head: true })
+        .is('assigned_manager_id', null)
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { count: count ?? 0 })
+    }
+
     if (req.method === 'GET' && action === 'checkIds') {
       if (!requireAdmin(res, profile)) return
       const ids = (readQueryParam(req, 'ids') ?? '').split(',').filter(Boolean)
@@ -103,6 +113,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       let query = supabase.from('members').select('*', { count: 'exact' }).order('updated_at', { ascending: false })
       const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
       if (managerScope) query = query.eq('assigned_manager_id', managerScope)
+      else if (readQueryParam(req, 'unassigned') === 'true') query = query.is('assigned_manager_id', null)
       if (status) query = query.eq('status', status as MemberStatus)
       if (search) {
         query = query.or(

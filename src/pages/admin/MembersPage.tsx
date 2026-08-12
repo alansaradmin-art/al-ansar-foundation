@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Upload, Users } from 'lucide-react'
-import { useMembers } from '@/hooks/useMembers'
+import { Upload, UserX, Users } from 'lucide-react'
+import { useMembers, useUnassignedMembersCount } from '@/hooks/useMembers'
 import { useManagers } from '@/hooks/useManagers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { MemberStatus } from '@/types'
 
+const UNASSIGNED = 'UNASSIGNED'
+
 export default function AdminMembersPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<MemberStatus | 'ALL'>('ALL')
@@ -22,10 +24,12 @@ export default function AdminMembersPage() {
   const debouncedSearch = useDebouncedValue(search)
 
   const { data: managers = [] } = useManagers()
+  const { data: unassignedCount = 0 } = useUnassignedMembersCount()
   const { data, isLoading, isError, refetch } = useMembers({
     search: debouncedSearch,
     status: status === 'ALL' ? undefined : status,
-    managerId: managerId === 'ALL' ? undefined : managerId,
+    managerId: managerId === 'ALL' || managerId === UNASSIGNED ? undefined : managerId,
+    unassigned: managerId === UNASSIGNED,
     page,
     pageSize: 20,
   })
@@ -74,6 +78,7 @@ export default function AdminMembersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All managers</SelectItem>
+            <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
             {managers.map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 {m.full_name}
@@ -81,6 +86,19 @@ export default function AdminMembersPage() {
             ))}
           </SelectContent>
         </Select>
+
+        {unassignedCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setManagerId(UNASSIGNED)
+              setPage(1)
+            }}
+            className="flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning-foreground transition-colors hover:bg-warning/20"
+          >
+            <UserX className="size-3.5" /> {unassignedCount} Unassigned
+          </button>
+        )}
       </div>
 
       {isLoading && (

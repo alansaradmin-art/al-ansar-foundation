@@ -4,6 +4,7 @@ import type { MemberFormValues } from '@/schemas/member.schema'
 
 export interface ListMembersParams {
   managerId?: string
+  unassigned?: boolean
   search?: string
   status?: MemberStatus
   page?: number
@@ -11,7 +12,8 @@ export interface ListMembersParams {
 }
 
 export async function listMembers(getToken: GetToken, params: ListMembersParams = {}): Promise<PaginatedResult<Member>> {
-  return apiClient.get('/api/members', getToken, { ...params })
+  const { unassigned, ...rest } = params
+  return apiClient.get('/api/members', getToken, { ...rest, ...(unassigned ? { unassigned: 'true' } : {}) })
 }
 
 export async function getMemberById(getToken: GetToken, id: string): Promise<Member | null> {
@@ -52,5 +54,10 @@ export async function reassignManager(getToken: GetToken, memberIds: string[], m
 
 export async function countMembersForManager(getToken: GetToken, managerId: string): Promise<number> {
   const { count } = await apiClient.get<{ count: number }>('/api/members', getToken, { action: 'count', managerId })
+  return count
+}
+
+export async function getUnassignedMembersCount(getToken: GetToken): Promise<number> {
+  const { count } = await apiClient.get<{ count: number }>('/api/members', getToken, { action: 'unassignedCount' })
   return count
 }

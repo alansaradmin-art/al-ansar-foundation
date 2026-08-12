@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { MemberFormDialog } from './MemberFormDialog'
-import { MemberStatusBadge } from '@/components/StatusBadge'
+import { AssignManagerDialog } from './AssignManagerDialog'
+import { MemberStatusBadge, UnassignedManagerBadge } from '@/components/StatusBadge'
 import { useSetMemberStatus } from '@/hooks/useMembers'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import type { Member, Manager } from '@/types'
@@ -41,12 +42,15 @@ export function AdminMemberCard({ member, managerName }: { member: Member; manag
             {member.member_name}
           </Link>
           {subline && <p className="text-xs text-muted-foreground">{subline}</p>}
-          {managerName && <p className="text-xs text-muted-foreground">Manager: {managerName}</p>}
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {managerName ? `Manager: ${managerName}` : <UnassignedManagerBadge />}
+          </p>
         </div>
         <MemberStatusBadge status={member.status} />
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <MemberFormDialog member={member} />
+        {!member.assigned_manager_id && <AssignManagerDialog member={member} />}
         <StatusButton member={member} />
       </div>
     </div>
@@ -64,13 +68,14 @@ export function AdminMemberTableRow({ member, managers }: { member: Member; mana
       </td>
       <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
       <td className="p-3 text-muted-foreground">{member.mobile_number || '—'}</td>
-      <td className="p-3 text-muted-foreground">{managerName || '—'}</td>
+      <td className="p-3 text-muted-foreground">{managerName || <UnassignedManagerBadge />}</td>
       <td className="p-3">
         <MemberStatusBadge status={member.status} />
       </td>
       <td className="p-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <MemberFormDialog member={member} />
+          {!member.assigned_manager_id && <AssignManagerDialog member={member} />}
           <StatusButton member={member} />
         </div>
       </td>
