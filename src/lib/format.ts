@@ -37,13 +37,43 @@ export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
 }
 
-/** Strips a leading country code (e.g. "+91", "0091") from a stored mobile
- * number for display — Indian mobile numbers are always exactly 10 digits,
- * so anything beyond the last 10 digits is a country/trunk prefix, not part
- * of the number itself. "+919167463126" -> "9167463126". Display only —
- * never used for tel:/wa.me links, which need the full number. */
+/** Country calling code -> expected local (subscriber) number length, for
+ * every country this foundation's members are known to have numbers from.
+ * Local length varies by country (India's mobiles are 10 digits, Saudi
+ * Arabia/UAE are 9, Qatar/Kuwait/Bahrain/Oman are 8), so a single fixed
+ * "take the last N digits" rule is wrong outside India — it either mangles
+ * shorter Gulf numbers or leaves a stray digit from their country code. */
+const COUNTRY_CODES: { code: string; localLength: number }[] = [
+  { code: '91', localLength: 10 }, // India
+  { code: '966', localLength: 9 }, // Saudi Arabia
+  { code: '971', localLength: 9 }, // UAE
+  { code: '974', localLength: 8 }, // Qatar
+  { code: '965', localLength: 8 }, // Kuwait
+  { code: '973', localLength: 8 }, // Bahrain
+  { code: '968', localLength: 8 }, // Oman
+]
+
+/** Strips a leading country code (+91, +966, 00971, ...) from a stored
+ * mobile number for display. Only strips when there's real evidence a code
+ * is actually present — an explicit "+"/"00" international prefix, or the
+ * total digit count exactly matching code+local length for that country —
+ * so a bare local number that happens to start with the same digits as a
+ * country code (e.g. an Indian "91XXXXXXXX" number) is left alone rather
+ * than mis-trimmed. Unrecognized country codes are left as-is; this isn't a
+ * full E.164 parser, just coverage for where this foundation's members are.
+ * "+919167463126" -> "9167463126", "+966501234567" -> "501234567". Display
+ * only — never used for tel:/wa.me links, which need the full number. */
 export function formatMobileNumber(phone: string | null | undefined): string {
   if (!phone) return ''
-  const digits = phone.replace(/\D/g, '')
-  return digits.length > 10 ? digits.slice(-10) : digits
+  const trimmed = phone.trim()
+  let digits = trimmed.replace(/\D/g, '')
+  const hasIntlPrefix = trimmed.startsWith('+') || digits.startsWith('00')
+  if (digits.startsWith('00')) digits = digits.slice(2)
+
+  for (const { code, localLength } of COUNTRY_CODES) {
+    if (digits.startsWith(code) && (hasIntlPrefix || digits.length === code.length + localLength)) {
+      return digits.slice(code.length)
+    }
+  }
+  return digits
 }
