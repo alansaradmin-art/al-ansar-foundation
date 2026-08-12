@@ -1,8 +1,7 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, UserCheck, UserX, UserCog, Wallet, IndianRupee, Receipt, CheckCircle2, Clock } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useAdminDashboard, useMemberGrowthTrend, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
+import { useAdminDashboard, useMemberGrowthTrend, useMonthlyDonationReport } from '@/hooks/useDashboard'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
@@ -10,20 +9,8 @@ import { CardListSkeleton, StatGridSkeleton, TableSkeleton } from '@/components/
 import { ErrorState, EmptyState } from '@/components/StateViews'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
 import { formatINR, formatPeriod, monthName } from '@/lib/format'
-import { DONATION_TYPES } from '@/schemas/donation.schema'
 import type { MemberGrowthRow } from '@/services/dashboard'
-import type { DonationType } from '@/types'
-
-const DONATION_TYPE_LABELS: Record<string, string> = {
-  ZAKAT: 'Zakat',
-  SADAQAH: 'Sadaqah/Sadka',
-  FITRA: 'Fitra',
-  GENERAL: 'General Donation',
-  OTHER: 'Other',
-}
 
 const TOP_DONORS_LIMIT = 5
 
@@ -50,17 +37,8 @@ function MemberGrowthChart({ rows }: { rows: MemberGrowthRow[] }) {
 
 export default function AdminDashboardPage() {
   const { period, setPeriod } = usePeriodSelector()
-  const [donationType, setDonationType] = useState<DonationType | 'ALL'>('ALL')
-  const scopedDonationType = donationType === 'ALL' ? undefined : donationType
 
   const { data: stats, isLoading, isError, refetch } = useAdminDashboard(period?.month, period?.year)
-
-  const {
-    data: monthRows,
-    isLoading: isTrendLoading,
-    isError: isTrendError,
-    refetch: refetchTrend,
-  } = useMonthWiseReport(period?.year, scopedDonationType)
 
   const {
     data: growthRows,
@@ -76,7 +54,6 @@ export default function AdminDashboardPage() {
     refetch: refetchDonationReport,
   } = useMonthlyDonationReport(period?.month, period?.year)
 
-  const totalCollection = monthRows?.reduce((sum, r) => sum + r.donation_amount, 0) ?? 0
   const topDonors = [...(donationReport?.members ?? [])].sort((a, b) => b.total - a.total).slice(0, TOP_DONORS_LIMIT)
   const donorCount = donationReport?.members.length ?? 0
   const donatedRate = stats && stats.active_members > 0 ? (donorCount / stats.active_members) * 100 : 0
@@ -169,36 +146,6 @@ export default function AdminDashboardPage() {
           />
         </div>
       )}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={donationType} onValueChange={(v) => setDonationType(v as DonationType | 'ALL')}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All donation types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All donation types</SelectItem>
-            {DONATION_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>
-                {DONATION_TYPE_LABELS[t]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Monthly Donation Trend</CardTitle>
-          <CardDescription>
-            {period ? `Total collected in ${period.year}: ${formatINR(totalCollection)}` : undefined}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isTrendLoading && <TableSkeleton rows={1} cols={12} />}
-          {isTrendError && <ErrorState message="Unable to load the donation trend." onRetry={refetchTrend} />}
-          {monthRows && <MonthlyBarChart rows={monthRows} />}
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
