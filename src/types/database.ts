@@ -209,6 +209,10 @@ export interface Database {
           donation_count: number
           completed_followups: number
           pending_followups: number
+          zakat_amount: number
+          sadaqah_amount: number
+          fitra_amount: number
+          general_or_other_amount: number
         }[]
       }
       admin_dashboard_stats: {

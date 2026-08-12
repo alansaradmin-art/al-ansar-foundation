@@ -15,7 +15,6 @@ const ManagerLayout = lazy(() => import('@/layouts/ManagerLayout'))
 const ManagerHomePage = lazy(() => import('@/pages/manager/HomePage'))
 const ManagerMembersPage = lazy(() => import('@/pages/manager/MembersPage'))
 const ManagerMemberDetailPage = lazy(() => import('@/pages/manager/MemberDetailPage'))
-const ManagerPendingPage = lazy(() => import('@/pages/manager/PendingPage'))
 const ManagerDonationsPage = lazy(() => import('@/pages/manager/DonationsPage'))
 const ManagerFollowupsPage = lazy(() => import('@/pages/manager/FollowupsPage'))
 const ManagerMorePage = lazy(() => import('@/pages/manager/MorePage'))
@@ -47,7 +46,6 @@ export default function AppRoutes() {
               <Route index element={<ManagerHomePage />} />
               <Route path="members" element={<ManagerMembersPage />} />
               <Route path="members/:memberId" element={<ManagerMemberDetailPage />} />
-              <Route path="pending" element={<ManagerPendingPage />} />
               <Route path="donations" element={<ManagerDonationsPage />} />
               <Route path="followups" element={<ManagerFollowupsPage />} />
               <Route path="more" element={<ManagerMorePage />} />

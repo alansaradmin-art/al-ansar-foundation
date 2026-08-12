@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Users, ClockAlert, IndianRupee, MoreHorizontal } from 'lucide-react'
+import { Home, Users, ClipboardList, IndianRupee, MoreHorizontal } from 'lucide-react'
 import { FoundationMark } from '@/components/FoundationMark'
 import { UserMenu } from '@/components/UserMenu'
 import { cn } from '@/lib/utils'
@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { to: '/manager', label: 'Home', icon: Home, end: true },
   { to: '/manager/members', label: 'Members', icon: Users },
-  { to: '/manager/pending', label: 'Pending', icon: ClockAlert },
+  { to: '/manager/followups', label: 'Follow-ups', icon: ClipboardList },
   { to: '/manager/donations', label: 'Donations', icon: IndianRupee },
   { to: '/manager/more', label: 'More', icon: MoreHorizontal },
 ]

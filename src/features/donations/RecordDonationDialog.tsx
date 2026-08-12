@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, type buttonVariants } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { MemberPicker } from '@/features/members/MemberPicker'
@@ -11,8 +11,19 @@ import { useProfile } from '@/contexts/ProfileContext'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import type { Member } from '@/types'
 import type { DonationFormValues } from '@/schemas/donation.schema'
+import type { VariantProps } from 'class-variance-authority'
 
-export function RecordDonationDialog() {
+export function RecordDonationDialog({
+  variant,
+  size = 'lg',
+  className,
+  label = 'Record Donation',
+}: {
+  variant?: VariantProps<typeof buttonVariants>['variant']
+  size?: VariantProps<typeof buttonVariants>['size']
+  className?: string
+  label?: string
+} = {}) {
   const [open, setOpen] = useState(false)
   const [member, setMember] = useState<Pick<Member, 'id' | 'member_name' | 'member_id'> | null>(null)
   const { profile } = useProfile()
@@ -40,8 +51,8 @@ export function RecordDonationDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="lg">
-          <Plus className="size-4" /> Record Donation
+        <Button variant={variant} size={size} className={className}>
+          <Plus className="size-4" /> {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">

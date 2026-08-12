@@ -9,9 +9,9 @@ import { MembersFilterBar } from '@/features/members/MembersFilterBar'
 import { MemberCard } from '@/features/members/MemberCard'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/Pagination'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
-import { Button } from '@/components/ui/button'
 import type { MemberStatus } from '@/types'
 
 export default function MembersPage() {
@@ -78,24 +78,7 @@ export default function MembersPage() {
         </div>
       )}
 
-      {data && data.count > 20 && (
-        <div className="flex items-center justify-between pt-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {Math.ceil(data.count / 20)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= Math.ceil(data.count / 20)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {data && <Pagination page={page} pageSize={20} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

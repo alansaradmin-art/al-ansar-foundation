@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { Receipt } from 'lucide-react'
+import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDonations } from '@/hooks/useDonations'
+import { useManagerDashboard } from '@/hooks/useDashboard'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/Pagination'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { DonationListItem } from '@/features/donations/DonationListItem'
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
-import { Button } from '@/components/ui/button'
 import { formatINR, formatPeriod } from '@/lib/format'
 
 export default function DonationsPage() {
+  const { profile } = useProfile()
   const { period, setPeriod } = usePeriodSelector()
   const [page, setPage] = useState(1)
   const { data, isLoading, isError, refetch } = useAdminDonations({
@@ -20,8 +23,12 @@ export default function DonationsPage() {
     page,
     pageSize: 20,
   })
-
-  const total = data?.rows.reduce((sum, d) => sum + Number(d.amount_inr), 0) ?? 0
+  // Period total/count come from the dashboard RPC, not from summing the
+  // current page's rows — that undercounts once a month has more than
+  // one page of donations.
+  const { data: stats } = useManagerDashboard(profile?.manager_id ?? undefined, period?.month, period?.year)
+  const total = stats?.donation_amount ?? 0
+  const count = stats?.donation_count ?? data?.count ?? 0
 
   return (
     <div className="space-y-4 p-4">
@@ -34,7 +41,7 @@ export default function DonationsPage() {
             <p className="font-display text-xl font-semibold tabular-nums">{formatINR(total)}</p>
           </div>
           <p className="text-sm text-primary-foreground/80">
-            {data.count} donation{data.count === 1 ? '' : 's'}
+            {count} donation{count === 1 ? '' : 's'}
           </p>
         </div>
       )}
@@ -58,22 +65,7 @@ export default function DonationsPage() {
         </div>
       )}
 
-      {data && data.count > 20 && (
-        <div className="flex items-center justify-between pt-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(data.count / 20)}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= Math.ceil(data.count / 20)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {data && <Pagination page={page} pageSize={20} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }
