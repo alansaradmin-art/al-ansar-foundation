@@ -118,6 +118,7 @@ export interface DonationReportMemberGroup {
   memberName: string
   memberDisplayId: string
   memberFatherName: string | null
+  memberMobileNumber: string | null
   total: number
   donations: DonationReportRow[]
 }

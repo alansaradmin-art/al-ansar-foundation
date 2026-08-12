@@ -86,7 +86,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const { data, error } = await supabase
         .from('donations')
         .select(
-          'id, donation_id, donation_date, donation_type, amount_inr, payment_method, transaction_reference, member_id, member:members(id, member_name, member_id, father_name)',
+          'id, donation_id, donation_date, donation_type, amount_inr, payment_method, transaction_reference, member_id, member:members(id, member_name, member_id, father_name, mobile_number)',
         )
         .eq('donation_month', month)
         .eq('donation_year', year)
@@ -103,6 +103,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           memberName: string
           memberDisplayId: string
           memberFatherName: string | null
+          memberMobileNumber: string | null
           total: number
           donations: DonationReportRow[]
         }
@@ -127,7 +128,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           transaction_reference: row.transaction_reference,
         }
 
-        const member = row.member as unknown as { id: string; member_name: string; member_id: string; father_name: string | null } | null
+        const member = row.member as unknown as {
+          id: string
+          member_name: string
+          member_id: string
+          father_name: string | null
+          mobile_number: string | null
+        } | null
         if (member) {
           const existing = membersById.get(member.id)
           if (existing) {
@@ -139,6 +146,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
               memberName: member.member_name,
               memberDisplayId: member.member_id,
               memberFatherName: member.father_name,
+              memberMobileNumber: member.mobile_number,
               total: amount,
               donations: [reportRow],
             })

@@ -61,6 +61,7 @@ export default function AdminDonationsPage() {
       { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
       { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
       { key: 'father_name', label: "Father's Name", value: (r) => r.member?.father_name ?? '' },
+      { key: 'mobile', label: 'Mobile Number', value: (r) => r.member?.mobile_number ?? '' },
       { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
@@ -152,9 +153,12 @@ export default function AdminDonationsPage() {
                     {donation.member ? (
                       <>
                         <p>{donation.member.member_name}</p>
-                        {donation.member.father_name && (
-                          <p className="text-xs text-muted-foreground">{donation.member.father_name}</p>
-                        )}
+                        {(() => {
+                          const subline = [donation.member.father_name, donation.member.mobile_number]
+                            .filter(Boolean)
+                            .join(' · ')
+                          return subline && <p className="text-xs text-muted-foreground">{subline}</p>
+                        })()}
                       </>
                     ) : (
                       <AnonymousDonationBadge />

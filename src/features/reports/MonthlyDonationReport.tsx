@@ -39,6 +39,7 @@ function DonationRow({ donation: d }: { donation: DonationReportRow }) {
 }
 
 function MemberDonationCard({ member }: { member: DonationReportMemberGroup }) {
+  const subline = [member.memberFatherName, member.memberMobileNumber].filter(Boolean).join(' · ')
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
@@ -48,7 +49,7 @@ function MemberDonationCard({ member }: { member: DonationReportMemberGroup }) {
               {member.memberName}
             </Link>
           </CardTitle>
-          {member.memberFatherName && <p className="text-xs text-muted-foreground">{member.memberFatherName}</p>}
+          {subline && <p className="text-xs text-muted-foreground">{subline}</p>}
         </div>
         <span className="shrink-0 font-display text-lg font-semibold tabular-nums text-primary">
           {formatINR(member.total)}
