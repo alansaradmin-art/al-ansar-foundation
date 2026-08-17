@@ -16,7 +16,7 @@ const NAV_ITEMS = [
 export default function ManagerLayout() {
   return (
     <div className="flex min-h-svh flex-col bg-muted/30">
-      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b-2 border-gold/40 bg-background/95 px-4 backdrop-blur">
         <FoundationMark size="sm" />
         <UserMenu />
       </header>
@@ -47,7 +47,7 @@ export default function ManagerLayout() {
                 <span
                   className={cn(
                     'flex size-8 items-center justify-center rounded-full transition-colors',
-                    isActive && 'bg-primary/10',
+                    isActive && 'bg-gold/20',
                   )}
                 >
                   <Icon className="size-5" />

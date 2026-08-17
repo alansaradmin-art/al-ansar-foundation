@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/StateViews'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
 import { MonthlyDonationReport } from '@/features/reports/MonthlyDonationReport'
 import { DonationEngagementReport } from '@/features/reports/DonationEngagementReport'
@@ -123,34 +124,32 @@ export default function ReportsPage() {
           {managerRows && managerRows.length === 0 && <EmptyState title="No managers found." />}
 
           {managerRows && managerRows.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="p-3 font-medium">Manager</th>
-                    <th className="p-3 font-medium">Assigned</th>
-                    <th className="p-3 font-medium">Donors</th>
-                    <th className="p-3 font-medium">Donations</th>
-                    <th className="p-3 font-medium">Amount</th>
-                    <th className="p-3 font-medium">Completed</th>
-                    <th className="p-3 font-medium">Pending</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {managerRows.map((row) => (
-                    <tr key={row.manager_id} className="border-b last:border-0">
-                      <td className="p-3 font-medium">{row.manager_name}</td>
-                      <td className="p-3 tabular-nums">{row.assigned_members}</td>
-                      <td className="p-3 tabular-nums">{row.members_with_donation}</td>
-                      <td className="p-3 tabular-nums">{row.donation_count}</td>
-                      <td className="p-3 tabular-nums">{formatINR(row.donation_amount)}</td>
-                      <td className="p-3 tabular-nums">{row.completed_followups}</td>
-                      <td className="p-3 tabular-nums">{row.pending_followups}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Manager</TableHead>
+                  <TableHead>Assigned</TableHead>
+                  <TableHead>Donors</TableHead>
+                  <TableHead>Donations</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Completed</TableHead>
+                  <TableHead>Pending</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {managerRows.map((row) => (
+                  <TableRow key={row.manager_id} className="border-b last:border-0">
+                    <TableCell className="font-medium">{row.manager_name}</TableCell>
+                    <TableCell className="tabular-nums">{row.assigned_members}</TableCell>
+                    <TableCell className="tabular-nums">{row.members_with_donation}</TableCell>
+                    <TableCell className="tabular-nums">{row.donation_count}</TableCell>
+                    <TableCell className="tabular-nums">{formatINR(row.donation_amount)}</TableCell>
+                    <TableCell className="tabular-nums">{row.completed_followups}</TableCell>
+                    <TableCell className="tabular-nums">{row.pending_followups}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </TabsContent>
 
@@ -172,30 +171,28 @@ export default function ReportsPage() {
           {monthRows && monthRows.length > 0 && (
             <>
               <MonthlyBarChart rows={monthRows} />
-              <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="p-3 font-medium">Month</th>
-                      <th className="p-3 font-medium">Donations</th>
-                      <th className="p-3 font-medium">Amount</th>
-                      <th className="p-3 font-medium">Completed</th>
-                      <th className="p-3 font-medium">Pending</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthRows.map((row) => (
-                      <tr key={row.month} className="border-b last:border-0">
-                        <td className="p-3 font-medium">{formatPeriod(row.month, row.year)}</td>
-                        <td className="p-3 tabular-nums">{row.donation_count}</td>
-                        <td className="p-3 tabular-nums">{formatINR(row.donation_amount)}</td>
-                        <td className="p-3 tabular-nums">{row.completed_followups}</td>
-                        <td className="p-3 tabular-nums">{row.pending_followups}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead>Donations</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Completed</TableHead>
+                    <TableHead>Pending</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthRows.map((row) => (
+                    <TableRow key={row.month} className="border-b last:border-0">
+                      <TableCell className="font-medium">{formatPeriod(row.month, row.year)}</TableCell>
+                      <TableCell className="tabular-nums">{row.donation_count}</TableCell>
+                      <TableCell className="tabular-nums">{formatINR(row.donation_amount)}</TableCell>
+                      <TableCell className="tabular-nums">{row.completed_followups}</TableCell>
+                      <TableCell className="tabular-nums">{row.pending_followups}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </>
           )}
         </TabsContent>

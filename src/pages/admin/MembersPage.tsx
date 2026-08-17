@@ -13,6 +13,7 @@ import { CardListSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableHeader, TableBody, TableRow, TableHead } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import type { MemberStatus } from '@/types'
 
@@ -158,32 +159,30 @@ export default function AdminMembersPage() {
             ))}
           </div>
 
-          <div className="hidden overflow-x-auto rounded-xl border bg-card shadow-sm md:block">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="p-3 font-medium">Name</th>
-                  <th className="p-3 font-medium">Father's Name</th>
-                  <th className="p-3 font-medium">Mobile</th>
-                  <th className="p-3 font-medium">Address</th>
-                  <th className="p-3 font-medium">Manager</th>
-                  <th className="p-3 font-medium">Status</th>
-                  <th className="p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.map((member) => (
-                  <AdminMemberTableRow
-                    key={member.id}
-                    member={member}
-                    managers={managers}
-                    showMissingFields={incomplete}
-                    lastDonationDates={lastDonationDates}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table className="hidden md:block">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Father's Name</TableHead>
+                <TableHead>Mobile</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Manager</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.rows.map((member) => (
+                <AdminMemberTableRow
+                  key={member.id}
+                  member={member}
+                  managers={managers}
+                  showMissingFields={incomplete}
+                  lastDonationDates={lastDonationDates}
+                />
+              ))}
+            </TableBody>
+          </Table>
         </>
       )}
 

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Hourglass } from 'lucide-react'
 import { FoundationMark } from '@/components/FoundationMark'
+import { AppFooter } from '@/components/AppFooter'
 import { Button } from '@/components/ui/button'
 
 export default function WaitingForSetupPage() {
@@ -21,19 +22,22 @@ export default function WaitingForSetupPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
-      <FoundationMark />
-      <Hourglass className="size-8 text-muted-foreground" />
-      <div>
-        <h1 className="font-semibold">Account not set up yet</h1>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-          You&apos;re signed in as {user?.primaryEmailAddress?.emailAddress}, but the Foundation Admin hasn&apos;t
-          linked this email to a manager profile yet. Please check with the Admin.
-        </p>
+    <div className="flex min-h-svh flex-col">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+        <FoundationMark />
+        <Hourglass className="size-8 text-muted-foreground" />
+        <div>
+          <h1 className="font-semibold">Account not set up yet</h1>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+            You&apos;re signed in as {user?.primaryEmailAddress?.emailAddress}, but the Foundation Admin hasn&apos;t
+            linked this email to a manager profile yet. Please check with the Admin.
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleSignOut}>
+          Sign out
+        </Button>
       </div>
-      <Button variant="outline" onClick={handleSignOut}>
-        Sign out
-      </Button>
+      <AppFooter />
     </div>
   )
 }

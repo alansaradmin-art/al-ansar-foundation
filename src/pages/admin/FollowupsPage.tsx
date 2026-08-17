@@ -11,6 +11,7 @@ import { EmptyState, ErrorState } from '@/components/StateViews'
 import { FollowupStatusBadge, UnassignedManagerBadge } from '@/components/StatusBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { formatDate } from '@/lib/format'
 import { FOLLOW_UP_STATUSES } from '@/schemas/followup.schema'
 import type { FollowUpStatus } from '@/types'
@@ -105,41 +106,39 @@ export default function AdminFollowupsPage() {
           {data && data.rows.length === 0 && <EmptyState title="No follow-ups recorded for this month." />}
 
           {data && data.rows.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="p-3 font-medium">Date</th>
-                    <th className="p-3 font-medium">Member</th>
-                    <th className="p-3 font-medium">Manager</th>
-                    <th className="p-3 font-medium">Status</th>
-                    <th className="p-3 font-medium">Contacted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((f) => (
-                    <tr key={f.id} className="border-b last:border-0">
-                      <td className="p-3 whitespace-nowrap">{formatDate(f.follow_up_date)}</td>
-                      <td className="p-3">
-                        <Link to={`/admin/members/${f.member_id}`} className="hover:underline">
-                          {f.member?.member_name}
-                        </Link>
-                        {f.member?.father_name && (
-                          <p className="text-xs text-muted-foreground">{f.member.father_name}</p>
-                        )}
-                      </td>
-                      <td className="p-3 text-muted-foreground">{f.manager?.full_name}</td>
-                      <td className="p-3">
-                        <FollowupStatusBadge status={f.follow_up_status} />
-                      </td>
-                      <td className="p-3 text-muted-foreground">
-                        {f.contacted_person_type === 'OTHER' ? f.contacted_person_name : f.contacted_person_type}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Manager</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Contacted</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.rows.map((f) => (
+                  <TableRow key={f.id} className="border-b last:border-0">
+                    <TableCell className="whitespace-nowrap">{formatDate(f.follow_up_date)}</TableCell>
+                    <TableCell>
+                      <Link to={`/admin/members/${f.member_id}`} className="hover:underline">
+                        {f.member?.member_name}
+                      </Link>
+                      {f.member?.father_name && (
+                        <p className="text-xs text-muted-foreground">{f.member.father_name}</p>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{f.manager?.full_name}</TableCell>
+                    <TableCell>
+                      <FollowupStatusBadge status={f.follow_up_status} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {f.contacted_person_type === 'OTHER' ? f.contacted_person_name : f.contacted_person_type}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
 
           {data && <Pagination page={page} pageSize={25} total={data.count} onPageChange={setPage} />}
@@ -155,42 +154,40 @@ export default function AdminFollowupsPage() {
           )}
 
           {overdueRows && overdueRows.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="p-3 font-medium">Member</th>
-                    <th className="p-3 font-medium">Father's Name</th>
-                    <th className="p-3 font-medium">Manager</th>
-                    <th className="p-3 font-medium">Last Follow-up</th>
-                    <th className="p-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overdueRows.map((row) => (
-                    <tr key={row.memberId} className="border-b last:border-0">
-                      <td className="p-3">
-                        <Link to={`/admin/members/${row.memberId}`} className="hover:underline">
-                          {row.memberName}
-                        </Link>
-                      </td>
-                      <td className="p-3 text-muted-foreground">{row.fatherName || '—'}</td>
-                      <td className="p-3 text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</td>
-                      <td className="p-3 text-muted-foreground">
-                        {row.lastFollowUpDate ? formatDate(row.lastFollowUpDate) : '—'}
-                      </td>
-                      <td className="p-3">
-                        {row.lastFollowUpStatus ? (
-                          <FollowupStatusBadge status={row.lastFollowUpStatus} />
-                        ) : (
-                          <span className="text-xs text-muted-foreground">No attempt this period</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Father's Name</TableHead>
+                  <TableHead>Manager</TableHead>
+                  <TableHead>Last Follow-up</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {overdueRows.map((row) => (
+                  <TableRow key={row.memberId} className="border-b last:border-0">
+                    <TableCell>
+                      <Link to={`/admin/members/${row.memberId}`} className="hover:underline">
+                        {row.memberName}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{row.fatherName || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.lastFollowUpDate ? formatDate(row.lastFollowUpDate) : '—'}
+                    </TableCell>
+                    <TableCell>
+                      {row.lastFollowUpStatus ? (
+                        <FollowupStatusBadge status={row.lastFollowUpStatus} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No attempt this period</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </TabsContent>
       </Tabs>

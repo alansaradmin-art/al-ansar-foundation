@@ -11,6 +11,7 @@ import { EmptyState, ErrorState } from '@/components/StateViews'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonationDialog'
 import { EditDonationDialog } from '@/features/donations/EditDonationDialog'
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
@@ -132,59 +133,57 @@ export default function AdminDonationsPage() {
       {data && data.rows.length === 0 && <EmptyState title="No donations recorded for this month." />}
 
       {data && data.rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">Member</th>
-                <th className="p-3 font-medium">Type</th>
-                <th className="p-3 font-medium">Amount</th>
-                <th className="p-3 font-medium">Method</th>
-                <th className="p-3 font-medium">Reference</th>
-                <th className="p-3 font-medium">Recorded By</th>
-                <th className="p-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {data.rows.map((donation) => (
-                <tr key={donation.id} className="border-b last:border-0">
-                  <td className="p-3 whitespace-nowrap">{formatDate(donation.donation_date)}</td>
-                  <td className="p-3">
-                    {donation.member ? (
-                      <>
-                        <p>{donation.member.member_name}</p>
-                        {(() => {
-                          const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
-                            .filter(Boolean)
-                            .join(' · ')
-                          return subline && <p className="text-xs text-muted-foreground">{subline}</p>
-                        })()}
-                      </>
-                    ) : (
-                      <AnonymousDonationBadge />
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <Badge variant="secondary">{DONATION_TYPE_LABELS[donation.donation_type]}</Badge>
-                  </td>
-                  <td className="p-3 font-medium tabular-nums">{formatINR(donation.amount_inr)}</td>
-                  <td className="p-3">
-                    <Badge variant="outline">{PAYMENT_LABELS[donation.payment_method]}</Badge>
-                  </td>
-                  <td className="p-3 text-muted-foreground">{donation.transaction_reference || '—'}</td>
-                  <td className="p-3 text-muted-foreground">{donation.recorder?.full_name ?? '—'}</td>
-                  <td className="p-3">
-                    <div className="flex gap-1">
-                      <EditDonationDialog donation={donation} />
-                      <SoftDeleteDonationDialog donationId={donation.id} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Member</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Reference</TableHead>
+              <TableHead>Recorded By</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.rows.map((donation) => (
+              <TableRow key={donation.id} className="border-b last:border-0">
+                <TableCell className="whitespace-nowrap">{formatDate(donation.donation_date)}</TableCell>
+                <TableCell>
+                  {donation.member ? (
+                    <>
+                      <p>{donation.member.member_name}</p>
+                      {(() => {
+                        const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
+                          .filter(Boolean)
+                          .join(' · ')
+                        return subline && <p className="text-xs text-muted-foreground">{subline}</p>
+                      })()}
+                    </>
+                  ) : (
+                    <AnonymousDonationBadge />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{DONATION_TYPE_LABELS[donation.donation_type]}</Badge>
+                </TableCell>
+                <TableCell className="font-medium tabular-nums">{formatINR(donation.amount_inr)}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{PAYMENT_LABELS[donation.payment_method]}</Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{donation.transaction_reference || '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{donation.recorder?.full_name ?? '—'}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <EditDonationDialog donation={donation} />
+                    <SoftDeleteDonationDialog donationId={donation.id} />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {data && <Pagination page={page} pageSize={25} total={data.count} onPageChange={setPage} />}

@@ -48,7 +48,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           {({ isActive }) => (
             <>
               {isActive && (
-                <span className="absolute inset-y-1.5 left-0 w-1 rounded-r-full bg-sidebar-primary" aria-hidden />
+                <span className="absolute inset-y-1.5 left-0 w-1 rounded-r-full bg-gold" aria-hidden />
               )}
               <Icon className="size-4" />
               {label}
@@ -73,7 +73,7 @@ export default function AdminLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b-2 border-gold/40 bg-background/95 px-4 backdrop-blur">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setDrawerOpen(true)}>
             <Menu className="size-5" />
           </Button>
