@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth, useSignIn } from '@clerk/clerk-react'
 import { ArrowLeft, Loader2, TriangleAlert } from 'lucide-react'
 import { LoadingState } from '@/components/StateViews'
+import { AppFooter } from '@/components/AppFooter'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -301,6 +302,8 @@ export default function LoginPage() {
         Access is limited to Al Ansar Foundation admins and managers. Contact the Foundation Admin if you need an
         account.
       </p>
+
+      <AppFooter />
     </div>
   )
 }

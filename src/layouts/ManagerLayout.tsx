@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Users, ClipboardList, IndianRupee, MoreHorizontal } from 'lucide-react'
 import { FoundationMark } from '@/components/FoundationMark'
+import { AppFooter } from '@/components/AppFooter'
 import { UserMenu } from '@/components/UserMenu'
 import { cn } from '@/lib/utils'
 
@@ -20,8 +21,9 @@ export default function ManagerLayout() {
         <UserMenu />
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 pb-24">
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col pb-24">
         <Outlet />
+        <AppFooter />
       </main>
 
       <nav
