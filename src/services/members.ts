@@ -71,3 +71,10 @@ export async function getIncompleteMembersCount(getToken: GetToken): Promise<num
   const { count } = await apiClient.get<{ count: number }>('/api/members', getToken, { action: 'incompleteCount' })
   return count
 }
+
+export async function getMemberLastDonationDates(
+  getToken: GetToken,
+  memberIds: string[],
+): Promise<Record<string, string | null>> {
+  return apiClient.post('/api/members', getToken, { memberIds }, { action: 'lastDonationDates' })
+}

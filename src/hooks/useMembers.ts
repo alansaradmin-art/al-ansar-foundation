@@ -40,6 +40,15 @@ export function useIncompleteMembersCount() {
   })
 }
 
+export function useMemberLastDonationDates(memberIds: string[]) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.members.lastDonationDates(memberIds),
+    queryFn: () => membersService.getMemberLastDonationDates(getToken, memberIds),
+    enabled: memberIds.length > 0,
+  })
+}
+
 export function useMemberPicker(query: string) {
   const { getToken } = useAuth()
   return useQuery({

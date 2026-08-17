@@ -2,5 +2,6 @@
   "rewrites": [
     { "source": "/__clerk/:path*", "destination": "/api/clerk-proxy?path=:path*" },
     { "source": "/((?!api/|__clerk/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "crons": [{ "path": "/api/cron/deactivate-stale-members", "schedule": "0 21 * * *" }]
 }

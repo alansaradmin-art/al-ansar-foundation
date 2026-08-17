@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { differenceInCalendarMonths } from 'date-fns'
 import { ArrowLeft, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMember } from '@/hooks/useMembers'
@@ -11,6 +12,8 @@ import { ContactSection } from '@/features/members/ContactSection'
 import { DonationHistoryList } from '@/features/donations/DonationHistoryList'
 import { FollowupHistoryList } from '@/features/followups/FollowupHistoryList'
 import { MemberFormDialog } from '@/features/members/MemberFormDialog'
+import { StatusButton } from '@/features/members/AdminMemberRow'
+import { formatDate } from '@/lib/format'
 
 export default function AdminMemberDetailPage() {
   const { memberId } = useParams<{ memberId: string }>()
@@ -24,6 +27,13 @@ export default function AdminMemberDetailPage() {
   if (isError || !member) {
     return <ErrorState message="Unable to load this member. Please try again." onRetry={refetch} />
   }
+
+  // donations is already sorted donation_date desc and excludes deleted
+  // rows (see api/donations.ts's ?action=forMember), so [0] is the latest
+  // valid donation, if any. Mirrors stale_active_member_ids()'s reference
+  // date (latest donation, falling back to join date) purely for display.
+  const latestDonationDate = donations[0]?.donation_date
+  const monthsInactive = differenceInCalendarMonths(new Date(), new Date(latestDonationDate ?? member.created_at))
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -40,8 +50,17 @@ export default function AdminMemberDetailPage() {
             <MemberStatusBadge status={member.status} />
           </div>
           {member.father_name && <p className="text-xs text-muted-foreground">{member.father_name}</p>}
+          {member.status === 'INACTIVE' && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {latestDonationDate ? `Last donation: ${formatDate(latestDonationDate)}` : 'Never donated'} ·{' '}
+              {monthsInactive} month{monthsInactive === 1 ? '' : 's'} inactive
+            </p>
+          )}
         </div>
-        <MemberFormDialog member={member} />
+        <div className="flex shrink-0 gap-2">
+          <StatusButton member={member} />
+          <MemberFormDialog member={member} />
+        </div>
       </div>
 
       <MemberInfoCard member={member} />

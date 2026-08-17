@@ -4,6 +4,7 @@ import { logInsert, logUpdate } from './_lib/auditLog.js'
 import type { Database, DonationType, PaymentMethod } from '../src/types/database'
 
 type DonationInsert = Database['public']['Tables']['donations']['Insert']
+type MemberRow = Database['public']['Tables']['members']['Row']
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const profile = await authenticate(req, res)
@@ -97,14 +98,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (req.method === 'POST') {
       const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string }>(req)
 
+      // Fetched once, for both the manager-scope permission check below and
+      // the auto-reactivation check after the donation is inserted (a
+      // member's current status can only be known by reading the row).
+      let member: MemberRow | null = null
       if (values.member_id) {
+        const { data, error: memberError } = await supabase
+          .from('members')
+          .select('*')
+          .eq('id', values.member_id)
+          .maybeSingle()
+        if (memberError) return sendSupabaseError(res, memberError)
+        member = data
         if (profile.role !== 'ADMIN') {
-          const { data: member, error: memberError } = await supabase
-            .from('members')
-            .select('assigned_manager_id')
-            .eq('id', values.member_id)
-            .maybeSingle()
-          if (memberError) return sendSupabaseError(res, memberError)
           if (!member || member.assigned_manager_id !== profile.managerId) {
             return sendError(res, 403, 'You can only record donations for your own members.')
           }
@@ -137,6 +143,26 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         .single()
       if (error) return sendSupabaseError(res, error)
       await logInsert(supabase, 'donations', profile.id, data)
+
+      // A new donation is exactly the signal that reverses inactivity —
+      // auto-reactivate, and log it as a real (non-system) change since a
+      // real person's action (recording this donation) caused it. Never
+      // fails the donation response over this: the donation already saved,
+      // and reactivation is a secondary consequence of it.
+      if (member && member.status === 'INACTIVE') {
+        const { data: reactivated, error: reactivateError } = await supabase
+          .from('members')
+          .update({ status: 'ACTIVE' })
+          .eq('id', member.id)
+          .select('*')
+          .single()
+        if (reactivateError) {
+          console.error('[api/donations] failed to auto-reactivate member', member.id, reactivateError)
+        } else if (reactivated) {
+          await logUpdate(supabase, 'members', profile.id, member, reactivated)
+        }
+      }
+
       return sendJson(res, 201, data)
     }
 

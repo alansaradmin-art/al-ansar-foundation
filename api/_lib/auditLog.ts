@@ -4,7 +4,7 @@ import type { Database } from '../../src/types/database'
 export type AuditEntityType = 'members' | 'donations' | 'monthly_followups' | 'managers'
 
 interface WriteAuditLogParams {
-  actorProfileId: string
+  actorProfileId: string | null
   action: string
   entityType: AuditEntityType
   entityId: string
@@ -46,7 +46,7 @@ export async function writeAuditLog(
 export function logInsert(
   supabase: SupabaseClient<Database>,
   entityType: AuditEntityType,
-  actorProfileId: string,
+  actorProfileId: string | null,
   row: { id: string },
 ): Promise<void> {
   return writeAuditLog(supabase, {
@@ -65,7 +65,7 @@ export function logInsert(
 export function logUpdate(
   supabase: SupabaseClient<Database>,
   entityType: AuditEntityType,
-  actorProfileId: string,
+  actorProfileId: string | null,
   oldRow: { id: string },
   newRow: { id: string },
 ): Promise<void> {

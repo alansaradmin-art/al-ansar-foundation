@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { differenceInCalendarMonths } from 'date-fns'
 import { MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MemberFormDialog } from './MemberFormDialog'
@@ -7,7 +8,7 @@ import { AssignManagerDialog } from './AssignManagerDialog'
 import { MemberStatusBadge, UnassignedManagerBadge } from '@/components/StatusBadge'
 import { useSetMemberStatus } from '@/hooks/useMembers'
 import { getFriendlyErrorMessage } from '@/lib/errors'
-import { formatMobileNumber } from '@/lib/format'
+import { formatDate, formatMobileNumber } from '@/lib/format'
 import type { Member, Manager } from '@/types'
 
 /** Mirrors api/members.ts's INCOMPLETE_MEMBER_OR field set exactly, so the
@@ -29,7 +30,24 @@ function MissingFieldsNote({ member }: { member: Member }) {
   return <p className="mt-0.5 text-xs font-medium text-gold-foreground">Missing: {missing.join(', ')}</p>
 }
 
-function StatusButton({ member }: { member: Member }) {
+/** Months since the reference point used by stale_active_member_ids()
+ * (supabase/migrations/0023_member_inactivity.sql) — the member's latest
+ * non-deleted donation, or, if they've never donated, their join date.
+ * Mirrored client-side purely for display; the actual INACTIVE flag is
+ * always set by the scheduled job, never derived here. */
+function InactivityNote({ member, lastDonationDate }: { member: Member; lastDonationDate: string | null | undefined }) {
+  if (lastDonationDate === undefined) return null
+  const referenceDate = lastDonationDate ? new Date(lastDonationDate) : new Date(member.created_at)
+  const months = differenceInCalendarMonths(new Date(), referenceDate)
+  const monthsLabel = `${months} month${months === 1 ? '' : 's'} inactive`
+  return (
+    <p className="mt-0.5 text-xs text-muted-foreground">
+      {lastDonationDate ? `Last donation: ${formatDate(lastDonationDate)}` : 'Never donated'} · {monthsLabel}
+    </p>
+  )
+}
+
+export function StatusButton({ member }: { member: Member }) {
   const { mutate, isPending } = useSetMemberStatus()
   const nextStatus = member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
@@ -57,10 +75,12 @@ export function AdminMemberCard({
   member,
   managerName,
   showMissingFields,
+  lastDonationDates,
 }: {
   member: Member
   managerName?: string
   showMissingFields?: boolean
+  lastDonationDates?: Record<string, string | null>
 }) {
   const subline = [member.father_name, formatMobileNumber(member.mobile_number)].filter(Boolean).join(' · ')
   return (
@@ -81,6 +101,9 @@ export function AdminMemberCard({
             {managerName ? `Manager: ${managerName}` : <UnassignedManagerBadge />}
           </p>
           {showMissingFields && <MissingFieldsNote member={member} />}
+          {lastDonationDates && member.status === 'INACTIVE' && (
+            <InactivityNote member={member} lastDonationDate={lastDonationDates[member.id]} />
+          )}
         </div>
         <MemberStatusBadge status={member.status} />
       </div>
@@ -97,10 +120,12 @@ export function AdminMemberTableRow({
   member,
   managers,
   showMissingFields,
+  lastDonationDates,
 }: {
   member: Member
   managers: Manager[]
   showMissingFields?: boolean
+  lastDonationDates?: Record<string, string | null>
 }) {
   const managerName = managers.find((m) => m.id === member.assigned_manager_id)?.full_name
   return (
@@ -110,6 +135,9 @@ export function AdminMemberTableRow({
           {member.member_name}
         </Link>
         {showMissingFields && <MissingFieldsNote member={member} />}
+        {lastDonationDates && member.status === 'INACTIVE' && (
+          <InactivityNote member={member} lastDonationDate={lastDonationDates[member.id]} />
+        )}
       </td>
       <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
       <td className="p-3 text-muted-foreground">{formatMobileNumber(member.mobile_number) || '—'}</td>

@@ -8,6 +8,7 @@ export const queryKeys = {
     picker: (query: string) => ['members', 'picker', query] as const,
     unassignedCount: ['members', 'unassigned-count'] as const,
     incompleteCount: ['members', 'incomplete-count'] as const,
+    lastDonationDates: (memberIds: string[]) => ['members', 'last-donation-dates', memberIds] as const,
   },
   donations: {
     forMember: (memberId: string) => ['donations', 'member', memberId] as const,

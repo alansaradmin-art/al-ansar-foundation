@@ -207,6 +207,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, summaries)
     }
 
+    if (req.method === 'POST' && action === 'lastDonationDates') {
+      if (!requireAdmin(res, profile)) return
+      const { memberIds } = await readJsonBody<{ memberIds: string[] }>(req)
+      if (!Array.isArray(memberIds) || memberIds.length === 0) return sendJson(res, 200, {})
+      const { data, error } = await supabase.rpc('member_last_donation_dates', { p_member_ids: memberIds })
+      if (error) return sendSupabaseError(res, error)
+      const dates: Record<string, string | null> = {}
+      for (const row of data ?? []) dates[row.member_id] = row.last_donation_date
+      return sendJson(res, 200, dates)
+    }
+
     if (req.method === 'POST' && action === 'reassign') {
       if (!requireAdmin(res, profile)) return
       const { memberIds, managerId } = await readJsonBody<{ memberIds: string[]; managerId: string }>(req)

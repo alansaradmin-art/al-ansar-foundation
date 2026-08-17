@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Upload, UserX, Users, FileWarning } from 'lucide-react'
-import { useMembers, useUnassignedMembersCount, useIncompleteMembersCount } from '@/hooks/useMembers'
+import { useMembers, useUnassignedMembersCount, useIncompleteMembersCount, useMemberLastDonationDates } from '@/hooks/useMembers'
 import { useManagers } from '@/hooks/useManagers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
@@ -39,6 +39,10 @@ export default function AdminMembersPage() {
     page,
     pageSize: 20,
   })
+
+  const { data: lastDonationDates } = useMemberLastDonationDates(
+    status === 'INACTIVE' ? (data?.rows.map((m) => m.id) ?? []) : [],
+  )
 
   return (
     <div className="space-y-4">
@@ -149,6 +153,7 @@ export default function AdminMembersPage() {
                 member={member}
                 managerName={managers.find((m) => m.id === member.assigned_manager_id)?.full_name}
                 showMissingFields={incomplete}
+                lastDonationDates={lastDonationDates}
               />
             ))}
           </div>
@@ -173,6 +178,7 @@ export default function AdminMembersPage() {
                     member={member}
                     managers={managers}
                     showMissingFields={incomplete}
+                    lastDonationDates={lastDonationDates}
                   />
                 ))}
               </tbody>

@@ -316,6 +316,14 @@ export interface Database {
           last_follow_up_status: string | null
         }[]
       }
+      stale_active_member_ids: {
+        Args: Record<string, never>
+        Returns: { member_id: string }[]
+      }
+      member_last_donation_dates: {
+        Args: { p_member_ids: string[] }
+        Returns: { member_id: string; last_donation_date: string | null }[]
+      }
     }
   }
 }

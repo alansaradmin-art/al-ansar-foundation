@@ -220,6 +220,7 @@ Covered in [§9](#9-post-deploy-wiring), since it needs your live Vercel URL fir
 | `CLERK_WEBHOOK_SIGNING_SECRET` | **Server-only**         | Clerk → Webhooks (set up in §9)                   |
 | `CLERK_PROXY_UPSTREAM`         | **Server-only**, optional (§9.3) | Clerk Dashboard → Domains → "Copy setup instructions" |
 | `FOUNDATION_ADMIN_EMAIL`       | **Server-only**         | You choose it — default `alansar.admin@gmail.com` |
+| `CRON_SECRET`                  | **Server-only**         | You generate it (§9.4) — any long random string    |
 
 Anything **not** prefixed `VITE_` never reaches the browser bundle — Vite only inlines
 `VITE_*` variables at build time. `VITE_SUPABASE_URL` is the one deliberate exception to read
@@ -432,6 +433,24 @@ Setup:
    then click **Verify proxy** in Clerk Dashboard → Domains, and specifically test a real
    sign-in (not just that the page loads) — the original bug only showed up on POST.
 
+### 9.4 Member inactivity cron job
+
+`api/cron/deactivate-stale-members.ts` runs daily (`vercel.json`'s `crons` entry, `0 21 * * *`
+— 21:00 UTC, off-peak) and flags any `ACTIVE` member `INACTIVE` once their latest non-deleted
+donation (or, for a member who's never donated, their join date) is more than 3 months old.
+It has no Clerk session to verify (Vercel invokes it on a schedule, not a signed-in user), so
+it instead checks `Authorization: Bearer <CRON_SECRET>` — the header Vercel automatically
+attaches to cron-triggered requests once `CRON_SECRET` is set.
+
+1. Generate any long random string and set it as `CRON_SECRET` in Vercel → **Settings →
+   Environment Variables** (server-only, all environments you deploy crons to). Without it,
+   the endpoint fails closed (401) — including for Vercel's own scheduler.
+2. Redeploy — Vercel only registers `vercel.json`'s `crons` entry on a fresh deployment.
+3. There's no local Vercel Cron trigger to test against. To verify manually after deploy:
+   `curl -H "Authorization: Bearer <CRON_SECRET>" https://<your-domain>/api/cron/deactivate-stale-members`
+   — expect `{"deactivated": <n>}`. A member it flags shows `INACTIVE` immediately in the app,
+   and their Audit Log entry shows actor **System**.
+
 ---
 
 ## 10. Verification checklist
@@ -619,8 +638,9 @@ cast the _result_ instead.
 
 ## 13. Security checklist
 
-- [ ] `SUPABASE_SERVICE_ROLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET` are set
-      only in Vercel's environment variables — never in a `VITE_` var, never committed to git
+- [ ] `SUPABASE_SERVICE_ROLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`,
+      `CRON_SECRET` are set only in Vercel's environment variables — never in a `VITE_` var,
+      never committed to git
 - [ ] `.env.local` is gitignored (already is — verify with `git status` if unsure)
 - [ ] Every `api/*.ts` resource file (everything except `profile.ts`) calls `authenticate()`
       from `api/_lib/auth.ts` before touching Supabase, and every admin-only operation calls
