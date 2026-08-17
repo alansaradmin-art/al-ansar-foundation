@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { LoadingState } from '@/components/StateViews'
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'
+import { AppFooter } from '@/components/AppFooter'
 
 export default function SettingsPage() {
   const { getToken } = useAuth()
@@ -135,6 +137,18 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+          <CardDescription>Choose how the app looks on this account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeSwitcher />
+        </CardContent>
+      </Card>
+
+      <AppFooter />
     </div>
   )
 }

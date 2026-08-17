@@ -14,7 +14,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { FoundationMark } from '@/components/FoundationMark'
-import { AppFooter } from '@/components/AppFooter'
 import { UserMenu } from '@/components/UserMenu'
 import { cn } from '@/lib/utils'
 
@@ -88,8 +87,6 @@ export default function AdminLayout() {
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
-
-        <AppFooter />
       </div>
 
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>

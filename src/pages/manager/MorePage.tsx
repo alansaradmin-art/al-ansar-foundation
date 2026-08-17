@@ -1,8 +1,10 @@
 import { useClerk } from '@clerk/clerk-react'
 import { LogOut, UserRound } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'
+import { AppFooter } from '@/components/AppFooter'
 
 export default function MorePage() {
   const { profile } = useProfile()
@@ -24,9 +26,21 @@ export default function MorePage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+          <CardDescription>Choose how the app looks on this account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeSwitcher />
+        </CardContent>
+      </Card>
+
       <Button variant="outline" className="w-full" onClick={() => signOut()}>
         <LogOut className="size-4" /> Sign out
       </Button>
+
+      <AppFooter />
     </div>
   )
 }

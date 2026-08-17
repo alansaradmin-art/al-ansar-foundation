@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { queryClient } from '@/lib/queryClient'
 import { ProfileProvider } from '@/contexts/ProfileContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import App from './App.tsx'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
@@ -30,14 +31,16 @@ if (!clerkPublishableKey) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ClerkProvider publishableKey={clerkPublishableKey} proxyUrl={clerkProxyUrl} afterSignOutUrl="/login">
-      <QueryClientProvider client={queryClient}>
-        <ProfileProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-          <Toaster position="top-center" richColors />
-        </ProfileProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ProfileProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+            <Toaster position="top-center" richColors />
+          </ProfileProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ClerkProvider>
   </StrictMode>,
 )
