@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, Phone, UserRound } from 'lucide-react'
+import { ChevronRight, MapPin, Phone, UserRound } from 'lucide-react'
 import {
   MemberStatusBadge,
   DonationStatusBadge,
@@ -39,6 +39,12 @@ export function MemberCard({
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <Phone className="size-3" />
             {formatMobileNumber(member.mobile_number)}
+          </p>
+        )}
+        {member.address && (
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="size-3 shrink-0" />
+            <span className="truncate">{member.address}</span>
           </p>
         )}
 

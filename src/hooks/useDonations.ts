@@ -45,6 +45,26 @@ export function useCreateDonation(recordedBy: string) {
   })
 }
 
+/** Same broad invalidation as useCreateDonation — editing amount/date/
+ * member can flip pending-followup status and every report total, for
+ * both the old and new member, so tracking "old member id" through the
+ * mutation isn't worth it over a blanket donations-prefix invalidation. */
+export function useUpdateDonation() {
+  const { getToken } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, values }: { id: string; values: DonationFormValues }) =>
+      donationsService.updateDonation(getToken, id, values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['donations'] })
+      queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+    },
+  })
+}
+
 export function useSoftDeleteDonation() {
   const { getToken } = useAuth()
   const queryClient = useQueryClient()

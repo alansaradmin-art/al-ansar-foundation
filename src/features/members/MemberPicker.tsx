@@ -12,15 +12,21 @@ export function MemberPicker({
   value,
   onChange,
   onClear,
+  clearLabel = 'All members',
 }: {
   value: (Pick<Member, 'id' | 'member_name'> & Partial<Pick<Member, 'member_id' | 'father_name'>>) | null
   onChange: (member: Pick<Member, 'id' | 'member_name' | 'member_id' | 'father_name' | 'mobile_number'>) => void
-  /** When provided, renders a leading "All members" option that calls this
-   * instead of onChange — used when this picker is a filter rather than a
-   * required form field. Existing form call sites (MemberForm,
-   * RecordDonationDialog) simply don't pass this, so onChange's signature
-   * stays unchanged for them. */
+  /** When provided, renders a leading clear option that calls this instead
+   * of onChange — used when this picker is a filter rather than a required
+   * form field. Existing form call sites (MemberForm, RecordDonationDialog)
+   * simply don't pass this, so onChange's signature stays unchanged for
+   * them. */
   onClear?: () => void
+  /** Copy for the clear option and the empty-value trigger label — default
+   * matches this component's original filter-context wording exactly.
+   * EditDonationDialog passes "Anonymous" since clearing there means "no
+   * member attached," not "no filter applied." */
+  clearLabel?: string
 }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -41,7 +47,7 @@ export function MemberPicker({
               ? `${value.member_name} (${value.father_name})`
               : value.member_name
             : onClear
-              ? 'All members'
+              ? clearLabel
               : 'Select a member…'}
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
@@ -61,7 +67,7 @@ export function MemberPicker({
                   }}
                 >
                   <Check className={cn('size-4', !value ? 'opacity-100' : 'opacity-0')} />
-                  All members
+                  {clearLabel}
                 </CommandItem>
               )}
               {options.map((member) => (

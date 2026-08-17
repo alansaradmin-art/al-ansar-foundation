@@ -32,12 +32,17 @@ function todayISO() {
 
 export function DonationForm({
   memberId,
+  defaultValues,
   onSubmit,
   isSubmitting,
 }: {
   /** Omitted for an Admin-only anonymous donation (AnonymousDonationDialog) —
    * every other caller always supplies a real member id. */
   memberId?: string
+  /** Pre-fills the form beyond the create defaults below — used by
+   * EditDonationDialog to seed the existing donation's values. Every other
+   * caller omits this, so their behavior is unchanged. */
+  defaultValues?: Partial<Omit<DonationFormValues, 'member_id'>>
   onSubmit: (values: DonationFormValues) => void
   isSubmitting: boolean
 }) {
@@ -51,6 +56,7 @@ export function DonationForm({
       payment_method: 'CASH',
       transaction_reference: '',
       notes: '',
+      ...defaultValues,
     },
   })
 

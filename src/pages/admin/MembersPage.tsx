@@ -108,7 +108,7 @@ export default function AdminMembersPage() {
             <CardListSkeleton />
           </div>
           <div className="hidden md:block">
-            <TableSkeleton cols={6} />
+            <TableSkeleton cols={7} />
           </div>
         </>
       )}
@@ -136,6 +136,7 @@ export default function AdminMembersPage() {
                   <th className="p-3 font-medium">Name</th>
                   <th className="p-3 font-medium">Father's Name</th>
                   <th className="p-3 font-medium">Mobile</th>
+                  <th className="p-3 font-medium">Address</th>
                   <th className="p-3 font-medium">Manager</th>
                   <th className="p-3 font-medium">Status</th>
                   <th className="p-3 font-medium">Actions</th>

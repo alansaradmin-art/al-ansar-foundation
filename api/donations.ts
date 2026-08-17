@@ -140,6 +140,39 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 201, data)
     }
 
+    if (req.method === 'PATCH' && id && action === 'update') {
+      if (!requireAdmin(res, profile)) return
+      const { data: oldRow, error: oldError } = await supabase.from('donations').select('*').eq('id', id).maybeSingle()
+      if (oldError) return sendSupabaseError(res, oldError)
+      if (!oldRow) return sendError(res, 404, 'Donation not found.')
+      if (oldRow.is_deleted) return sendError(res, 400, 'Cannot edit a removed donation.')
+
+      const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string }>(req)
+      const [year, month] = values.donation_date.split('-').map(Number)
+      const { data, error } = await supabase
+        .from('donations')
+        .update({
+          member_id: values.member_id ?? null,
+          donation_date: values.donation_date,
+          donation_month: month,
+          donation_year: year,
+          amount_inr: values.amount_inr!,
+          payment_method: values.payment_method!,
+          donation_type: values.donation_type!,
+          transaction_reference: values.transaction_reference || null,
+          notes: values.notes || null,
+          // donation_id, recorded_by, is_deleted, deleted_at/by/reason,
+          // created_at are intentionally absent — never taken from the
+          // client payload, so a crafted request body can't touch them.
+        })
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      await logUpdate(supabase, 'donations', profile.id, oldRow, data)
+      return sendJson(res, 200, data)
+    }
+
     if (req.method === 'PATCH' && id && action === 'softDelete') {
       if (!requireAdmin(res, profile)) return
       const { reason } = await readJsonBody<{ reason: string }>(req)

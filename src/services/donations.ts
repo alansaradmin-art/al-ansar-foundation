@@ -53,6 +53,10 @@ export async function listDonationsAdmin(
   return apiClient.get('/api/donations', getToken, { ...filters })
 }
 
+export async function updateDonation(getToken: GetToken, id: string, values: DonationFormValues): Promise<Donation> {
+  return apiClient.patch('/api/donations', getToken, values, { id, action: 'update' })
+}
+
 export async function softDeleteDonation(
   getToken: GetToken,
   id: string,

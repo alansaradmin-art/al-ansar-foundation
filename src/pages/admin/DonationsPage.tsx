@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonationDialog'
+import { EditDonationDialog } from '@/features/donations/EditDonationDialog'
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
 import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationDialog'
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
@@ -174,7 +175,10 @@ export default function AdminDonationsPage() {
                   <td className="p-3 text-muted-foreground">{donation.transaction_reference || '—'}</td>
                   <td className="p-3 text-muted-foreground">{donation.recorder?.full_name ?? '—'}</td>
                   <td className="p-3">
-                    <SoftDeleteDonationDialog donationId={donation.id} />
+                    <div className="flex gap-1">
+                      <EditDonationDialog donation={donation} />
+                      <SoftDeleteDonationDialog donationId={donation.id} />
+                    </div>
                   </td>
                 </tr>
               ))}

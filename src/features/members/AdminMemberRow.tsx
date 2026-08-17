@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MemberFormDialog } from './MemberFormDialog'
 import { AssignManagerDialog } from './AssignManagerDialog'
@@ -43,6 +44,12 @@ export function AdminMemberCard({ member, managerName }: { member: Member; manag
             {member.member_name}
           </Link>
           {subline && <p className="text-xs text-muted-foreground">{subline}</p>}
+          {member.address && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="size-3 shrink-0" />
+              <span className="truncate">{member.address}</span>
+            </p>
+          )}
           <p className="mt-0.5 text-xs text-muted-foreground">
             {managerName ? `Manager: ${managerName}` : <UnassignedManagerBadge />}
           </p>
@@ -69,6 +76,7 @@ export function AdminMemberTableRow({ member, managers }: { member: Member; mana
       </td>
       <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
       <td className="p-3 text-muted-foreground">{formatMobileNumber(member.mobile_number) || '—'}</td>
+      <td className="max-w-48 truncate p-3 text-muted-foreground">{member.address || '—'}</td>
       <td className="p-3 text-muted-foreground">{managerName || <UnassignedManagerBadge />}</td>
       <td className="p-3">
         <MemberStatusBadge status={member.status} />
