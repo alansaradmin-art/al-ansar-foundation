@@ -14,53 +14,59 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.24 0.014 55);
 
-  /* Deep emerald — the foundation's primary brand color. */
-  --primary: oklch(0.4 0.086 155);
-  --primary-foreground: oklch(0.98 0.012 150);
+  /* Warm near-black charcoal — matches the Logo's black mark on light
+     ground. Never pure #000, keeps a touch of the background's warmth. */
+  --primary: oklch(0.22 0.015 55);
+  --primary-foreground: oklch(0.98 0.007 75);
 
   --secondary: oklch(0.955 0.008 75);
   --secondary-foreground: oklch(0.28 0.014 60);
   --muted: oklch(0.955 0.008 75);
   --muted-foreground: oklch(0.51 0.014 60);
 
-  /* Soft warm-green tint used for hover/selected backgrounds throughout. */
-  --accent: oklch(0.945 0.025 140);
-  --accent-foreground: oklch(0.28 0.03 140);
+  /* Neutral warm tint for hover/selected backgrounds — deliberately not
+     gold, so gold stays a special-purpose accent instead of appearing on
+     every hover. */
+  --accent: oklch(0.94 0.012 70);
+  --accent-foreground: oklch(0.26 0.02 60);
 
   --destructive: oklch(0.577 0.215 27);
   --destructive-foreground: oklch(0.98 0.01 27);
   --border: oklch(0.9 0.009 70);
   --input: oklch(0.9 0.009 70);
-  --ring: oklch(0.4 0.086 155);
+  --ring: oklch(0.72 0.15 78);
 
-  /* Status semantics — distinct from brand primary so they always read as
-     status, not "the foundation's color." */
+  /* Status semantics — distinct from brand primary/gold so they always
+     read as status, not "the foundation's color." Warning's hue is kept
+     apart from gold's (78) so the two don't blend together. */
   --success: oklch(0.6 0.135 150);
   --success-foreground: oklch(0.98 0.01 150);
-  --warning: oklch(0.74 0.14 75);
-  --warning-foreground: oklch(0.28 0.05 75);
+  --warning: oklch(0.72 0.16 58);
+  --warning-foreground: oklch(0.27 0.05 58);
 
-  /* Teal + gold — secondary/tertiary accents used meaningfully (charts,
-     informational chips), never as the dominant color. */
+  /* Teal stays a minor tertiary accent. Gold is the foundation's signature
+     accent — matches the Logo's flame gradient, used meaningfully
+     (donation amounts, highlights, focus rings), never as the dominant
+     color across every element. */
   --teal: oklch(0.56 0.083 200);
   --teal-foreground: oklch(0.98 0.01 200);
-  --gold: oklch(0.77 0.12 82);
-  --gold-foreground: oklch(0.3 0.06 82);
+  --gold: oklch(0.72 0.15 78);
+  --gold-foreground: oklch(0.26 0.05 78);
 
-  --chart-1: oklch(0.5 0.095 155);
+  --chart-1: oklch(0.22 0.015 55);
   --chart-2: oklch(0.56 0.083 200);
-  --chart-3: oklch(0.75 0.12 82);
+  --chart-3: oklch(0.72 0.15 78);
   --chart-4: oklch(0.63 0.16 32);
   --chart-5: oklch(0.55 0.05 290);
 
   --sidebar: oklch(0.975 0.008 75);
   --sidebar-foreground: oklch(0.24 0.014 55);
-  --sidebar-primary: oklch(0.4 0.086 155);
-  --sidebar-primary-foreground: oklch(0.98 0.012 150);
-  --sidebar-accent: oklch(0.945 0.025 140);
-  --sidebar-accent-foreground: oklch(0.28 0.03 140);
+  --sidebar-primary: oklch(0.22 0.015 55);
+  --sidebar-primary-foreground: oklch(0.98 0.007 75);
+  --sidebar-accent: oklch(0.94 0.012 70);
+  --sidebar-accent-foreground: oklch(0.26 0.02 60);
   --sidebar-border: oklch(0.9 0.009 70);
-  --sidebar-ring: oklch(0.4 0.086 155);
+  --sidebar-ring: oklch(0.72 0.15 78);
 }
 
 /* No theme toggle exists in this app — dark mode simply follows the OS
@@ -75,47 +81,51 @@
     --popover: oklch(0.235 0.013 55);
     --popover-foreground: oklch(0.96 0.008 75);
 
-    --primary: oklch(0.68 0.12 155);
-    --primary-foreground: oklch(0.16 0.02 155);
+    /* Gold on dark ground — the other half of the Logo's color
+       relationship (light mode is black-on-light, dark mode is
+       gold-on-dark), and reads far better than a dark charcoal primary
+       would against an already-dark background. */
+    --primary: oklch(0.78 0.13 80);
+    --primary-foreground: oklch(0.18 0.02 80);
 
     --secondary: oklch(0.29 0.013 55);
     --secondary-foreground: oklch(0.96 0.008 75);
     --muted: oklch(0.29 0.013 55);
     --muted-foreground: oklch(0.68 0.012 65);
 
-    --accent: oklch(0.32 0.04 145);
-    --accent-foreground: oklch(0.94 0.02 145);
+    --accent: oklch(0.32 0.015 60);
+    --accent-foreground: oklch(0.94 0.012 70);
 
     --destructive: oklch(0.7 0.19 22);
     --destructive-foreground: oklch(0.16 0.02 22);
     --border: oklch(1 0 0 / 12%);
     --input: oklch(1 0 0 / 16%);
-    --ring: oklch(0.68 0.12 155);
+    --ring: oklch(0.78 0.13 80);
 
     --success: oklch(0.68 0.14 150);
     --success-foreground: oklch(0.16 0.02 150);
-    --warning: oklch(0.78 0.14 80);
-    --warning-foreground: oklch(0.2 0.04 80);
+    --warning: oklch(0.76 0.15 60);
+    --warning-foreground: oklch(0.22 0.04 60);
 
     --teal: oklch(0.66 0.09 200);
     --teal-foreground: oklch(0.16 0.02 200);
-    --gold: oklch(0.8 0.12 85);
-    --gold-foreground: oklch(0.2 0.04 85);
+    --gold: oklch(0.8 0.12 82);
+    --gold-foreground: oklch(0.2 0.04 82);
 
-    --chart-1: oklch(0.68 0.12 155);
+    --chart-1: oklch(0.78 0.13 80);
     --chart-2: oklch(0.66 0.09 200);
-    --chart-3: oklch(0.8 0.12 85);
+    --chart-3: oklch(0.8 0.12 82);
     --chart-4: oklch(0.68 0.16 32);
     --chart-5: oklch(0.65 0.06 290);
 
     --sidebar: oklch(0.21 0.013 55);
     --sidebar-foreground: oklch(0.96 0.008 75);
-    --sidebar-primary: oklch(0.68 0.12 155);
-    --sidebar-primary-foreground: oklch(0.16 0.02 155);
-    --sidebar-accent: oklch(0.32 0.04 145);
-    --sidebar-accent-foreground: oklch(0.94 0.02 145);
+    --sidebar-primary: oklch(0.78 0.13 80);
+    --sidebar-primary-foreground: oklch(0.18 0.02 80);
+    --sidebar-accent: oklch(0.32 0.015 60);
+    --sidebar-accent-foreground: oklch(0.94 0.012 70);
     --sidebar-border: oklch(1 0 0 / 12%);
-    --sidebar-ring: oklch(0.68 0.12 155);
+    --sidebar-ring: oklch(0.78 0.13 80);
   }
 }
 

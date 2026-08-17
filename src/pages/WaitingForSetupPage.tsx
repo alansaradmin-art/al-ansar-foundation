@@ -2,6 +2,7 @@ import { useClerk, useUser } from '@clerk/clerk-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Hourglass } from 'lucide-react'
+import { FoundationMark } from '@/components/FoundationMark'
 import { Button } from '@/components/ui/button'
 
 export default function WaitingForSetupPage() {
@@ -21,6 +22,7 @@ export default function WaitingForSetupPage() {
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
+      <FoundationMark />
       <Hourglass className="size-8 text-muted-foreground" />
       <div>
         <h1 className="font-semibold">Account not set up yet</h1>

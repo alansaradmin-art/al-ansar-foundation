@@ -35,9 +35,14 @@ export default function ManagerHomePage() {
   return (
     <div className="space-y-5 p-4">
       <div className="overflow-hidden rounded-2xl bg-primary px-5 py-6 text-primary-foreground shadow-sm">
-        <p className="text-sm text-primary-foreground/80">Assalamu alaikum, {firstName || profile?.full_name}</p>
-        <h1 className="font-display mt-1 text-xl font-semibold">Al Ansar Foundation</h1>
-        <p className="text-sm text-primary-foreground/80">Member &amp; Donation Management</p>
+        <div className="flex items-center gap-3">
+          <img src="/Logo.jpeg" alt="" className="size-10 shrink-0 rounded-full ring-2 ring-primary-foreground/20" />
+          <div>
+            <p className="text-sm text-primary-foreground/80">Assalamu alaikum, {firstName || profile?.full_name}</p>
+            <h1 className="font-display mt-1 text-xl font-semibold">Al Ansar Foundation</h1>
+          </div>
+        </div>
+        <p className="mt-1 text-sm text-primary-foreground/80">Member &amp; Donation Management</p>
       </div>
 
       <div className="flex gap-2">

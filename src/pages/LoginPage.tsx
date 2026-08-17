@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth, useSignIn } from '@clerk/clerk-react'
 import { ArrowLeft, Loader2, TriangleAlert } from 'lucide-react'
-import { FoundationMark } from '@/components/FoundationMark'
 import { LoadingState } from '@/components/StateViews'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -175,7 +174,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-muted/30 px-4 py-10 sm:px-6">
-      <FoundationMark subtitle="Member & Donation Management System" />
+      <div className="w-full max-w-sm space-y-2 text-center">
+        <img src="/Banner.jpeg" alt="Al Ansar Foundation, Hatwa Bazar Basti" className="w-full rounded-xl" />
+        <p className="text-sm text-muted-foreground">Member &amp; Donation Management System</p>
+      </div>
 
       <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-6 space-y-1 text-center">
