@@ -24,6 +24,7 @@ export const queryKeys = {
   },
   managers: {
     list: (params: unknown) => ['managers', 'list', params] as const,
+    paginatedList: (params: unknown) => ['managers', 'paginated-list', params] as const,
     detail: (id: string) => ['managers', 'detail', id] as const,
   },
   dashboard: {
@@ -41,6 +42,7 @@ export const queryKeys = {
     currentPeriod: ['settings', 'current-period'] as const,
     pendingDay: ['settings', 'pending-day'] as const,
     nonDonorThreshold: ['settings', 'non-donor-threshold'] as const,
+    defaultPageSize: ['settings', 'default-page-size'] as const,
   },
   auditLogs: {
     list: (filters: unknown) => ['audit-logs', 'list', filters] as const,

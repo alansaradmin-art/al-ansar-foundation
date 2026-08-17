@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Upload, UserX, Users, FileWarning } from 'lucide-react'
 import { useMembers, useUnassignedMembersCount, useIncompleteMembersCount, useMemberLastDonationDates } from '@/hooks/useMembers'
 import { useManagers } from '@/hooks/useManagers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
 import { AdminMemberCard, AdminMemberTableRow } from '@/features/members/AdminMemberRow'
 import { MemberFormDialog } from '@/features/members/MemberFormDialog'
@@ -31,6 +32,8 @@ export default function AdminMembersPage() {
   const { data: managers = [] } = useManagers()
   const { data: unassignedCount = 0 } = useUnassignedMembersCount()
   const { data: incompleteCount = 0 } = useIncompleteMembersCount()
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setPage(1), [pageSize])
   const { data, isLoading, isError, refetch } = useMembers({
     search: debouncedSearch,
     status: status === 'ALL' ? undefined : status,
@@ -38,7 +41,7 @@ export default function AdminMembersPage() {
     unassigned: managerId === UNASSIGNED,
     incomplete,
     page,
-    pageSize: 20,
+    pageSize,
   })
 
   const { data: lastDonationDates } = useMemberLastDonationDates(
@@ -186,7 +189,7 @@ export default function AdminMembersPage() {
         </>
       )}
 
-      {data && <Pagination page={page} pageSize={20} total={data.count} onPageChange={setPage} />}
+      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

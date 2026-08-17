@@ -13,6 +13,15 @@ export function useManagers(params: { status?: ManagerStatus; search?: string } 
   })
 }
 
+export function usePaginatedManagers(params: { status?: ManagerStatus; search?: string; page: number; pageSize: number }) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.managers.paginatedList(params),
+    queryFn: () => managersService.listManagersPaginated(getToken, params),
+    placeholderData: (prev) => prev,
+  })
+}
+
 export function useManager(id: string | undefined) {
   const { getToken } = useAuth()
   return useQuery({

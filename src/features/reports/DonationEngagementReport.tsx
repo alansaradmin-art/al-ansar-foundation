@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowUpDown, ChevronDown, ChevronUp, Download, IndianRupee, Search, UserCheck, Users, UserX } from 'lucide-react'
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from 'date-fns'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useDonationEngagementReport } from '@/hooks/useDashboard'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
 import { Pagination } from '@/components/Pagination'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
@@ -54,7 +55,6 @@ type SortKey =
   | 'totalAmount'
   | 'donationCount'
   | 'latestDonationDate'
-const PAGE_SIZE = 25
 
 function toISO(date: Date): string {
   return format(date, 'yyyy-MM-dd')
@@ -173,6 +173,8 @@ export function DonationEngagementReport() {
   const [sortKey, setSortKey] = useState<SortKey>('memberName')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
+  const { pageSize: PAGE_SIZE } = useDefaultPageSize()
+  useEffect(() => setPage(1), [PAGE_SIZE])
 
   const params = useMemo(() => resolveDateRange(preset, period, customRange), [preset, period, customRange])
   const { data: rows, isLoading, isError, refetch } = useDonationEngagementReport(params)

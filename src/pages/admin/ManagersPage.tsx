@@ -1,25 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UserCog, Search } from 'lucide-react'
-import { useManagers } from '@/hooks/useManagers'
+import { usePaginatedManagers } from '@/hooks/useManagers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { ManagerFormDialog } from '@/features/managers/ManagerFormDialog'
 import { ManagerStatusControl } from '@/features/managers/ManagerStatusControl'
 import { MemberStatusBadge } from '@/components/StatusBadge'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/Pagination'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState } from '@/components/StateViews'
 import { Input } from '@/components/ui/input'
 
 export default function ManagersPage() {
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const debouncedSearch = useDebouncedValue(search)
-  const { data: managers, isLoading } = useManagers({ search: debouncedSearch })
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setPage(1), [pageSize])
+  const { data, isLoading } = usePaginatedManagers({ search: debouncedSearch, page, pageSize })
+  const managers = data?.rows
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Managers"
-        description={managers ? `${managers.length} manager${managers.length === 1 ? '' : 's'}` : undefined}
+        description={data ? `${data.count} manager${data.count === 1 ? '' : 's'}` : undefined}
         actions={<ManagerFormDialog />}
       />
 
@@ -27,7 +33,10 @@ export default function ManagersPage() {
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
           placeholder="Search managers…"
           className="pl-9"
         />
@@ -58,6 +67,8 @@ export default function ManagersPage() {
           ))}
         </div>
       )}
+
+      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

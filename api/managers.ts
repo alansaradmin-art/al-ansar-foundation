@@ -31,12 +31,25 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (!requireAdmin(res, profile)) return
       const status = readQueryParam(req, 'status')
       const search = readQueryParam(req, 'search')?.trim()
-      let query = supabase.from('managers').select('*').order('full_name')
+      const pageParam = readQueryParam(req, 'page')
+      const pageSizeParam = readQueryParam(req, 'pageSize')
+
+      let query = supabase.from('managers').select('*', { count: 'exact' }).order('full_name')
       if (status) query = query.eq('status', status as ManagerStatus)
       if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)
-      const { data, error } = await query
+      // Pagination is opt-in: every existing dropdown/picker caller never
+      // sends page/pageSize and keeps getting the full flat list exactly
+      // as before — only the Admin Managers list page passes these.
+      if (pageParam && pageSizeParam) {
+        const page = Number(pageParam)
+        const pageSize = Number(pageSizeParam)
+        const from = (page - 1) * pageSize
+        query = query.range(from, from + pageSize - 1)
+      }
+
+      const { data, error, count } = await query
       if (error) return sendSupabaseError(res, error)
-      return sendJson(res, 200, { rows: data ?? [] })
+      return sendJson(res, 200, { rows: data ?? [], count: count ?? data?.length ?? 0 })
     }
 
     if (req.method === 'POST') {

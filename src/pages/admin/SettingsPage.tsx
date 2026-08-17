@@ -3,16 +3,26 @@ import { useAuth } from '@clerk/clerk-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useProfile } from '@/contexts/ProfileContext'
-import { getFollowUpPendingDay, setFollowUpPendingDay, getNonDonorThreshold, setNonDonorThreshold } from '@/services/settings'
+import {
+  getFollowUpPendingDay,
+  setFollowUpPendingDay,
+  getNonDonorThreshold,
+  setNonDonorThreshold,
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from '@/services/settings'
 import { queryKeys } from '@/lib/queryKeys'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingState } from '@/components/StateViews'
 import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 import { AppFooter } from '@/components/AppFooter'
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 export default function SettingsPage() {
   const { getToken } = useAuth()
@@ -65,6 +75,31 @@ export default function SettingsPage() {
       toast.error(getFriendlyErrorMessage(error, 'Unable to save this setting.'))
     } finally {
       setSavingThreshold(false)
+    }
+  }
+
+  const { data: pageSize, isLoading: isPageSizeLoading } = useQuery({
+    queryKey: queryKeys.settings.defaultPageSize,
+    queryFn: () => getDefaultPageSize(getToken),
+  })
+
+  const [pageSizeValue, setPageSizeValue] = useState<number>(10)
+  const [savingPageSize, setSavingPageSize] = useState(false)
+
+  useEffect(() => {
+    if (pageSize != null) setPageSizeValue(pageSize)
+  }, [pageSize])
+
+  async function handleSavePageSize() {
+    setSavingPageSize(true)
+    try {
+      await setDefaultPageSize(getToken, pageSizeValue)
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.defaultPageSize })
+      toast.success('Setting saved.')
+    } catch (error) {
+      toast.error(getFriendlyErrorMessage(error, 'Unable to save this setting.'))
+    } finally {
+      setSavingPageSize(false)
     }
   }
 
@@ -132,6 +167,42 @@ export default function SettingsPage() {
               </div>
               <Button onClick={handleSaveThreshold} disabled={savingThreshold}>
                 {savingThreshold ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Listing Page Size</CardTitle>
+          <CardDescription>
+            The number of rows shown per page on Members, Donations, Follow-ups, Audit Logs, Managers, and the
+            Donation Engagement report — for both Admin and Manager views.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isPageSizeLoading ? (
+            <LoadingState label="Loading…" />
+          ) : (
+            <div className="flex items-end gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="page-size">Rows per page</Label>
+                <Select value={String(pageSizeValue)} onValueChange={(v) => setPageSizeValue(Number(v))}>
+                  <SelectTrigger id="page-size" className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleSavePageSize} disabled={savingPageSize}>
+                {savingPageSize ? 'Saving…' : 'Save'}
               </Button>
             </div>
           )}

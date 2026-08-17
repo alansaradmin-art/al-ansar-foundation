@@ -27,3 +27,12 @@ export async function getNonDonorThreshold(getToken: GetToken): Promise<number> 
 export async function setNonDonorThreshold(getToken: GetToken, percent: number): Promise<void> {
   await apiClient.put('/api/settings', getToken, { percent }, { action: 'nonDonorThreshold' })
 }
+
+export async function getDefaultPageSize(getToken: GetToken): Promise<number> {
+  const { pageSize } = await apiClient.get<{ pageSize: number }>('/api/settings', getToken, { action: 'pageSize' })
+  return pageSize
+}
+
+export async function setDefaultPageSize(getToken: GetToken, pageSize: number): Promise<void> {
+  await apiClient.put('/api/settings', getToken, { pageSize }, { action: 'pageSize' })
+}

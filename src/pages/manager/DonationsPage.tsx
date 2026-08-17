@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Receipt } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDonations } from '@/hooks/useDonations'
 import { useManagerDashboard } from '@/hooks/useDashboard'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -17,11 +18,13 @@ export default function DonationsPage() {
   const { profile } = useProfile()
   const { period, setPeriod } = usePeriodSelector()
   const [page, setPage] = useState(1)
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setPage(1), [pageSize])
   const { data, isLoading, isError, refetch } = useAdminDonations({
     month: period?.month,
     year: period?.year,
     page,
-    pageSize: 20,
+    pageSize,
   })
   // Period total/count come from the dashboard RPC, not from summing the
   // current page's rows — that undercounts once a month has more than
@@ -65,7 +68,7 @@ export default function DonationsPage() {
         </div>
       )}
 
-      {data && <Pagination page={page} pageSize={20} total={data.count} onPageChange={setPage} />}
+      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

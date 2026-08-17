@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { useAuditLogs, useAuditLogActors } from '@/hooks/useAuditLogs'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
@@ -12,8 +13,6 @@ import { AuditLogEntry } from '@/features/auditLogs/AuditLogEntry'
 import { ACTION_TYPE_OPTIONS, findActionTypeOption } from '@/features/auditLogs/ActionTypeOptions'
 import { FOLLOW_UP_METHOD_LABELS, FOLLOW_UP_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/features/auditLogs/labels'
 import type { FollowUpMethod, FollowUpStatus, Member, PaymentMethod } from '@/types'
-
-const PAGE_SIZE = 20
 
 export default function AuditLogsPage() {
   const [actionType, setActionType] = useState('ALL')
@@ -30,6 +29,8 @@ export default function AuditLogsPage() {
   const isDonationAction = selectedAction?.entityType === 'donations'
 
   const { data: actors = [] } = useAuditLogActors()
+  const { pageSize: PAGE_SIZE } = useDefaultPageSize()
+  useEffect(() => setPage(1), [PAGE_SIZE])
   const { data, isLoading, isError, refetch } = useAuditLogs({
     entityType: selectedAction?.entityType,
     action: selectedAction?.action,

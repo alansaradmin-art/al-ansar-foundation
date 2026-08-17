@@ -56,6 +56,27 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { percent })
     }
 
+    if (req.method === 'GET' && action === 'pageSize') {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'DEFAULT_PAGE_SIZE')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { pageSize: Number(data.value) })
+    }
+
+    if (req.method === 'PUT' && action === 'pageSize') {
+      if (!requireAdmin(res, profile)) return
+      const { pageSize } = await readJsonBody<{ pageSize: number }>(req)
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ value: pageSize, updated_by: profile.id, updated_at: new Date().toISOString() })
+        .eq('key', 'DEFAULT_PAGE_SIZE')
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { pageSize })
+    }
+
     sendError(res, 404, 'Not found.')
   } catch (error) {
     console.error('[api/settings]', error)

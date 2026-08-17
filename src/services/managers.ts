@@ -1,5 +1,5 @@
 import { apiClient, ApiError, type GetToken } from '@/lib/apiClient'
-import type { Manager, ManagerStatus } from '@/types'
+import type { Manager, ManagerStatus, PaginatedResult } from '@/types'
 import type { ManagerFormValues } from '@/schemas/manager.schema'
 
 export async function listManagers(
@@ -8,6 +8,16 @@ export async function listManagers(
 ): Promise<Manager[]> {
   const { rows } = await apiClient.get<{ rows: Manager[] }>('/api/managers', getToken, { ...params })
   return rows
+}
+
+export async function listManagersPaginated(
+  getToken: GetToken,
+  params: { status?: ManagerStatus; search?: string; page: number; pageSize: number },
+): Promise<PaginatedResult<Manager>> {
+  const { rows, count } = await apiClient.get<{ rows: Manager[]; count: number }>('/api/managers', getToken, {
+    ...params,
+  })
+  return { rows, count }
 }
 
 export async function getManagerById(getToken: GetToken, id: string): Promise<Manager | null> {

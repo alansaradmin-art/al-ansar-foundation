@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDonations } from '@/hooks/useDonations'
 import { useManagers } from '@/hooks/useManagers'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -47,6 +48,8 @@ export default function AdminDonationsPage() {
   const [page, setPage] = useState(1)
 
   const { data: managers = [] } = useManagers()
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setPage(1), [pageSize])
   const { data, isLoading, isError, refetch } = useAdminDonations({
     month: period?.month,
     year: period?.year,
@@ -54,7 +57,7 @@ export default function AdminDonationsPage() {
     paymentMethod: paymentMethod === 'ALL' ? undefined : paymentMethod,
     donationType: donationType === 'ALL' ? undefined : donationType,
     page,
-    pageSize: 25,
+    pageSize,
   })
 
   function handleExport() {
@@ -186,7 +189,7 @@ export default function AdminDonationsPage() {
         </Table>
       )}
 
-      {data && <Pagination page={page} pageSize={25} total={data.count} onPageChange={setPage} />}
+      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }

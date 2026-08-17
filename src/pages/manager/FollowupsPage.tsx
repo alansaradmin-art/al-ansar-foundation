@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ClipboardList, PartyPopper } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminFollowups, usePendingFollowups } from '@/hooks/useFollowups'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -18,6 +19,8 @@ export default function ManagerFollowupsPage() {
   const { profile } = useProfile()
   const { period, setPeriod } = usePeriodSelector()
   const [historyPage, setHistoryPage] = useState(1)
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setHistoryPage(1), [pageSize])
 
   const {
     data: pendingMembers,
@@ -31,7 +34,7 @@ export default function ManagerFollowupsPage() {
     isLoading: isHistoryLoading,
     isError: isHistoryError,
     refetch: refetchHistory,
-  } = useAdminFollowups({ month: period?.month, year: period?.year, page: historyPage, pageSize: 20 })
+  } = useAdminFollowups({ month: period?.month, year: period?.year, page: historyPage, pageSize })
 
   return (
     <div className="space-y-4 p-4">
@@ -92,7 +95,7 @@ export default function ManagerFollowupsPage() {
               ))}
             </div>
           )}
-          {history && <Pagination page={historyPage} pageSize={20} total={history.count} onPageChange={setHistoryPage} />}
+          {history && <Pagination page={historyPage} pageSize={pageSize} total={history.count} onPageChange={setHistoryPage} />}
         </TabsContent>
       </Tabs>
     </div>

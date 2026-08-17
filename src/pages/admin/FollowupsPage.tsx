@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminFollowups, useOverdueFollowups } from '@/hooks/useFollowups'
 import { useManagers } from '@/hooks/useManagers'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -35,6 +36,8 @@ export default function AdminFollowupsPage() {
   const [page, setPage] = useState(1)
 
   const { data: managers = [] } = useManagers()
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setPage(1), [pageSize])
   const scopedManagerId = managerId === 'ALL' ? undefined : managerId
   const { data, isLoading, isError, refetch } = useAdminFollowups({
     month: period?.month,
@@ -42,7 +45,7 @@ export default function AdminFollowupsPage() {
     managerId: scopedManagerId,
     status: status === 'ALL' ? undefined : status,
     page,
-    pageSize: 25,
+    pageSize,
   })
 
   const {
@@ -141,7 +144,7 @@ export default function AdminFollowupsPage() {
             </Table>
           )}
 
-          {data && <Pagination page={page} pageSize={25} total={data.count} onPageChange={setPage} />}
+          {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
         </TabsContent>
 
         <TabsContent value="overdue" className="space-y-4">

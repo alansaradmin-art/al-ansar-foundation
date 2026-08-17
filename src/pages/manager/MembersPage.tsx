@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Users } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useMembers } from '@/hooks/useMembers'
 import { useMemberPeriodSummaries } from '@/hooks/useMemberPeriodSummaries'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
 import { MemberCard } from '@/features/members/MemberCard'
 import { PeriodSelector } from '@/components/PeriodSelector'
@@ -22,12 +23,14 @@ export default function MembersPage() {
   const [page, setPage] = useState(1)
   const debouncedSearch = useDebouncedValue(search)
 
+  const { pageSize } = useDefaultPageSize()
+  useEffect(() => setPage(1), [pageSize])
   const params = {
     managerId: profile!.manager_id!,
     search: debouncedSearch,
     status: status === 'ALL' ? undefined : status,
     page,
-    pageSize: 20,
+    pageSize,
   }
   const { data, isLoading, isError, refetch } = useMembers(params)
   const memberIds = data?.rows.map((m) => m.id) ?? []
@@ -78,7 +81,7 @@ export default function MembersPage() {
         </div>
       )}
 
-      {data && <Pagination page={page} pageSize={20} total={data.count} onPageChange={setPage} />}
+      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
     </div>
   )
 }
