@@ -23,6 +23,15 @@ export function usePendingFollowups(managerId: string | undefined, month: number
   })
 }
 
+export function useOverdueFollowups(managerId: string | undefined, month: number | undefined, year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.followups.overdue(managerId, month ?? 0, year ?? 0),
+    queryFn: () => followupsService.listOverdueFollowups(getToken, managerId, month!, year!),
+    enabled: month != null && year != null,
+  })
+}
+
 export function useAdminFollowups(filters: AdminFollowupFilters) {
   const { getToken } = useAuth()
   return useQuery({

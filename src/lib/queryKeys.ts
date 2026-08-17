@@ -7,6 +7,7 @@ export const queryKeys = {
     detail: (id: string) => ['members', 'detail', id] as const,
     picker: (query: string) => ['members', 'picker', query] as const,
     unassignedCount: ['members', 'unassigned-count'] as const,
+    incompleteCount: ['members', 'incomplete-count'] as const,
   },
   donations: {
     forMember: (memberId: string) => ['donations', 'member', memberId] as const,
@@ -16,6 +17,8 @@ export const queryKeys = {
     forMember: (memberId: string) => ['followups', 'member', memberId] as const,
     pending: (managerId: string | undefined, month: number, year: number) =>
       ['followups', 'pending', managerId, month, year] as const,
+    overdue: (managerId: string | undefined, month: number, year: number) =>
+      ['followups', 'overdue', managerId, month, year] as const,
     adminList: (filters: unknown) => ['followups', 'admin-list', filters] as const,
   },
   managers: {
@@ -36,6 +39,7 @@ export const queryKeys = {
   settings: {
     currentPeriod: ['settings', 'current-period'] as const,
     pendingDay: ['settings', 'pending-day'] as const,
+    nonDonorThreshold: ['settings', 'non-donor-threshold'] as const,
   },
   auditLogs: {
     list: (filters: unknown) => ['audit-logs', 'list', filters] as const,

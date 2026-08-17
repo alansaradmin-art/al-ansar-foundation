@@ -5,6 +5,7 @@ import { useAdminDashboard, useMemberGrowthTrend, useMonthlyDonationReport } fro
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
+import { NeedsAttentionSection } from '@/features/dashboard/NeedsAttentionSection'
 import { CardListSkeleton, StatGridSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { ErrorState, EmptyState } from '@/components/StateViews'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -146,6 +147,8 @@ export default function AdminDashboardPage() {
           />
         </div>
       )}
+
+      <NeedsAttentionSection period={period} />
 
       <Card>
         <CardHeader>

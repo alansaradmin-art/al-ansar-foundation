@@ -10,6 +10,25 @@ import { getFriendlyErrorMessage } from '@/lib/errors'
 import { formatMobileNumber } from '@/lib/format'
 import type { Member, Manager } from '@/types'
 
+/** Mirrors api/members.ts's INCOMPLETE_MEMBER_OR field set exactly, so the
+ * "why is this member incomplete" text always matches why it showed up in
+ * the filtered list in the first place. */
+function missingFields(member: Member): string[] {
+  const missing: string[] = []
+  if (!member.mobile_number?.trim()) missing.push('Mobile')
+  if (!member.address?.trim()) missing.push('Address')
+  if (!member.father_name?.trim()) missing.push("Father's Name")
+  if (!member.added_by_name?.trim()) missing.push('Added By')
+  if (!member.reference_contact_name?.trim()) missing.push('Reference Contact')
+  return missing
+}
+
+function MissingFieldsNote({ member }: { member: Member }) {
+  const missing = missingFields(member)
+  if (missing.length === 0) return null
+  return <p className="mt-0.5 text-xs font-medium text-gold-foreground">Missing: {missing.join(', ')}</p>
+}
+
 function StatusButton({ member }: { member: Member }) {
   const { mutate, isPending } = useSetMemberStatus()
   const nextStatus = member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
@@ -34,7 +53,15 @@ function StatusButton({ member }: { member: Member }) {
   )
 }
 
-export function AdminMemberCard({ member, managerName }: { member: Member; managerName?: string }) {
+export function AdminMemberCard({
+  member,
+  managerName,
+  showMissingFields,
+}: {
+  member: Member
+  managerName?: string
+  showMissingFields?: boolean
+}) {
   const subline = [member.father_name, formatMobileNumber(member.mobile_number)].filter(Boolean).join(' · ')
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
@@ -53,6 +80,7 @@ export function AdminMemberCard({ member, managerName }: { member: Member; manag
           <p className="mt-0.5 text-xs text-muted-foreground">
             {managerName ? `Manager: ${managerName}` : <UnassignedManagerBadge />}
           </p>
+          {showMissingFields && <MissingFieldsNote member={member} />}
         </div>
         <MemberStatusBadge status={member.status} />
       </div>
@@ -65,7 +93,15 @@ export function AdminMemberCard({ member, managerName }: { member: Member; manag
   )
 }
 
-export function AdminMemberTableRow({ member, managers }: { member: Member; managers: Manager[] }) {
+export function AdminMemberTableRow({
+  member,
+  managers,
+  showMissingFields,
+}: {
+  member: Member
+  managers: Manager[]
+  showMissingFields?: boolean
+}) {
   const managerName = managers.find((m) => m.id === member.assigned_manager_id)?.full_name
   return (
     <tr className="border-b last:border-0">
@@ -73,6 +109,7 @@ export function AdminMemberTableRow({ member, managers }: { member: Member; mana
         <Link to={`/admin/members/${member.id}`} className="font-medium hover:underline">
           {member.member_name}
         </Link>
+        {showMissingFields && <MissingFieldsNote member={member} />}
       </td>
       <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
       <td className="p-3 text-muted-foreground">{formatMobileNumber(member.mobile_number) || '—'}</td>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Upload, UserX, Users } from 'lucide-react'
-import { useMembers, useUnassignedMembersCount } from '@/hooks/useMembers'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Upload, UserX, Users, FileWarning } from 'lucide-react'
+import { useMembers, useUnassignedMembersCount, useIncompleteMembersCount } from '@/hooks/useMembers'
 import { useManagers } from '@/hooks/useManagers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
@@ -13,24 +13,29 @@ import { CardListSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import type { MemberStatus } from '@/types'
 
 const UNASSIGNED = 'UNASSIGNED'
 
 export default function AdminMembersPage() {
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<MemberStatus | 'ALL'>('ALL')
-  const [managerId, setManagerId] = useState<string>('ALL')
+  const [managerId, setManagerId] = useState<string>(searchParams.get('manager') === UNASSIGNED ? UNASSIGNED : 'ALL')
+  const [incomplete, setIncomplete] = useState(searchParams.get('incomplete') === 'true')
   const [page, setPage] = useState(1)
   const debouncedSearch = useDebouncedValue(search)
 
   const { data: managers = [] } = useManagers()
   const { data: unassignedCount = 0 } = useUnassignedMembersCount()
+  const { data: incompleteCount = 0 } = useIncompleteMembersCount()
   const { data, isLoading, isError, refetch } = useMembers({
     search: debouncedSearch,
     status: status === 'ALL' ? undefined : status,
     managerId: managerId === 'ALL' || managerId === UNASSIGNED ? undefined : managerId,
     unassigned: managerId === UNASSIGNED,
+    incomplete,
     page,
     pageSize: 20,
   })
@@ -100,6 +105,24 @@ export default function AdminMembersPage() {
             <UserX className="size-3.5" /> {unassignedCount} Unassigned
           </button>
         )}
+
+        {incompleteCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setIncomplete((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+              incomplete
+                ? 'border-gold bg-gold/20 text-gold-foreground'
+                : 'border-gold/40 bg-gold/10 text-gold-foreground hover:bg-gold/20',
+            )}
+          >
+            <FileWarning className="size-3.5" /> {incompleteCount} Incomplete
+          </button>
+        )}
       </div>
 
       {isLoading && (
@@ -125,6 +148,7 @@ export default function AdminMembersPage() {
                 key={member.id}
                 member={member}
                 managerName={managers.find((m) => m.id === member.assigned_manager_id)?.full_name}
+                showMissingFields={incomplete}
               />
             ))}
           </div>
@@ -144,7 +168,12 @@ export default function AdminMembersPage() {
               </thead>
               <tbody>
                 {data.rows.map((member) => (
-                  <AdminMemberTableRow key={member.id} member={member} managers={managers} />
+                  <AdminMemberTableRow
+                    key={member.id}
+                    member={member}
+                    managers={managers}
+                    showMissingFields={incomplete}
+                  />
                 ))}
               </tbody>
             </table>

@@ -35,6 +35,27 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { day })
     }
 
+    if (req.method === 'GET' && action === 'nonDonorThreshold') {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'NON_DONOR_ALERT_THRESHOLD')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { percent: Number(data.value) })
+    }
+
+    if (req.method === 'PUT' && action === 'nonDonorThreshold') {
+      if (!requireAdmin(res, profile)) return
+      const { percent } = await readJsonBody<{ percent: number }>(req)
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ value: percent, updated_by: profile.id, updated_at: new Date().toISOString() })
+        .eq('key', 'NON_DONOR_ALERT_THRESHOLD')
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { percent })
+    }
+
     sendError(res, 404, 'Not found.')
   } catch (error) {
     console.error('[api/settings]', error)

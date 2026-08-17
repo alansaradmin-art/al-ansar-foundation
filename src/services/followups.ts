@@ -40,6 +40,48 @@ export async function listPendingFollowups(
   return rows
 }
 
+export interface OverdueFollowupRow {
+  memberId: string
+  memberName: string
+  fatherName: string | null
+  memberDisplayId: string
+  assignedManagerId: string | null
+  managerName: string | null
+  lastFollowUpDate: string | null
+  lastFollowUpStatus: FollowUpStatus | null
+}
+
+/** managerId = undefined -> Admin view across every manager. */
+export async function listOverdueFollowups(
+  getToken: GetToken,
+  managerId: string | undefined,
+  month: number,
+  year: number,
+): Promise<OverdueFollowupRow[]> {
+  const { rows } = await apiClient.get<{
+    rows: {
+      member_id: string
+      member_name: string
+      father_name: string | null
+      member_display_id: string
+      assigned_manager_id: string | null
+      manager_name: string | null
+      last_follow_up_date: string | null
+      last_follow_up_status: FollowUpStatus | null
+    }[]
+  }>('/api/followups', getToken, { action: 'overdue', managerId, month, year })
+  return rows.map((r) => ({
+    memberId: r.member_id,
+    memberName: r.member_name,
+    fatherName: r.father_name,
+    memberDisplayId: r.member_display_id,
+    assignedManagerId: r.assigned_manager_id,
+    managerName: r.manager_name,
+    lastFollowUpDate: r.last_follow_up_date,
+    lastFollowUpStatus: r.last_follow_up_status,
+  }))
+}
+
 export interface AdminFollowupFilters {
   month?: number
   year?: number

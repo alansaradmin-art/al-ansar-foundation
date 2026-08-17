@@ -16,3 +16,14 @@ export async function setFollowUpPendingDay(getToken: GetToken, day: number, upd
   void updatedBy
   await apiClient.put('/api/settings', getToken, { day }, { action: 'pendingDay' })
 }
+
+export async function getNonDonorThreshold(getToken: GetToken): Promise<number> {
+  const { percent } = await apiClient.get<{ percent: number }>('/api/settings', getToken, {
+    action: 'nonDonorThreshold',
+  })
+  return percent
+}
+
+export async function setNonDonorThreshold(getToken: GetToken, percent: number): Promise<void> {
+  await apiClient.put('/api/settings', getToken, { percent }, { action: 'nonDonorThreshold' })
+}

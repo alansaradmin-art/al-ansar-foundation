@@ -14,6 +14,22 @@ import type { Database, MemberStatus } from '../src/types/database'
 type MemberRow = Database['public']['Tables']['members']['Row']
 type MemberInsert = Database['public']['Tables']['members']['Insert']
 
+// "Incomplete" = missing any of these — used by both ?action=incompleteCount
+// and the main list's ?incomplete=true filter, so the definition can't drift
+// between the count and the list it's counting.
+const INCOMPLETE_MEMBER_OR = [
+  'mobile_number.is.null',
+  'mobile_number.eq.',
+  'address.is.null',
+  'address.eq.',
+  'father_name.is.null',
+  'father_name.eq.',
+  'added_by_name.is.null',
+  'added_by_name.eq.',
+  'reference_contact_name.is.null',
+  'reference_contact_name.eq.',
+].join(',')
+
 function toMemberRow(values: Partial<MemberInsert>): MemberInsert {
   return {
     member_name: values.member_name ?? '',
@@ -83,6 +99,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { count: count ?? 0 })
     }
 
+    if (req.method === 'GET' && action === 'incompleteCount') {
+      if (!requireAdmin(res, profile)) return
+      const { count, error } = await supabase
+        .from('members')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'ACTIVE')
+        .or(INCOMPLETE_MEMBER_OR)
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { count: count ?? 0 })
+    }
+
     if (req.method === 'GET' && action === 'checkIds') {
       if (!requireAdmin(res, profile)) return
       const ids = (readQueryParam(req, 'ids') ?? '').split(',').filter(Boolean)
@@ -114,6 +141,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
       if (managerScope) query = query.eq('assigned_manager_id', managerScope)
       else if (readQueryParam(req, 'unassigned') === 'true') query = query.is('assigned_manager_id', null)
+      if (readQueryParam(req, 'incomplete') === 'true') query = query.or(INCOMPLETE_MEMBER_OR)
       if (status) query = query.eq('status', status as MemberStatus)
       if (search) {
         query = query.or(

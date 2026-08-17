@@ -1,4 +1,4 @@
-import { authenticate, getServiceRoleClient, resolveManagerScope, sendForbiddenUnlessManager } from './_lib/auth.js'
+import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope, sendForbiddenUnlessManager } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 import { logInsert } from './_lib/auditLog.js'
 import type { Database, FollowUpStatus } from '../src/types/database'
@@ -42,6 +42,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const year = Number(readQueryParam(req, 'year'))
       const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
       const { data, error } = await supabase.rpc('list_pending_followups', {
+        p_manager_id: managerScope ?? null,
+        p_month: month,
+        p_year: year,
+      })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (req.method === 'GET' && action === 'overdue') {
+      if (!requireAdmin(res, profile)) return
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
+      const { data, error } = await supabase.rpc('admin_overdue_followups', {
         p_manager_id: managerScope ?? null,
         p_month: month,
         p_year: year,

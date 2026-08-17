@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useManagerWiseReport, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
@@ -32,7 +33,11 @@ const PAYMENT_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
+const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement'])
+
 export default function ReportsPage() {
+  const [searchParams] = useSearchParams()
+  const initialTab = searchParams.get('tab')
   const { period, setPeriod } = usePeriodSelector()
   const [year, setYear] = useState(new Date().getFullYear())
 
@@ -98,7 +103,7 @@ export default function ReportsPage() {
     <div className="space-y-4">
       <PageHeader title="Reports" description="Manager performance and month-over-month donation trends" />
 
-      <Tabs defaultValue="manager">
+      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'manager'}>
         <TabsList>
           <TabsTrigger value="manager">Manager-wise</TabsTrigger>
           <TabsTrigger value="month">Month-wise</TabsTrigger>

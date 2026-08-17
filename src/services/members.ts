@@ -5,6 +5,7 @@ import type { MemberFormValues } from '@/schemas/member.schema'
 export interface ListMembersParams {
   managerId?: string
   unassigned?: boolean
+  incomplete?: boolean
   search?: string
   status?: MemberStatus
   page?: number
@@ -12,8 +13,12 @@ export interface ListMembersParams {
 }
 
 export async function listMembers(getToken: GetToken, params: ListMembersParams = {}): Promise<PaginatedResult<Member>> {
-  const { unassigned, ...rest } = params
-  return apiClient.get('/api/members', getToken, { ...rest, ...(unassigned ? { unassigned: 'true' } : {}) })
+  const { unassigned, incomplete, ...rest } = params
+  return apiClient.get('/api/members', getToken, {
+    ...rest,
+    ...(unassigned ? { unassigned: 'true' } : {}),
+    ...(incomplete ? { incomplete: 'true' } : {}),
+  })
 }
 
 export async function getMemberById(getToken: GetToken, id: string): Promise<Member | null> {
@@ -59,5 +64,10 @@ export async function countMembersForManager(getToken: GetToken, managerId: stri
 
 export async function getUnassignedMembersCount(getToken: GetToken): Promise<number> {
   const { count } = await apiClient.get<{ count: number }>('/api/members', getToken, { action: 'unassignedCount' })
+  return count
+}
+
+export async function getIncompleteMembersCount(getToken: GetToken): Promise<number> {
+  const { count } = await apiClient.get<{ count: number }>('/api/members', getToken, { action: 'incompleteCount' })
   return count
 }

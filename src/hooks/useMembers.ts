@@ -32,6 +32,14 @@ export function useUnassignedMembersCount() {
   })
 }
 
+export function useIncompleteMembersCount() {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.members.incompleteCount,
+    queryFn: () => membersService.getIncompleteMembersCount(getToken),
+  })
+}
+
 export function useMemberPicker(query: string) {
   const { getToken } = useAuth()
   return useQuery({

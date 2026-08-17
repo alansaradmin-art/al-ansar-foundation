@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowUpDown, ChevronDown, ChevronUp, Download, IndianRupee, Search, UserCheck, Users, UserX } from 'lucide-react'
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from 'date-fns'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
@@ -26,6 +26,23 @@ const PRESET_LABELS: Record<Preset, string> = {
   THIS_YEAR: 'This Year',
   NEVER_DONATED: 'Never Donated',
   CUSTOM: 'Custom Range',
+}
+
+type StatusFilter = 'ALL' | 'DONATED' | 'NOT_DONATED'
+
+const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
+  ALL: 'All Statuses',
+  DONATED: 'Donated',
+  NOT_DONATED: 'Not Donated',
+}
+
+/** Maps the Dashboard's deep-link ?status= value to this filter — kept
+ * separate from STATUS_FILTER_LABELS' keys since the URL uses a shorter,
+ * link-friendly spelling ("notDonated") than the internal enum. */
+function statusFilterFromParam(value: string | null): StatusFilter {
+  if (value === 'notDonated') return 'NOT_DONATED'
+  if (value === 'donated') return 'DONATED'
+  return 'ALL'
 }
 
 type SortKey =
@@ -147,10 +164,12 @@ function EngagementRowCard({ row }: { row: DonationEngagementRow }) {
 }
 
 export function DonationEngagementReport() {
+  const [searchParams] = useSearchParams()
   const { period } = usePeriodSelector()
   const [preset, setPreset] = useState<Preset>('THIS_MONTH')
   const [customRange, setCustomRange] = useState<DateRangeValue | undefined>(undefined)
-  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(statusFilterFromParam(searchParams.get('status')))
+  const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [sortKey, setSortKey] = useState<SortKey>('memberName')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
@@ -161,10 +180,12 @@ export function DonationEngagementReport() {
 
   const filtered = useMemo(() => {
     const list = rows ?? []
+    const byStatus =
+      statusFilter === 'ALL' ? list : list.filter((r) => (statusFilter === 'DONATED' ? r.donated : !r.donated))
     const q = debouncedSearch.trim().toLowerCase()
     const searched = !q
-      ? list
-      : list.filter(
+      ? byStatus
+      : byStatus.filter(
           (r) =>
             r.memberName.toLowerCase().includes(q) ||
             (r.fatherName ?? '').toLowerCase().includes(q) ||
@@ -173,7 +194,7 @@ export function DonationEngagementReport() {
         )
     const sorted = [...searched].sort((a, b) => compareRows(a, b, sortKey) * (sortDir === 'asc' ? 1 : -1))
     return sorted
-  }, [rows, debouncedSearch, sortKey, sortDir])
+  }, [rows, statusFilter, debouncedSearch, sortKey, sortDir])
 
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
@@ -234,6 +255,27 @@ export function DonationEngagementReport() {
               setPage(1)
             }}
           />
+        )}
+
+        {preset !== 'NEVER_DONATED' && (
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v as StatusFilter)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(STATUS_FILTER_LABELS) as StatusFilter[]).map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_FILTER_LABELS[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
 
         {params?.dateFrom && params?.dateTo && (
