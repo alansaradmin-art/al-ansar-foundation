@@ -9,6 +9,7 @@ import {
   sendSupabaseError,
 } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
+import { normalizeMobileNumber } from './_lib/phone.js'
 import type { Database, MemberStatus } from '../src/types/database'
 
 type MemberRow = Database['public']['Tables']['members']['Row']
@@ -34,7 +35,7 @@ function toMemberRow(values: Partial<MemberInsert>): MemberInsert {
   return {
     member_name: values.member_name ?? '',
     father_name: values.father_name || null,
-    mobile_number: values.mobile_number || null,
+    mobile_number: values.mobile_number ? normalizeMobileNumber(values.mobile_number) : null,
     address: values.address || null,
     added_by_type: values.added_by_type ?? null,
     added_by_id: values.added_by_type === 'REGISTERED_MEMBER' ? (values.added_by_id ?? null) : null,
@@ -117,6 +118,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const { data, error } = await supabase.from('members').select('member_id').in('member_id', ids)
       if (error) return sendSupabaseError(res, error)
       return sendJson(res, 200, { existingIds: (data ?? []).map((m) => m.member_id) })
+    }
+
+    if (req.method === 'GET' && action === 'checkMobileNumbers') {
+      if (!requireAdmin(res, profile)) return
+      const raw = (readQueryParam(req, 'numbers') ?? '').split(',').filter(Boolean)
+      const normalized = [...new Set(raw.map(normalizeMobileNumber).filter(Boolean))]
+      if (normalized.length === 0) return sendJson(res, 200, { existingNumbers: [] })
+      const { data, error } = await supabase.from('members').select('mobile_number').in('mobile_number', normalized)
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { existingNumbers: (data ?? []).map((m) => m.mobile_number) })
     }
 
     if (req.method === 'GET' && id) {

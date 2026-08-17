@@ -53,18 +53,22 @@ const COUNTRY_CODES: { code: string; localLength: number }[] = [
   { code: '968', localLength: 8 }, // Oman
 ]
 
-/** Strips a leading country code (+91, +966, 00971, ...) from a stored
- * mobile number for display. Only strips when there's real evidence a code
- * is actually present — an explicit "+"/"00" international prefix, or the
- * total digit count exactly matching code+local length for that country —
- * so a bare local number that happens to start with the same digits as a
- * country code (e.g. an Indian "91XXXXXXXX" number) is left alone rather
- * than mis-trimmed. Unrecognized country codes are left as-is; this isn't a
- * full E.164 parser, just coverage for where this foundation's members are.
- * "+919167463126" -> "9167463126", "+966501234567" -> "501234567". Display
- * only — never used for tel:/wa.me links, which need the full number. */
-export function formatMobileNumber(phone: string | null | undefined): string {
-  if (!phone) return ''
+/** Strips a leading country code (+91, +966, 00971, ...) down to the bare
+ * local number. Only strips when there's real evidence a code is actually
+ * present — an explicit "+"/"00" international prefix, or the total digit
+ * count exactly matching code+local length for that country — so a bare
+ * local number that happens to start with the same digits as a country code
+ * (e.g. an Indian "91XXXXXXXX" number) is left alone rather than
+ * mis-trimmed. Unrecognized country codes are left as-is; this isn't a full
+ * E.164 parser, just coverage for where this foundation's members are.
+ * "+919167463126" -> "9167463126", "+966501234567" -> "501234567".
+ *
+ * This is the canonical form used both for display (formatMobileNumber
+ * below) and for storage/uniqueness comparison (api/members.ts's
+ * toMemberRow, via api/_lib/phone.ts's server-side copy of this same
+ * function — keep both in sync). Never used for tel:/wa.me links, which
+ * need the full number as entered. */
+export function normalizeMobileNumber(phone: string): string {
   const trimmed = phone.trim()
   let digits = trimmed.replace(/\D/g, '')
   const hasIntlPrefix = trimmed.startsWith('+') || digits.startsWith('00')
@@ -76,4 +80,11 @@ export function formatMobileNumber(phone: string | null | undefined): string {
     }
   }
   return digits
+}
+
+/** Display-only wrapper around normalizeMobileNumber — see that function
+ * for the actual stripping rules. */
+export function formatMobileNumber(phone: string | null | undefined): string {
+  if (!phone) return ''
+  return normalizeMobileNumber(phone)
 }

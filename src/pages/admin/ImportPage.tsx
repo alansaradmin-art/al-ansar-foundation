@@ -12,6 +12,7 @@ import { apiClient } from '@/lib/apiClient'
 import { useQueryClient } from '@tanstack/react-query'
 import { parseCsv } from '@/lib/csv'
 import { getFriendlyErrorMessage } from '@/lib/errors'
+import { normalizeMobileNumber } from '@/lib/format'
 import { guessColumnMapping } from '@/features/members/import/columnMapping'
 import { importRowSchema, IMPORT_COLUMNS, type ImportRow } from '@/schemas/import.schema'
 
@@ -64,13 +65,21 @@ export default function ImportPage() {
     })
 
     const seenIds = new Set<string>()
+    const seenNumbers = new Set<string>()
     const fileMemberIds = mappedRows.map((r) => r.member_id).filter(Boolean)
-    const { existingIds: existingIdsList } = await apiClient.get<{ existingIds: string[] }>(
-      '/api/members',
-      getToken,
-      { action: 'checkIds', ids: fileMemberIds.join(',') },
-    )
+    const fileMobileNumbers = mappedRows.map((r) => r.mobile_number).filter(Boolean)
+    const [{ existingIds: existingIdsList }, { existingNumbers: existingNumbersList }] = await Promise.all([
+      apiClient.get<{ existingIds: string[] }>('/api/members', getToken, {
+        action: 'checkIds',
+        ids: fileMemberIds.join(','),
+      }),
+      apiClient.get<{ existingNumbers: string[] }>('/api/members', getToken, {
+        action: 'checkMobileNumbers',
+        numbers: fileMobileNumbers.join(','),
+      }),
+    ])
     const existingIds = new Set(existingIdsList)
+    const existingNumbers = new Set(existingNumbersList)
 
     const rows: PreviewRow[] = mappedRows.map((raw) => {
       const errors: string[] = []
@@ -84,6 +93,16 @@ export default function ImportPage() {
         if (existingIds.has(memberId)) errors.push('Member ID already exists in the system.')
         if (seenIds.has(memberId)) errors.push('Duplicate Member ID within this file.')
         seenIds.add(memberId)
+      }
+
+      const mobileNumber = raw.mobile_number?.trim()
+      if (mobileNumber) {
+        const normalized = normalizeMobileNumber(mobileNumber)
+        if (normalized) {
+          if (existingNumbers.has(normalized)) errors.push('Mobile number already exists in the system.')
+          if (seenNumbers.has(normalized)) errors.push('Duplicate mobile number within this file.')
+          seenNumbers.add(normalized)
+        }
       }
 
       let managerId: string | null = null
