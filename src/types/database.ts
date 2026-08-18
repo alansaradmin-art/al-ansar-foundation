@@ -135,6 +135,7 @@ export interface Database {
           contacted_person_phone: string | null
           contacted_person_relationship: string | null
           remarks: string | null
+          next_follow_up_date: string | null
           created_by: string
           created_at: string
           updated_at: string
@@ -186,6 +187,33 @@ export interface Database {
           value: unknown
         }
         Update: Partial<Database['public']['Tables']['app_settings']['Row']>
+        Relationships: []
+      }
+      member_documents: {
+        Row: {
+          id: string
+          member_id: string
+          file_name: string
+          storage_path: string
+          file_size: number
+          content_type: string
+          uploaded_by: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['member_documents']['Row']> & {
+          member_id: string
+          file_name: string
+          storage_path: string
+          file_size: number
+          content_type: string
+          uploaded_by: string
+        }
+        Update: Partial<Database['public']['Tables']['member_documents']['Row']>
         Relationships: []
       }
     }

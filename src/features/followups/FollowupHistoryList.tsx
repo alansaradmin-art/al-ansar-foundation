@@ -52,6 +52,9 @@ function FollowupRow({ followup: f }: { followup: MonthlyFollowup }) {
         )}
       </dl>
       {f.remarks && <p className="text-sm text-muted-foreground">{f.remarks}</p>}
+      {f.next_follow_up_date && (
+        <p className="text-xs font-medium text-gold-foreground">Next follow-up: {formatDate(f.next_follow_up_date)}</p>
+      )}
     </li>
   )
 }

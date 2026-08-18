@@ -71,6 +71,7 @@ export function FollowupForm({
       contacted_person_phone: '',
       contacted_person_relationship: '',
       remarks: '',
+      next_follow_up_date: '',
     },
   })
 
@@ -234,6 +235,20 @@ export function FollowupForm({
               <FormLabel>Remarks (optional)</FormLabel>
               <FormControl>
                 <Textarea rows={2} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="next_follow_up_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Next Follow-up Date (optional)</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -1,4 +1,4 @@
-import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth.js'
+import { authenticate, getServiceRoleClient } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 import type { Database, FollowUpStatus, FollowUpMethod, PaymentMethod } from '../src/types/database'
 
@@ -27,15 +27,36 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   const profile = await authenticate(req, res)
   if (!profile) return
-  if (!requireAdmin(res, profile)) return
   const supabase = getServiceRoleClient()
+  const action = readQueryParam(req, 'action')
+  const memberId = readQueryParam(req, 'memberId')
+
+  // Admin keeps full access (the standalone Audit Logs page: unscoped list,
+  // any filter, the actors picker). A Manager may only ever ask for one of
+  // their own member's timelines — this is Member 360's Activity Timeline
+  // tab, not a general audit log browser — so memberId is required and its
+  // ownership is verified the same way api/donations.ts's ?action=forMember
+  // does it.
+  if (profile.role !== 'ADMIN') {
+    if (action === 'actors' || !memberId) return sendError(res, 403, 'Admins only.')
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('assigned_manager_id')
+      .eq('id', memberId!)
+      .maybeSingle()
+    if (memberError) return sendSupabaseError(res, memberError)
+    if (!member || member.assigned_manager_id !== profile.managerId) {
+      return sendError(res, 404, 'Member not found.')
+    }
+  }
 
   try {
     // GET /api/audit-logs?action=actors — the data source for the
     // "Manager/User" filter. Deliberately includes inactive profiles too:
     // a deactivated manager's historical audit entries must stay
-    // filterable by name, not disappear from the picker.
-    if (readQueryParam(req, 'action') === 'actors') {
+    // filterable by name, not disappear from the picker. Admin-only (see
+    // the gate above).
+    if (action === 'actors') {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, role')
@@ -46,11 +67,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
 
     const entityType = readQueryParam(req, 'entityType')
-    const action = readQueryParam(req, 'action')
     const dateFrom = readQueryParam(req, 'dateFrom')
     const dateTo = readQueryParam(req, 'dateTo')
     const actorProfileId = readQueryParam(req, 'actorProfileId')
-    const memberId = readQueryParam(req, 'memberId')
     const followUpStatus = readQueryParam(req, 'followUpStatus') as FollowUpStatus | undefined
     const followUpMethod = readQueryParam(req, 'followUpMethod') as FollowUpMethod | undefined
     const paymentMethod = readQueryParam(req, 'paymentMethod') as PaymentMethod | undefined

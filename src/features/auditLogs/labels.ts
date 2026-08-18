@@ -66,6 +66,7 @@ export const FIELD_LABELS: Record<string, string> = {
   contacted_person_phone: 'Contact Phone',
   contacted_person_relationship: 'Relationship',
   remarks: 'Remarks',
+  next_follow_up_date: 'Next Follow-up Date',
 }
 
 /** Skipped from the generic before/after diff — either pure noise

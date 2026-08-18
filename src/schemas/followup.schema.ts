@@ -20,6 +20,7 @@ export const followupFormSchema = z
     contacted_person_phone: optionalPhoneSchema,
     contacted_person_relationship: z.string().trim().optional().or(z.literal('')),
     remarks: z.string().trim().optional().or(z.literal('')),
+    next_follow_up_date: z.string().trim().optional().or(z.literal('')),
     // Not a visible form field — set only when resubmitting after the
     // user confirmed a possible-duplicate warning (see
     // useDuplicateConfirmation), so the server skips its soft check.

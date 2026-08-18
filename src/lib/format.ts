@@ -47,6 +47,13 @@ export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
 }
 
+/** Bytes -> "1.2 MB" — used for uploaded document sizes. */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 /** Country calling code -> expected local (subscriber) number length, for
  * every country this foundation's members are known to have numbers from.
  * Local length varies by country (India's mobiles are 10 digits, Saudi

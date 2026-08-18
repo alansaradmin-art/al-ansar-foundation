@@ -16,9 +16,13 @@ import type { Donation } from '@/types'
 export function AddDonationDialog({
   memberId,
   variant = 'default',
+  size = 'lg',
+  className = 'flex-1',
 }: {
   memberId: string
   variant?: 'outline' | 'default'
+  size?: 'default' | 'sm' | 'lg'
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const { profile } = useProfile()
@@ -58,7 +62,7 @@ export function AddDonationDialog({
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button size="lg" variant={variant} className="flex-1">
+          <Button size={size} variant={variant} className={className}>
             <Plus className="size-4" /> Add Donation
           </Button>
         </DialogTrigger>

@@ -53,6 +53,9 @@ export function FollowupListItem({
           : CONTACTED_LABELS[f.contacted_person_type ?? 'OTHER']}
       </p>
       {f.remarks && <p className="text-sm text-muted-foreground">{f.remarks}</p>}
+      {f.next_follow_up_date && (
+        <p className="text-xs font-medium text-gold-foreground">Next follow-up: {formatDate(f.next_follow_up_date)}</p>
+      )}
     </Link>
   )
 }

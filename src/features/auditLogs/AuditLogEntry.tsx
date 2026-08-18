@@ -62,10 +62,12 @@ function FollowupDetail({ data, managerName }: { data: Record<string, unknown>; 
   const contactPhone = str(data, 'contacted_person_phone')
   const relationship = str(data, 'contacted_person_relationship')
   const remarks = str(data, 'remarks')
+  const nextFollowUpDate = str(data, 'next_follow_up_date')
 
   return (
     <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
       {date && <Field label="Follow-up Date">{formatDate(date)}</Field>}
+      {nextFollowUpDate && <Field label="Next Follow-up">{formatDate(nextFollowUpDate)}</Field>}
       {status && (
         <Field label="Status">
           <FollowupStatusBadge status={status} />
@@ -121,9 +123,21 @@ const ACTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'destructiv
   monthly_followups_created: 'secondary',
   managers_created: 'secondary',
   managers_updated: 'outline',
+  member_documents_created: 'secondary',
+  member_documents_updated: 'destructive',
 }
 
-export function AuditLogEntry({ log }: { log: AuditLogWithActor }) {
+export function AuditLogEntry({
+  log,
+  hideMemberInfo = false,
+}: {
+  log: AuditLogWithActor
+  /** Set when this entry is already rendered inside that same member's own
+   * Member 360 page (the Activity Timeline tab) — the member-name header
+   * line would just be a redundant self-reference there, and its link
+   * always points at the admin member route, which a Manager can't open. */
+  hideMemberInfo?: boolean
+}) {
   const actionOption = findActionTypeOption(log.action)
   const isUpdate = log.action.endsWith('_updated')
   const data = asRecord(log.new_value) ?? asRecord(log.old_value)
@@ -134,7 +148,7 @@ export function AuditLogEntry({ log }: { log: AuditLogWithActor }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1.5">
           <Badge variant={ACTION_BADGE_VARIANT[log.action] ?? 'outline'}>{actionOption?.label ?? log.action}</Badge>
-          {log.memberName && (
+          {!hideMemberInfo && log.memberName && (
             <p className="font-medium">
               {log.memberRowId ? (
                 <Link to={`/admin/members/${log.memberRowId}`} className="hover:underline">

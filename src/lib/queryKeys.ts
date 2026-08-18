@@ -48,6 +48,9 @@ export const queryKeys = {
     list: (filters: unknown) => ['audit-logs', 'list', filters] as const,
     actors: ['audit-logs', 'actors'] as const,
   },
+  documents: {
+    forMember: (memberId: string) => ['documents', 'member', memberId] as const,
+  },
   profile: {
     current: (clerkUserId: string | undefined) => ['current-profile', clerkUserId] as const,
   },

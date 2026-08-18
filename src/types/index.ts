@@ -6,6 +6,7 @@ export type Member = Database['public']['Tables']['members']['Row']
 export type Donation = Database['public']['Tables']['donations']['Row']
 export type MonthlyFollowup = Database['public']['Tables']['monthly_followups']['Row']
 export type AuditLog = Database['public']['Tables']['audit_logs']['Row']
+export type MemberDocument = Database['public']['Tables']['member_documents']['Row']
 
 export type {
   Role,

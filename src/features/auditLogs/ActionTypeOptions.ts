@@ -25,6 +25,18 @@ export const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
   },
   { value: 'managers_created', label: 'Manager Added', entityType: 'managers', action: 'managers_created' },
   { value: 'managers_updated', label: 'Manager Updated', entityType: 'managers', action: 'managers_updated' },
+  {
+    value: 'member_documents_created',
+    label: 'Document Uploaded',
+    entityType: 'member_documents',
+    action: 'member_documents_created',
+  },
+  {
+    value: 'member_documents_updated',
+    label: 'Document Removed',
+    entityType: 'member_documents',
+    action: 'member_documents_updated',
+  },
 ]
 
 export function findActionTypeOption(value: string | undefined): ActionTypeOption | undefined {

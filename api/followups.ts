@@ -164,6 +164,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           contacted_person_phone: values.contacted_person_phone || null,
           contacted_person_relationship: values.contacted_person_relationship || null,
           remarks: values.remarks || null,
+          next_follow_up_date: values.next_follow_up_date || null,
           created_by: profile.id,
         })
         .select('*')
