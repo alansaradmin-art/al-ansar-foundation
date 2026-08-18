@@ -13,6 +13,7 @@ import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/StateViews'
+import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import type { Period } from '@/types'
 
 type Tone = 'destructive' | 'warning' | 'gold'
@@ -64,9 +65,9 @@ function AttentionRow({
 export function NeedsAttentionSection({ period }: { period: Period | null }) {
   const { getToken } = useAuth()
 
-  const { data: unassignedCount = 0 } = useUnassignedMembersCount()
+  const { data: unassignedCount = 0, isLoading: isUnassignedLoading } = useUnassignedMembersCount()
 
-  const { data: overdueRows } = useOverdueFollowups(undefined, period?.month, period?.year)
+  const { data: overdueRows, isLoading: isOverdueLoading } = useOverdueFollowups(undefined, period?.month, period?.year)
   const overdueCount = overdueRows?.length ?? 0
 
   // Donation Engagement data doubles as the source for both "haven't
@@ -78,15 +79,18 @@ export function NeedsAttentionSection({ period }: { period: Period | null }) {
     const anchor = new Date(period.year, period.month - 1, 1)
     return { dateFrom: toISO(startOfMonth(anchor)), dateTo: toISO(endOfMonth(anchor)) }
   }, [period])
-  const { data: engagementRows } = useDonationEngagementReport(engagementParams)
+  const { data: engagementRows, isLoading: isEngagementLoading } = useDonationEngagementReport(engagementParams)
   const notDonatedCount = engagementRows?.filter((r) => !r.donated).length ?? 0
 
-  const { data: incompleteCount = 0 } = useIncompleteMembersCount()
+  const { data: incompleteCount = 0, isLoading: isIncompleteLoading } = useIncompleteMembersCount()
 
-  const { data: threshold = 50 } = useQuery({
+  const { data: threshold = 50, isLoading: isThresholdLoading } = useQuery({
     queryKey: queryKeys.settings.nonDonorThreshold,
     queryFn: () => getNonDonorThreshold(getToken),
   })
+
+  const isLoading =
+    isUnassignedLoading || isOverdueLoading || isEngagementLoading || isIncompleteLoading || isThresholdLoading
 
   const flaggedManagers = useMemo(() => {
     if (!engagementRows) return []
@@ -125,7 +129,9 @@ export function NeedsAttentionSection({ period }: { period: Period | null }) {
         <CardTitle>Needs Attention</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {!hasAnyAttention && (
+        {isLoading && <CardListSkeleton count={3} />}
+
+        {!isLoading && !hasAnyAttention && (
           <EmptyState
             icon={<PartyPopper className="size-8" />}
             title="All clear!"

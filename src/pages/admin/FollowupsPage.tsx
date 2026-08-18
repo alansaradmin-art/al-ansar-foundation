@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminFollowups, useOverdueFollowups } from '@/hooks/useFollowups'
 import { useManagers } from '@/hooks/useManagers'
@@ -7,15 +8,17 @@ import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
-import { TableSkeleton } from '@/components/LoadingSkeletons'
+import { TableSkeleton, CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { FollowupStatusBadge, UnassignedManagerBadge } from '@/components/StatusBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { FollowupListItem } from '@/features/followups/FollowupListItem'
 import { formatDate } from '@/lib/format'
 import { FOLLOW_UP_STATUSES } from '@/schemas/followup.schema'
 import type { FollowUpStatus } from '@/types'
+import type { OverdueFollowupRow } from '@/services/followups'
 
 const STATUS_LABELS: Record<string, string> = {
   NOT_STARTED: 'Not Started',
@@ -41,9 +44,35 @@ const CONTACTED_LABELS: Record<string, string> = {
 
 const VALID_TABS = new Set(['history', 'overdue'])
 
+function OverdueRowCard({ row }: { row: OverdueFollowupRow }) {
+  return (
+    <Link
+      to={`/admin/members/${row.memberId}`}
+      className="block space-y-1.5 rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-accent/40"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{row.memberName}</p>
+          {row.fatherName && <p className="text-xs text-muted-foreground">{row.fatherName}</p>}
+        </div>
+        {row.lastFollowUpStatus ? (
+          <FollowupStatusBadge status={row.lastFollowUpStatus} />
+        ) : (
+          <span className="shrink-0 text-xs text-muted-foreground">No attempt this period</span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {row.managerName ?? 'Unassigned'}
+        {row.lastFollowUpDate ? ` · Last follow-up: ${formatDate(row.lastFollowUpDate)}` : ''}
+      </p>
+    </Link>
+  )
+}
+
 export default function AdminFollowupsPage() {
   const [searchParams] = useSearchParams()
   const initialTab = searchParams.get('tab')
+  const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
   const [managerId, setManagerId] = useState('ALL')
   const [status, setStatus] = useState<FollowUpStatus | 'ALL'>('ALL')
@@ -53,6 +82,14 @@ export default function AdminFollowupsPage() {
   const { pageSize } = useDefaultPageSize()
   useEffect(() => setPage(1), [pageSize])
   const scopedManagerId = managerId === 'ALL' ? undefined : managerId
+
+  // Both tabs' data is fetched once at page mount — switching tabs
+  // re-fetches that tab's own data so a follow-up recorded elsewhere in
+  // the same session shows up without a full reload.
+  function handleTabChange(value: string) {
+    if (value === 'history') queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
+    if (value === 'overdue') queryClient.invalidateQueries({ queryKey: ['followups', 'overdue'] })
+  }
   const { data, isLoading, isError, refetch } = useAdminFollowups({
     month: period?.month,
     year: period?.year,
@@ -97,7 +134,7 @@ export default function AdminFollowupsPage() {
         </SelectContent>
       </Select>
 
-      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'history'}>
+      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'history'} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="overdue">Overdue</TabsTrigger>
@@ -118,61 +155,87 @@ export default function AdminFollowupsPage() {
             </SelectContent>
           </Select>
 
-          {isLoading && <TableSkeleton cols={6} />}
+          {isLoading && (
+            <>
+              <div className="md:hidden">
+                <CardListSkeleton />
+              </div>
+              <div className="hidden md:block">
+                <TableSkeleton cols={6} />
+              </div>
+            </>
+          )}
           {isError && <ErrorState message="Unable to load follow-ups. Please try again." onRetry={refetch} />}
           {data && data.rows.length === 0 && <EmptyState title="No follow-ups recorded for this month." />}
 
           {data && data.rows.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Manager</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Contacted</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="space-y-2 md:hidden">
                 {data.rows.map((f) => (
-                  <TableRow key={f.id} className="border-b last:border-0">
-                    <TableCell className="whitespace-nowrap">{formatDate(f.follow_up_date)}</TableCell>
-                    <TableCell>
-                      <Link to={`/admin/members/${f.member_id}`} className="hover:underline">
-                        {f.member?.member_name}
-                      </Link>
-                      {f.member?.father_name && (
-                        <p className="text-xs text-muted-foreground">{f.member.father_name}</p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{f.manager?.full_name}</TableCell>
-                    <TableCell>
-                      <FollowupStatusBadge status={f.follow_up_status} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {f.follow_up_method ? METHOD_LABELS[f.follow_up_method] : '—'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {f.contacted_person_type === 'OTHER'
-                        ? f.contacted_person_name || 'Other'
-                        : CONTACTED_LABELS[f.contacted_person_type ?? 'OTHER']}
-                    </TableCell>
-                    <TableCell className="max-w-56 text-muted-foreground">
-                      {f.remarks ? <span className="line-clamp-2">{f.remarks}</span> : '—'}
-                    </TableCell>
-                  </TableRow>
+                  <FollowupListItem key={f.id} followup={f} href={`/admin/members/${f.member_id}`} showManager />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <Table className="hidden md:block">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Manager</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Contacted</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.rows.map((f) => (
+                    <TableRow key={f.id} className="border-b last:border-0">
+                      <TableCell className="whitespace-nowrap">{formatDate(f.follow_up_date)}</TableCell>
+                      <TableCell>
+                        <Link to={`/admin/members/${f.member_id}`} className="hover:underline">
+                          {f.member?.member_name}
+                        </Link>
+                        {f.member?.father_name && (
+                          <p className="text-xs text-muted-foreground">{f.member.father_name}</p>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{f.manager?.full_name}</TableCell>
+                      <TableCell>
+                        <FollowupStatusBadge status={f.follow_up_status} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {f.follow_up_method ? METHOD_LABELS[f.follow_up_method] : '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {f.contacted_person_type === 'OTHER'
+                          ? f.contacted_person_name || 'Other'
+                          : CONTACTED_LABELS[f.contacted_person_type ?? 'OTHER']}
+                      </TableCell>
+                      <TableCell className="max-w-56 text-muted-foreground">
+                        {f.remarks ? <span className="line-clamp-2">{f.remarks}</span> : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
 
           {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
         </TabsContent>
 
         <TabsContent value="overdue" className="space-y-4">
-          {isOverdueLoading && <TableSkeleton cols={5} />}
+          {isOverdueLoading && (
+            <>
+              <div className="md:hidden">
+                <CardListSkeleton />
+              </div>
+              <div className="hidden md:block">
+                <TableSkeleton cols={5} />
+              </div>
+            </>
+          )}
           {isOverdueError && (
             <ErrorState message="Unable to load overdue follow-ups. Please try again." onRetry={refetchOverdue} />
           )}
@@ -181,40 +244,48 @@ export default function AdminFollowupsPage() {
           )}
 
           {overdueRows && overdueRows.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Father's Name</TableHead>
-                  <TableHead>Manager</TableHead>
-                  <TableHead>Last Follow-up</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="space-y-2 md:hidden">
                 {overdueRows.map((row) => (
-                  <TableRow key={row.memberId} className="border-b last:border-0">
-                    <TableCell>
-                      <Link to={`/admin/members/${row.memberId}`} className="hover:underline">
-                        {row.memberName}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{row.fatherName || '—'}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {row.lastFollowUpDate ? formatDate(row.lastFollowUpDate) : '—'}
-                    </TableCell>
-                    <TableCell>
-                      {row.lastFollowUpStatus ? (
-                        <FollowupStatusBadge status={row.lastFollowUpStatus} />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">No attempt this period</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                  <OverdueRowCard key={row.memberId} row={row} />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <Table className="hidden md:block">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Father's Name</TableHead>
+                    <TableHead>Manager</TableHead>
+                    <TableHead>Last Follow-up</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {overdueRows.map((row) => (
+                    <TableRow key={row.memberId} className="border-b last:border-0">
+                      <TableCell>
+                        <Link to={`/admin/members/${row.memberId}`} className="hover:underline">
+                          {row.memberName}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.fatherName || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {row.lastFollowUpDate ? formatDate(row.lastFollowUpDate) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {row.lastFollowUpStatus ? (
+                          <FollowupStatusBadge status={row.lastFollowUpStatus} />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No attempt this period</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </TabsContent>
       </Tabs>

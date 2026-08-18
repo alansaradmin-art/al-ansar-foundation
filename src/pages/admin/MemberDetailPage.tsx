@@ -6,6 +6,7 @@ import { useMember } from '@/hooks/useMembers'
 import { useMemberDonations } from '@/hooks/useDonations'
 import { useMemberFollowups } from '@/hooks/useFollowups'
 import { LoadingState, ErrorState } from '@/components/StateViews'
+import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { MemberStatusBadge } from '@/components/StatusBadge'
 import { MemberInfoCard } from '@/features/members/MemberInfoCard'
 import { ContactSection } from '@/features/members/ContactSection'
@@ -20,8 +21,8 @@ export default function AdminMemberDetailPage() {
   const navigate = useNavigate()
 
   const { data: member, isLoading, isError, refetch } = useMember(memberId)
-  const { data: donations = [] } = useMemberDonations(memberId)
-  const { data: followups = [] } = useMemberFollowups(memberId)
+  const { data: donations = [], isLoading: isDonationsLoading } = useMemberDonations(memberId)
+  const { data: followups = [], isLoading: isFollowupsLoading } = useMemberFollowups(memberId)
 
   if (isLoading) return <LoadingState label="Loading member…" />
   if (isError || !member) {
@@ -65,8 +66,8 @@ export default function AdminMemberDetailPage() {
 
       <MemberInfoCard member={member} />
       <ContactSection member={member} />
-      <DonationHistoryList donations={donations} />
-      <FollowupHistoryList followups={followups} />
+      {isDonationsLoading ? <CardListSkeleton count={2} /> : <DonationHistoryList donations={donations} />}
+      {isFollowupsLoading ? <CardListSkeleton count={2} /> : <FollowupHistoryList followups={followups} />}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useManagerWiseReport, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
@@ -39,12 +40,23 @@ const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement'])
 export default function ReportsPage() {
   const [searchParams] = useSearchParams()
   const initialTab = searchParams.get('tab')
+  const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
   const [year, setYear] = useState(new Date().getFullYear())
 
   const { data: managerRows, isLoading: isManagerLoading } = useManagerWiseReport(period?.month, period?.year)
   const { data: monthRows, isLoading: isMonthLoading } = useMonthWiseReport(year)
   const { data: donationReport, isLoading: isDonationReportLoading } = useMonthlyDonationReport(period?.month, period?.year)
+
+  // Each tab's report is fetched once at page mount — switching tabs
+  // re-fetches that tab's own report so changes made elsewhere in the
+  // same session (a new donation, a follow-up) show up without a reload.
+  function handleTabChange(value: string) {
+    if (value === 'manager') queryClient.invalidateQueries({ queryKey: ['reports', 'manager-wise'] })
+    if (value === 'month') queryClient.invalidateQueries({ queryKey: ['reports', 'month-wise'] })
+    if (value === 'donations') queryClient.invalidateQueries({ queryKey: ['reports', 'monthly-donation'] })
+    if (value === 'engagement') queryClient.invalidateQueries({ queryKey: ['reports', 'donation-engagement'] })
+  }
 
   function exportManagerReport() {
     if (!managerRows || !period) return
@@ -104,7 +116,7 @@ export default function ReportsPage() {
     <div className="space-y-4">
       <PageHeader title="Reports" description="Manager performance and month-over-month donation trends" />
 
-      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'manager'}>
+      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'manager'} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="manager">Manager-wise</TabsTrigger>
           <TabsTrigger value="month">Month-wise</TabsTrigger>

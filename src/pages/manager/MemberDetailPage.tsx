@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, UserRound, IdCard, IndianRupee, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -6,7 +7,9 @@ import { useMember } from '@/hooks/useMembers'
 import { useMemberDonations } from '@/hooks/useDonations'
 import { useMemberFollowups } from '@/hooks/useFollowups'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
+import { queryKeys } from '@/lib/queryKeys'
 import { LoadingState, ErrorState } from '@/components/StateViews'
+import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { MemberStatusBadge } from '@/components/StatusBadge'
 import { MemberInfoCard } from '@/features/members/MemberInfoCard'
 import { ContactSection } from '@/features/members/ContactSection'
@@ -20,11 +23,12 @@ import { AddFollowupDialog } from '@/features/followups/AddFollowupDialog'
 export default function MemberDetailPage() {
   const { memberId } = useParams<{ memberId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
 
   const { data: member, isLoading, isError, refetch } = useMember(memberId)
-  const { data: donations = [] } = useMemberDonations(memberId)
-  const { data: followups = [] } = useMemberFollowups(memberId)
+  const { data: donations = [], isLoading: isDonationsLoading } = useMemberDonations(memberId)
+  const { data: followups = [], isLoading: isFollowupsLoading } = useMemberFollowups(memberId)
 
   if (isLoading) return <LoadingState label="Loading member…" />
   if (isError || !member) {
@@ -34,6 +38,20 @@ export default function MemberDetailPage() {
   const periodDonations = period
     ? donations.filter((d) => d.donation_month === period.month && d.donation_year === period.year)
     : []
+
+  // Switching to a tab refreshes that tab's own data — the fetch itself
+  // happens once at this page's mount (see useMemberDonations/useMemberFollowups
+  // above), so re-selecting a tab wouldn't otherwise pick up a donation/
+  // follow-up recorded elsewhere in the same session without a full reload.
+  const confirmedMemberId = member.id
+  function handleTabChange(value: string) {
+    if (value === 'donations') {
+      queryClient.invalidateQueries({ queryKey: queryKeys.donations.forMember(confirmedMemberId) })
+    }
+    if (value === 'followups') {
+      queryClient.invalidateQueries({ queryKey: queryKeys.followups.forMember(confirmedMemberId) })
+    }
+  }
 
   return (
     <div className="pb-32">
@@ -53,7 +71,7 @@ export default function MemberDetailPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="contact" className="mt-3 gap-0">
+      <Tabs defaultValue="contact" className="mt-3 gap-0" onValueChange={handleTabChange}>
         <div className="sticky top-14 z-10 border-b bg-background/95 px-4 py-2 backdrop-blur">
           <TabsList className="w-full">
             <TabsTrigger value="contact">
@@ -78,11 +96,11 @@ export default function MemberDetailPage() {
           {period && (
             <MonthlyDonationSummary period={period} onPeriodChange={setPeriod} donations={periodDonations} />
           )}
-          <DonationHistoryList donations={donations} />
+          {isDonationsLoading ? <CardListSkeleton count={2} /> : <DonationHistoryList donations={donations} />}
         </TabsContent>
 
         <TabsContent value="followups" className="space-y-4 p-4">
-          <FollowupHistoryList followups={followups} />
+          {isFollowupsLoading ? <CardListSkeleton count={2} /> : <FollowupHistoryList followups={followups} />}
         </TabsContent>
       </Tabs>
 

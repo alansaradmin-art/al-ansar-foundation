@@ -61,7 +61,7 @@ export function SoftDeleteDonationDialog({ donationId }: { donationId: string })
             Cancel
           </Button>
           <Button variant="destructive" disabled={!reason.trim() || isPending} onClick={handleConfirm}>
-            Remove Donation
+            {isPending ? 'Removing…' : 'Remove Donation'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -86,7 +86,7 @@ export function ManagerStatusControl({ manager }: { manager: Manager }) {
   if (manager.status === 'INACTIVE') {
     return (
       <Button variant="outline" size="sm" disabled={isTogglingStatus} onClick={handleActivate}>
-        Activate
+        {isTogglingStatus ? 'Activating…' : 'Activate'}
       </Button>
     )
   }
@@ -136,7 +136,7 @@ export function ManagerStatusControl({ manager }: { manager: Manager }) {
               handleDeactivate()
             }}
           >
-            Deactivate
+            {isTogglingStatus || isReassigning ? 'Deactivating…' : 'Deactivate'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

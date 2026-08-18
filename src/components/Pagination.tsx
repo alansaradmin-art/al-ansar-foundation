@@ -41,7 +41,7 @@ export function Pagination({
       </p>
 
       {totalPages > 1 && (
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-center gap-1">
           <Button variant="outline" size="sm" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
             Previous
           </Button>

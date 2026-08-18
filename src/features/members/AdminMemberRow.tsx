@@ -66,7 +66,13 @@ export function StatusButton({ member }: { member: Member }) {
         )
       }
     >
-      {member.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+      {isPending
+        ? member.status === 'ACTIVE'
+          ? 'Deactivating…'
+          : 'Activating…'
+        : member.status === 'ACTIVE'
+          ? 'Deactivate'
+          : 'Activate'}
     </Button>
   )
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useClerk } from '@clerk/clerk-react'
 import { LogOut, UserRound } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -9,6 +10,16 @@ import { AppFooter } from '@/components/AppFooter'
 export default function MorePage() {
   const { profile } = useProfile()
   const { signOut } = useClerk()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    try {
+      await signOut()
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
 
   return (
     <div className="space-y-4 p-4">
@@ -36,8 +47,8 @@ export default function MorePage() {
         </CardContent>
       </Card>
 
-      <Button variant="outline" className="w-full" onClick={() => signOut()}>
-        <LogOut className="size-4" /> Sign out
+      <Button variant="outline" className="w-full" onClick={handleSignOut} disabled={isSigningOut}>
+        <LogOut className="size-4" /> {isSigningOut ? 'Signing out…' : 'Sign out'}
       </Button>
 
       <AppFooter />

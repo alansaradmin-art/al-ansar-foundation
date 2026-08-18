@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useClerk, useUser } from '@clerk/clerk-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -10,8 +11,10 @@ export default function WaitingForSetupPage() {
   const { signOut } = useClerk()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   async function handleSignOut() {
+    setIsSigningOut(true)
     try {
       await signOut()
     } finally {
@@ -31,8 +34,8 @@ export default function WaitingForSetupPage() {
           linked this email to a manager profile yet. Please check with the Admin.
         </p>
       </div>
-      <Button variant="outline" onClick={handleSignOut}>
-        Sign out
+      <Button variant="outline" onClick={handleSignOut} disabled={isSigningOut}>
+        {isSigningOut ? 'Signing out…' : 'Sign out'}
       </Button>
     </div>
   )

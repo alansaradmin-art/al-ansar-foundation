@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, PartyPopper } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
@@ -11,30 +11,25 @@ import { Pagination } from '@/components/Pagination'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
-import { FollowupStatusBadge } from '@/components/StatusBadge'
 import { PendingMemberCard } from '@/features/followups/PendingMemberCard'
-import { formatDate } from '@/lib/format'
-
-const METHOD_LABELS: Record<string, string> = {
-  PHONE: 'Phone',
-  WHATSAPP: 'WhatsApp',
-  IN_PERSON: 'In Person',
-  OTHER: 'Other',
-}
-
-const CONTACTED_LABELS: Record<string, string> = {
-  MEMBER: 'Member',
-  ADDED_BY: 'Added By',
-  REFERENCE_CONTACT: 'Reference Contact',
-  OTHER: 'Other',
-}
+import { FollowupListItem } from '@/features/followups/FollowupListItem'
 
 export default function ManagerFollowupsPage() {
   const { profile } = useProfile()
+  const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
   const [historyPage, setHistoryPage] = useState(1)
   const { pageSize } = useDefaultPageSize()
   useEffect(() => setHistoryPage(1), [pageSize])
+
+  // Both tabs' data is fetched once at page mount (see the two useQuery
+  // calls below) — switching tabs re-fetches that tab's own data so a
+  // follow-up recorded elsewhere in the same session shows up without a
+  // full reload.
+  function handleTabChange(value: string) {
+    if (value === 'pending') queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+    if (value === 'history') queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
+  }
 
   const {
     data: pendingMembers,
@@ -54,7 +49,7 @@ export default function ManagerFollowupsPage() {
     <div className="space-y-4 p-4">
       <PageHeader title="Follow-ups" actions={period && <PeriodSelector period={period} onChange={setPeriod} />} />
 
-      <Tabs defaultValue="pending">
+      <Tabs defaultValue="pending" onValueChange={handleTabChange}>
         <TabsList className="w-full">
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
@@ -92,28 +87,7 @@ export default function ManagerFollowupsPage() {
           {history && history.rows.length > 0 && (
             <div className="space-y-2">
               {history.rows.map((f) => (
-                <Link
-                  key={f.id}
-                  to={`/manager/members/${f.member_id}`}
-                  className="block space-y-1.5 rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-accent/40"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{f.member?.member_name ?? 'Unknown member'}</p>
-                      {f.member?.father_name && <p className="text-xs text-muted-foreground">{f.member.father_name}</p>}
-                    </div>
-                    <FollowupStatusBadge status={f.follow_up_status} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(f.follow_up_date)}
-                    {f.follow_up_method && ` · ${METHOD_LABELS[f.follow_up_method]}`}
-                    {' · '}
-                    {f.contacted_person_type === 'OTHER'
-                      ? f.contacted_person_name || 'Other'
-                      : CONTACTED_LABELS[f.contacted_person_type ?? 'OTHER']}
-                  </p>
-                  {f.remarks && <p className="text-sm text-muted-foreground">{f.remarks}</p>}
-                </Link>
+                <FollowupListItem key={f.id} followup={f} href={`/manager/members/${f.member_id}`} />
               ))}
             </div>
           )}

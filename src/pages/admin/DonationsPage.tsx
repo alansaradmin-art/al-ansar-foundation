@@ -7,7 +7,7 @@ import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
-import { TableSkeleton } from '@/components/LoadingSkeletons'
+import { TableSkeleton, CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonatio
 import { EditDonationDialog } from '@/features/donations/EditDonationDialog'
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
 import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationDialog'
+import { DonationListItem } from '@/features/donations/DonationListItem'
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
 import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
@@ -131,62 +132,89 @@ export default function AdminDonationsPage() {
         <AnonymousDonationDialog />
       </div>
 
-      {isLoading && <TableSkeleton cols={7} />}
+      {isLoading && (
+        <>
+          <div className="md:hidden">
+            <CardListSkeleton />
+          </div>
+          <div className="hidden md:block">
+            <TableSkeleton cols={7} />
+          </div>
+        </>
+      )}
       {isError && <ErrorState message="Unable to load donations. Please try again." onRetry={refetch} />}
       {data && data.rows.length === 0 && <EmptyState title="No donations recorded for this month." />}
 
       {data && data.rows.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Member</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead>Recorded By</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          <div className="space-y-2 md:hidden">
             {data.rows.map((donation) => (
-              <TableRow key={donation.id} className="border-b last:border-0">
-                <TableCell className="whitespace-nowrap">{formatDate(donation.donation_date)}</TableCell>
-                <TableCell>
-                  {donation.member ? (
-                    <>
-                      <p>{donation.member.member_name}</p>
-                      {(() => {
-                        const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
-                          .filter(Boolean)
-                          .join(' · ')
-                        return subline && <p className="text-xs text-muted-foreground">{subline}</p>
-                      })()}
-                    </>
-                  ) : (
-                    <AnonymousDonationBadge />
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{DONATION_TYPE_LABELS[donation.donation_type]}</Badge>
-                </TableCell>
-                <TableCell className="font-medium tabular-nums">{formatINR(donation.amount_inr)}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{PAYMENT_LABELS[donation.payment_method]}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{donation.transaction_reference || '—'}</TableCell>
-                <TableCell className="text-muted-foreground">{donation.recorder?.full_name ?? '—'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
+              <DonationListItem
+                key={donation.id}
+                donation={donation}
+                memberHref={donation.member_id ? `/admin/members/${donation.member_id}` : undefined}
+                actions={
+                  <>
                     <EditDonationDialog donation={donation} />
                     <SoftDeleteDonationDialog donationId={donation.id} />
-                  </div>
-                </TableCell>
-              </TableRow>
+                  </>
+                }
+              />
             ))}
-          </TableBody>
-        </Table>
+          </div>
+
+          <Table className="hidden md:block">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Member</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Recorded By</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.rows.map((donation) => (
+                <TableRow key={donation.id} className="border-b last:border-0">
+                  <TableCell className="whitespace-nowrap">{formatDate(donation.donation_date)}</TableCell>
+                  <TableCell>
+                    {donation.member ? (
+                      <>
+                        <p>{donation.member.member_name}</p>
+                        {(() => {
+                          const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
+                            .filter(Boolean)
+                            .join(' · ')
+                          return subline && <p className="text-xs text-muted-foreground">{subline}</p>
+                        })()}
+                      </>
+                    ) : (
+                      <AnonymousDonationBadge />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{DONATION_TYPE_LABELS[donation.donation_type]}</Badge>
+                  </TableCell>
+                  <TableCell className="font-medium tabular-nums">{formatINR(donation.amount_inr)}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{PAYMENT_LABELS[donation.payment_method]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{donation.transaction_reference || '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">{donation.recorder?.full_name ?? '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <EditDonationDialog donation={donation} />
+                      <SoftDeleteDonationDialog donationId={donation.id} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
       )}
 
       {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
