@@ -66,6 +66,21 @@ export function useCreateMember() {
   })
 }
 
+/** Pending/Overdue/History follow-up lists are all filtered by the
+ * member's current assigned_manager_id and status (see
+ * list_pending_followups()/admin_overdue_followups() — both take
+ * assigned_manager_id and require status='ACTIVE') — any mutation that
+ * can change either one must invalidate these too, or a manager's
+ * already-cached Pending list keeps showing a member who was just
+ * reassigned away from them (or deactivated) until the cache naturally
+ * expires or the page is hard-reloaded. Mirrors the exact prefixes
+ * useCreateFollowup already invalidates. */
+function invalidateFollowupLists(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+  queryClient.invalidateQueries({ queryKey: ['followups', 'overdue'] })
+  queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
+}
+
 export function useUpdateMember(id: string) {
   const { getToken } = useAuth()
   const queryClient = useQueryClient()
@@ -74,6 +89,8 @@ export function useUpdateMember(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['members'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.members.detail(id) })
+      // Editing a member can change assigned_manager_id or status.
+      invalidateFollowupLists(queryClient)
     },
   })
 }
@@ -87,6 +104,7 @@ export function useSetMemberStatus() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['members'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.members.detail(id) })
+      invalidateFollowupLists(queryClient)
     },
   })
 }
@@ -97,6 +115,9 @@ export function useReassignManager() {
   return useMutation({
     mutationFn: ({ memberIds, managerId }: { memberIds: string[]; managerId: string }) =>
       membersService.reassignManager(getToken, memberIds, managerId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['members'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+      invalidateFollowupLists(queryClient)
+    },
   })
 }
