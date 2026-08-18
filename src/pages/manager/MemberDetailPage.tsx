@@ -34,6 +34,7 @@ export default function MemberDetailPage() {
       followups={followups}
       isFollowupsLoading={isFollowupsLoading}
       canDeleteDocuments={false}
+      canEditFollowups
       periodSummary={
         period ? <MonthlyDonationSummary period={period} onPeriodChange={setPeriod} donations={periodDonations} /> : undefined
       }

@@ -53,10 +53,19 @@ function contactInfoFor(member: Member, type: string) {
 
 export function FollowupForm({
   member,
+  defaultValues,
+  disableDateEdit,
   onSubmit,
   isSubmitting,
 }: {
   member: Member
+  /** Pre-fills the form beyond the create defaults below — used by
+   * EditFollowupDialog to seed the existing follow-up's values. Every
+   * other caller omits this, so their behavior is unchanged. */
+  defaultValues?: Partial<Omit<FollowupFormValues, 'member_id'>>
+  /** Locks the date field — EditFollowupDialog continues the same attempt,
+   * it never moves it to a different date/period. */
+  disableDateEdit?: boolean
   onSubmit: (values: FollowupFormValues) => void
   isSubmitting: boolean
 }) {
@@ -73,6 +82,7 @@ export function FollowupForm({
       contacted_person_relationship: '',
       remarks: '',
       next_follow_up_date: '',
+      ...defaultValues,
     },
   })
 
@@ -102,7 +112,7 @@ export function FollowupForm({
             <FormItem>
               <FormLabel>Follow-up Date</FormLabel>
               <FormControl>
-                <Input type="date" max={todayISO()} {...field} />
+                <Input type="date" max={todayISO()} disabled={disableDateEdit} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

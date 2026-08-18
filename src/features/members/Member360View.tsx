@@ -36,6 +36,7 @@ export function Member360View({
   followups,
   isFollowupsLoading,
   canDeleteDocuments,
+  canEditFollowups = false,
   headerActions,
   bottomActions,
   periodSummary,
@@ -46,6 +47,9 @@ export function Member360View({
   followups: MonthlyFollowup[]
   isFollowupsLoading: boolean
   canDeleteDocuments: boolean
+  /** Only the Manager page passes this true — there is no admin follow-up
+   * editing path, matching create's manager-only rule. */
+  canEditFollowups?: boolean
   headerActions?: ReactNode
   bottomActions?: ReactNode
   /** Manager's existing period-scoped MonthlyDonationSummary (with its own
@@ -154,7 +158,11 @@ export function Member360View({
         </TabsContent>
 
         <TabsContent value="followups" className="space-y-4 p-4">
-          {isFollowupsLoading ? <CardListSkeleton count={2} /> : <FollowupHistoryList followups={followups} />}
+          {isFollowupsLoading ? (
+            <CardListSkeleton count={2} />
+          ) : (
+            <FollowupHistoryList followups={followups} member={member} canEdit={canEditFollowups} />
+          )}
         </TabsContent>
 
         <TabsContent value="timeline" className="space-y-3 p-4">

@@ -121,6 +121,7 @@ const ACTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'destructiv
   donations_created: 'secondary',
   donations_updated: 'destructive',
   monthly_followups_created: 'secondary',
+  monthly_followups_updated: 'outline',
   managers_created: 'secondary',
   managers_updated: 'outline',
   member_documents_created: 'secondary',

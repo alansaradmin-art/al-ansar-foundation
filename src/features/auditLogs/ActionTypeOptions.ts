@@ -1,10 +1,12 @@
 /** Client-computed "Action Type" filter options — each maps to an existing
  * entityType+action pair the API already understands (see api/_lib/auditLog.ts
  * for where these action strings come from: `${entityType}_created`/`_updated`).
- * No new backend param needed for this filter. `monthly_followups` is
- * create-only (api/followups.ts has no PATCH/PUT) and `donations` is only
- * ever updated via the soft-delete path (api/donations.ts's
- * ?action=softDelete), so both map unambiguously to one label each. */
+ * No new backend param needed for this filter. `donations` is only ever
+ * updated via the soft-delete path (api/donations.ts's ?action=softDelete),
+ * and `monthly_followups` is only ever updated via continuing an open
+ * STARTED/IN_PROGRESS attempt (api/followups.ts's ?action=update) — a
+ * finished outcome is still immutable — so both map unambiguously to one
+ * label each. */
 export interface ActionTypeOption {
   value: string
   label: string
@@ -22,6 +24,12 @@ export const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
     label: 'Follow-up Recorded',
     entityType: 'monthly_followups',
     action: 'monthly_followups_created',
+  },
+  {
+    value: 'monthly_followups_updated',
+    label: 'Follow-up Updated',
+    entityType: 'monthly_followups',
+    action: 'monthly_followups_updated',
   },
   { value: 'managers_created', label: 'Manager Added', entityType: 'managers', action: 'managers_created' },
   { value: 'managers_updated', label: 'Manager Updated', entityType: 'managers', action: 'managers_updated' },

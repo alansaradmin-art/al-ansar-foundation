@@ -54,6 +54,30 @@ export function useCreateFollowup(managerId: string, createdBy: string) {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['members'] })
+      queryClient.invalidateQueries({ queryKey: ['member-period-summaries'] })
+    },
+  })
+}
+
+/** Same broad invalidation as useCreateFollowup, plus 'overdue' (an update
+ * can move a member off the overdue list) and 'audit-logs' (Member 360's
+ * Timeline tab, if already mounted). */
+export function useUpdateFollowup() {
+  const { getToken } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, values }: { id: string; values: FollowupFormValues }) =>
+      followupsService.updateFollowup(getToken, id, values),
+    onSuccess: (_data, { values }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.followups.forMember(values.member_id) })
+      queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+      queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
+      queryClient.invalidateQueries({ queryKey: ['followups', 'overdue'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+      queryClient.invalidateQueries({ queryKey: ['member-period-summaries'] })
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
     },
   })
 }

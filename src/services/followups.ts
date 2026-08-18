@@ -24,6 +24,14 @@ export async function createFollowup(
   return apiClient.post('/api/followups', getToken, values)
 }
 
+export async function updateFollowup(
+  getToken: GetToken,
+  id: string,
+  values: FollowupFormValues,
+): Promise<MonthlyFollowup> {
+  return apiClient.patch('/api/followups', getToken, values, { id, action: 'update' })
+}
+
 /** managerId = undefined -> Admin view across every manager. */
 export async function listPendingFollowups(
   getToken: GetToken,

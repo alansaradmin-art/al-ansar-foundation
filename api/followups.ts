@@ -1,6 +1,6 @@
 import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope, sendForbiddenUnlessManager } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
-import { logInsert } from './_lib/auditLog.js'
+import { logInsert, logUpdate } from './_lib/auditLog.js'
 import type { Database, FollowUpStatus } from '../src/types/database'
 
 type FollowupInsert = Database['public']['Tables']['monthly_followups']['Insert']
@@ -10,6 +10,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (!profile) return
   const supabase = getServiceRoleClient()
   const action = readQueryParam(req, 'action')
+  const id = readQueryParam(req, 'id')
 
   try {
     if (req.method === 'GET' && action === 'forMember') {
@@ -172,6 +173,86 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (error) return sendSupabaseError(res, error)
       await logInsert(supabase, 'monthly_followups', profile.id, data)
       return sendJson(res, 201, data)
+    }
+
+    if (req.method === 'PATCH' && id && action === 'update') {
+      // Same manager-only rule as create — there is still no admin
+      // follow-up path.
+      if (!sendForbiddenUnlessManager(res, profile)) return
+
+      const { data: oldRow, error: oldError } = await supabase.from('monthly_followups').select('*').eq('id', id).maybeSingle()
+      if (oldError) return sendSupabaseError(res, oldError)
+      if (!oldRow) return sendError(res, 404, 'Follow-up not found.')
+
+      // Only an open attempt can be continued — a finished outcome
+      // (COMPLETED/NOT_INTERESTED/CALLBACK_REQUIRED/OTHER) stays immutable,
+      // same as every other follow-up today; logging a new one is still
+      // the only way to record another attempt after this point.
+      if (oldRow.follow_up_status !== 'STARTED' && oldRow.follow_up_status !== 'IN_PROGRESS') {
+        return sendError(res, 400, 'Only a Started or In Progress follow-up can be updated.')
+      }
+
+      // Re-checks the member's CURRENT manager, not the row's stored
+      // manager_id — a follow-up logged before a reassignment isn't
+      // editable by a manager who no longer owns this member.
+      const { data: member, error: memberError } = await supabase
+        .from('members')
+        .select('assigned_manager_id')
+        .eq('id', oldRow.member_id)
+        .maybeSingle()
+      if (memberError) return sendSupabaseError(res, memberError)
+      if (!member || member.assigned_manager_id !== profile.managerId) {
+        return sendError(res, 403, 'You can only update follow-ups for your own members.')
+      }
+
+      const values = await readJsonBody<Partial<FollowupInsert> & { confirmDuplicate?: boolean }>(req)
+
+      // follow_up_date/month/year are never taken from the client here —
+      // "update" continues the same attempt, it never moves it to a
+      // different period. Only donations.ts's ?action=update allows a date
+      // change; that's a deliberately different rule for a different
+      // entity.
+      if (!values.confirmDuplicate) {
+        const { data: existingFollowup, error: dupError } = await supabase
+          .from('monthly_followups')
+          .select('*')
+          .eq('member_id', oldRow.member_id)
+          .eq('follow_up_date', oldRow.follow_up_date)
+          .eq('follow_up_status', values.follow_up_status!)
+          .neq('id', id)
+          .maybeSingle()
+        if (dupError) return sendSupabaseError(res, dupError)
+        if (existingFollowup) {
+          return sendJson(res, 409, {
+            error: {
+              message: 'A follow-up for this member on this date with this status is already recorded.',
+              code: 'POSSIBLE_DUPLICATE',
+            },
+            existing: existingFollowup,
+          })
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('monthly_followups')
+        .update({
+          follow_up_status: values.follow_up_status!,
+          follow_up_method: values.follow_up_method ?? null,
+          contacted_person_type: values.contacted_person_type ?? null,
+          contacted_person_name: values.contacted_person_name || null,
+          contacted_person_phone: values.contacted_person_phone || null,
+          contacted_person_relationship: values.contacted_person_relationship || null,
+          remarks: values.remarks || null,
+          next_follow_up_date: values.next_follow_up_date || null,
+          // follow_up_date, month, year, member_id, manager_id, created_by
+          // are intentionally absent — never taken from the client payload.
+        })
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      await logUpdate(supabase, 'monthly_followups', profile.id, oldRow, data)
+      return sendJson(res, 200, data)
     }
 
     sendError(res, 404, 'Not found.')
