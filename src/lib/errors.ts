@@ -28,6 +28,9 @@ export function getFriendlyErrorMessage(error: unknown, fallback: string): strin
     if (text.includes('mobile_number')) return 'This mobile number is already registered with another member.'
     if (text.includes('managers_email')) return 'A manager with this email already exists.'
     if (text.includes('donation_id')) return 'Donation ID already exists.'
+    if (text.includes('transaction_reference')) {
+      return 'This transaction reference has already been used for another donation.'
+    }
     return 'This record already exists.'
   }
 

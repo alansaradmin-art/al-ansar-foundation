@@ -97,7 +97,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       // (which technically also permitted an unrestricted admin branch that
       // nothing ever exercised).
       if (!sendForbiddenUnlessManager(res, profile)) return
-      const values = await readJsonBody<Partial<FollowupInsert> & { follow_up_date: string }>(req)
+      const values = await readJsonBody<Partial<FollowupInsert> & { follow_up_date: string; confirmDuplicate?: boolean }>(req)
       if (!values.member_id) return sendError(res, 400, 'member_id is required.')
 
       // Authoritative check — the client can't be trusted to enforce this,
@@ -117,6 +117,33 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (memberError) return sendSupabaseError(res, memberError)
       if (!member || member.assigned_manager_id !== profile.managerId) {
         return sendError(res, 403, 'You can only add follow-ups for your own members.')
+      }
+
+      // Soft duplicate check — a warning, not a block. Deliberately keyed
+      // on status too, not just date: the request explicitly allows
+      // multiple genuinely separate attempts on the same day (e.g. no
+      // answer, then reached them later) — only re-logging the *same*
+      // status for a date that already has one is flagged. manager_id
+      // isn't part of the match: a member has exactly one assigned
+      // manager, already enforced above, so it's redundant here.
+      if (!values.confirmDuplicate) {
+        const { data: existingFollowup, error: dupError } = await supabase
+          .from('monthly_followups')
+          .select('*')
+          .eq('member_id', values.member_id)
+          .eq('follow_up_date', values.follow_up_date)
+          .eq('follow_up_status', values.follow_up_status!)
+          .maybeSingle()
+        if (dupError) return sendSupabaseError(res, dupError)
+        if (existingFollowup) {
+          return sendJson(res, 409, {
+            error: {
+              message: 'A follow-up for this member on this date with this status is already recorded.',
+              code: 'POSSIBLE_DUPLICATE',
+            },
+            existing: existingFollowup,
+          })
+        }
       }
 
       const [year, month] = values.follow_up_date.split('-').map(Number)

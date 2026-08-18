@@ -12,13 +12,18 @@ export class ApiError extends Error {
   status: number
   code?: string
   details?: string
+  /** The full parsed response body, when a caller needs more than
+   * message/code/details — e.g. the POSSIBLE_DUPLICATE contract also
+   * carries an `existing` record alongside the standard error shape. */
+  data?: unknown
 
-  constructor(status: number, message: string, code?: string, details?: string) {
+  constructor(status: number, message: string, code?: string, details?: string, data?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
     this.details = details
+    this.data = data
   }
 }
 
@@ -57,7 +62,7 @@ async function request<T>(method: string, path: string, getToken: GetToken, opti
 
   if (!response.ok) {
     const errorBody = data?.error as { message?: string; code?: string; details?: string } | undefined
-    throw new ApiError(response.status, errorBody?.message ?? 'Something went wrong.', errorBody?.code, errorBody?.details)
+    throw new ApiError(response.status, errorBody?.message ?? 'Something went wrong.', errorBody?.code, errorBody?.details, data)
   }
 
   return data as T

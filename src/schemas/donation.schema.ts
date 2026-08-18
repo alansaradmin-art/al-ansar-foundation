@@ -21,6 +21,10 @@ export const donationFormSchema = z
     payment_method: z.enum(PAYMENT_METHODS),
     transaction_reference: z.string().trim().optional().or(z.literal('')),
     notes: z.string().trim().optional().or(z.literal('')),
+    // Not a visible form field — set only when resubmitting after the
+    // user confirmed a possible-duplicate warning (see
+    // useDuplicateConfirmation), so the server skips its soft check.
+    confirmDuplicate: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     if (REFERENCE_REQUIRED_METHODS.has(data.payment_method) && !data.transaction_reference) {

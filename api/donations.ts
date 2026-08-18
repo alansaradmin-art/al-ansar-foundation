@@ -96,7 +96,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
 
     if (req.method === 'POST') {
-      const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string }>(req)
+      const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string; confirmDuplicate?: boolean }>(req)
 
       // Fetched once, for both the manager-scope permission check below and
       // the auto-reactivation check after the donation is inserted (a
@@ -120,6 +120,32 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         // record one; this is the real enforcement boundary, not just the
         // absence of the entry point in the Manager UI.
         return sendError(res, 403, 'Only Admins can record a donation without a member.')
+      }
+
+      // Soft duplicate check — a warning, not a block (see the hard
+      // transaction_reference unique index for the one case that IS
+      // always a real error). Skipped for anonymous donations (nothing to
+      // dedupe against) and when the caller already confirmed once.
+      if (values.member_id && !values.confirmDuplicate) {
+        const { data: existingDonation, error: dupError } = await supabase
+          .from('donations')
+          .select('*')
+          .eq('member_id', values.member_id)
+          .eq('donation_date', values.donation_date)
+          .eq('amount_inr', values.amount_inr!)
+          .eq('donation_type', values.donation_type!)
+          .eq('is_deleted', false)
+          .maybeSingle()
+        if (dupError) return sendSupabaseError(res, dupError)
+        if (existingDonation) {
+          return sendJson(res, 409, {
+            error: {
+              message: 'A donation for this member, date, amount, and type may already be recorded.',
+              code: 'POSSIBLE_DUPLICATE',
+            },
+            existing: existingDonation,
+          })
+        }
       }
 
       const [year, month] = values.donation_date.split('-').map(Number)
@@ -173,7 +199,35 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (!oldRow) return sendError(res, 404, 'Donation not found.')
       if (oldRow.is_deleted) return sendError(res, 400, 'Cannot edit a removed donation.')
 
-      const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string }>(req)
+      const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string; confirmDuplicate?: boolean }>(req)
+
+      // Same soft check as create — editing a donation into an accidental
+      // collision with another real donation should be caught too.
+      // Excludes this donation's own row and, like create, only runs for
+      // a real member (never for editing an anonymous donation).
+      if (values.member_id && !values.confirmDuplicate) {
+        const { data: existingDonation, error: dupError } = await supabase
+          .from('donations')
+          .select('*')
+          .eq('member_id', values.member_id)
+          .eq('donation_date', values.donation_date)
+          .eq('amount_inr', values.amount_inr!)
+          .eq('donation_type', values.donation_type!)
+          .eq('is_deleted', false)
+          .neq('id', id)
+          .maybeSingle()
+        if (dupError) return sendSupabaseError(res, dupError)
+        if (existingDonation) {
+          return sendJson(res, 409, {
+            error: {
+              message: 'A donation for this member, date, amount, and type may already be recorded.',
+              code: 'POSSIBLE_DUPLICATE',
+            },
+            existing: existingDonation,
+          })
+        }
+      }
+
       const [year, month] = values.donation_date.split('-').map(Number)
       const { data, error } = await supabase
         .from('donations')
