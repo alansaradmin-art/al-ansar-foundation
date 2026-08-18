@@ -1,5 +1,17 @@
 import type { ReactNode } from 'react'
-import { CheckCircle2, Circle, CircleSlash, Clock, PhoneCall, XCircle, MoreHorizontal, IndianRupee, UserX } from 'lucide-react'
+import {
+  CheckCircle2,
+  Circle,
+  CircleSlash,
+  Clock,
+  PhoneCall,
+  PlayCircle,
+  Hourglass,
+  XCircle,
+  MoreHorizontal,
+  IndianRupee,
+  UserX,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FollowUpStatus, MemberStatus } from '@/types'
 
@@ -59,8 +71,9 @@ export function AnonymousDonationBadge() {
 }
 
 const FOLLOW_UP_CONFIG: Record<FollowUpStatus, { label: string; tone: Tone; icon: ReactNode }> = {
+  STARTED: { label: 'Started', tone: 'info', icon: <PlayCircle className="size-3.5" /> },
+  IN_PROGRESS: { label: 'In Progress', tone: 'warning', icon: <Hourglass className="size-3.5" /> },
   COMPLETED: { label: 'Completed', tone: 'success', icon: <CheckCircle2 className="size-3.5" /> },
-  NOT_STARTED: { label: 'Not Started', tone: 'neutral', icon: <Circle className="size-3.5" /> },
   NOT_INTERESTED: { label: 'Not Interested', tone: 'neutral', icon: <XCircle className="size-3.5" /> },
   CALLBACK_REQUIRED: { label: 'Callback Required', tone: 'info', icon: <PhoneCall className="size-3.5" /> },
   OTHER: { label: 'Other', tone: 'neutral', icon: <MoreHorizontal className="size-3.5" /> },

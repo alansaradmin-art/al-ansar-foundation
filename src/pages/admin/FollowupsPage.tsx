@@ -22,7 +22,8 @@ import type { FollowUpStatus } from '@/types'
 import type { OverdueFollowupRow } from '@/services/followups'
 
 const STATUS_LABELS: Record<string, string> = {
-  NOT_STARTED: 'Not Started',
+  STARTED: 'Started',
+  IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   NOT_INTERESTED: 'Not Interested',
   CALLBACK_REQUIRED: 'Callback Required',

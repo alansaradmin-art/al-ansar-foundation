@@ -16,7 +16,8 @@ import { todayISO } from '@/lib/format'
 import type { Member } from '@/types'
 
 const STATUS_LABELS: Record<(typeof FOLLOW_UP_STATUSES)[number], string> = {
-  NOT_STARTED: 'Not Started',
+  STARTED: 'Started',
+  IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   NOT_INTERESTED: 'Not Interested',
   CALLBACK_REQUIRED: 'Callback Required',

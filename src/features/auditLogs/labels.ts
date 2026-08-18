@@ -9,7 +9,8 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 }
 
 export const FOLLOW_UP_STATUS_LABELS: Record<FollowUpStatus, string> = {
-  NOT_STARTED: 'Not Started',
+  STARTED: 'Started',
+  IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   NOT_INTERESTED: 'Not Interested',
   CALLBACK_REQUIRED: 'Callback Required',
