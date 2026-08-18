@@ -107,22 +107,27 @@ export function Member360View({
       </div>
 
       <Tabs defaultValue="overview" className="mt-3 gap-0" onValueChange={handleTabChange}>
-        <div className="sticky top-14 z-10 overflow-x-auto border-b bg-background/95 px-4 py-2 backdrop-blur">
+        <div className="sticky top-14 z-10 border-b bg-background/95 px-4 py-2 backdrop-blur">
+          {/* 5 tabs' full labels don't fit a phone-width bar (whitespace-nowrap
+           * on TabsTrigger blocks shrinking below content size) — text
+           * collapses to icon-only below sm, avoiding both squished labels
+           * and a horizontal-scroll tab bar. aria-label keeps each tab
+           * announced correctly once the visible text is hidden. */}
           <TabsList className="w-full">
-            <TabsTrigger value="overview">
-              <IdCard className="size-4" /> Overview
+            <TabsTrigger value="overview" aria-label="Overview">
+              <IdCard className="size-4" /> <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="donations">
-              <IndianRupee className="size-4" /> Donations
+            <TabsTrigger value="donations" aria-label="Donations">
+              <IndianRupee className="size-4" /> <span className="hidden sm:inline">Donations</span>
             </TabsTrigger>
-            <TabsTrigger value="followups">
-              <ClipboardList className="size-4" /> Follow-ups
+            <TabsTrigger value="followups" aria-label="Follow-ups">
+              <ClipboardList className="size-4" /> <span className="hidden sm:inline">Follow-ups</span>
             </TabsTrigger>
-            <TabsTrigger value="timeline">
-              <History className="size-4" /> Timeline
+            <TabsTrigger value="timeline" aria-label="Timeline">
+              <History className="size-4" /> <span className="hidden sm:inline">Timeline</span>
             </TabsTrigger>
-            <TabsTrigger value="documents">
-              <FileText className="size-4" /> Documents
+            <TabsTrigger value="documents" aria-label="Documents">
+              <FileText className="size-4" /> <span className="hidden sm:inline">Documents</span>
             </TabsTrigger>
           </TabsList>
         </div>
