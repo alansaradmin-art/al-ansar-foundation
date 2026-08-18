@@ -10,7 +10,7 @@ import {
 } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
 import { normalizeMobileNumber } from './_lib/phone.js'
-import type { Database, MemberStatus } from '../src/types/database'
+import type { Database, FollowUpStatus, MemberStatus } from '../src/types/database'
 
 type MemberRow = Database['public']['Tables']['members']['Row']
 type MemberInsert = Database['public']['Tables']['members']['Insert']
@@ -186,7 +186,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           .eq('is_deleted', false),
         supabase
           .from('monthly_followups')
-          .select('member_id, follow_up_status')
+          .select('member_id, follow_up_status, follow_up_date, remarks, created_at')
           .in('member_id', allowedIds)
           .eq('month', month)
           .eq('year', year),
@@ -196,9 +196,30 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (followupsResult.error) return sendSupabaseError(res, followupsResult.error)
       if (pendingResult.error) return sendSupabaseError(res, pendingResult.error)
 
-      const summaries: Record<string, { donationTotal: number; donationCount: number; hasCompletedFollowup: boolean; isPending: boolean }> = {}
+      interface PeriodSummary {
+        donationTotal: number
+        donationCount: number
+        hasCompletedFollowup: boolean
+        isPending: boolean
+        // The most recently logged follow-up attempt this period (by
+        // follow_up_date, tie-broken by created_at) — surfaced so a manager
+        // can see a STARTED/IN_PROGRESS/etc. attempt (and its notes) on the
+        // member list immediately, not just once it's COMPLETED.
+        latestFollowupStatus: FollowUpStatus | null
+        latestFollowupDate: string | null
+        latestFollowupNotes: string | null
+      }
+      const summaries: Record<string, PeriodSummary> = {}
       for (const id of allowedIds) {
-        summaries[id] = { donationTotal: 0, donationCount: 0, hasCompletedFollowup: false, isPending: false }
+        summaries[id] = {
+          donationTotal: 0,
+          donationCount: 0,
+          hasCompletedFollowup: false,
+          isPending: false,
+          latestFollowupStatus: null,
+          latestFollowupDate: null,
+          latestFollowupNotes: null,
+        }
       }
       for (const d of donationsResult.data ?? []) {
         // member_id is only nullable for anonymous donations (see
@@ -209,8 +230,21 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         summaries[d.member_id].donationTotal += Number(d.amount_inr)
         summaries[d.member_id].donationCount += 1
       }
+      const latestCreatedAt: Record<string, string> = {}
       for (const f of followupsResult.data ?? []) {
         if (f.follow_up_status === 'COMPLETED') summaries[f.member_id].hasCompletedFollowup = true
+
+        const summary = summaries[f.member_id]
+        const isNewer =
+          !summary.latestFollowupDate ||
+          f.follow_up_date > summary.latestFollowupDate ||
+          (f.follow_up_date === summary.latestFollowupDate && f.created_at > latestCreatedAt[f.member_id])
+        if (isNewer) {
+          summary.latestFollowupStatus = f.follow_up_status
+          summary.latestFollowupDate = f.follow_up_date
+          summary.latestFollowupNotes = f.remarks
+          latestCreatedAt[f.member_id] = f.created_at
+        }
       }
       for (const p of pendingResult.data ?? []) {
         if (summaries[p.member_id]) summaries[p.member_id].isPending = p.is_pending

@@ -1,4 +1,5 @@
 import { apiClient, type GetToken } from '@/lib/apiClient'
+import type { FollowUpStatus } from '@/types'
 
 export interface MemberPeriodSummary {
   donationTotal: number
@@ -9,6 +10,12 @@ export interface MemberPeriodSummary {
    * received OR a completed follow-up both clear this regardless of the
    * cutoff day. Never derive "pending" from hasCompletedFollowup alone. */
   isPending: boolean
+  /** The most recently logged follow-up attempt this period, regardless of
+   * status — so a STARTED/IN_PROGRESS/etc. attempt (and its notes) shows up
+   * on the member list immediately, not just once it's COMPLETED. */
+  latestFollowupStatus: FollowUpStatus | null
+  latestFollowupDate: string | null
+  latestFollowupNotes: string | null
 }
 
 /**

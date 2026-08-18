@@ -49,19 +49,29 @@ export function MemberCard({
         )}
 
         {summary && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <DonationStatusBadge
-              received={summary.donationCount > 0}
-              label={summary.donationCount > 0 ? formatINR(summary.donationTotal) : undefined}
-            />
-            {summary.hasCompletedFollowup ? (
-              <FollowupStatusBadge status="COMPLETED" />
-            ) : summary.isPending ? (
-              <PendingFollowupBadge label="Follow-up Needed" />
-            ) : summary.donationCount === 0 ? (
-              <FollowupNotDueBadge />
-            ) : null}
-          </div>
+          <>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <DonationStatusBadge
+                received={summary.donationCount > 0}
+                label={summary.donationCount > 0 ? formatINR(summary.donationTotal) : undefined}
+              />
+              {summary.hasCompletedFollowup ? (
+                <FollowupStatusBadge status="COMPLETED" />
+              ) : summary.latestFollowupStatus ? (
+                // A logged attempt this period that isn't COMPLETED yet
+                // (STARTED, IN_PROGRESS, ...) — shown as-is rather than the
+                // generic "Follow-up Needed" once any attempt exists.
+                <FollowupStatusBadge status={summary.latestFollowupStatus} />
+              ) : summary.isPending ? (
+                <PendingFollowupBadge label="Follow-up Needed" />
+              ) : summary.donationCount === 0 ? (
+                <FollowupNotDueBadge />
+              ) : null}
+            </div>
+            {summary.latestFollowupNotes && (
+              <p className="line-clamp-2 text-xs text-muted-foreground">{summary.latestFollowupNotes}</p>
+            )}
+          </>
         )}
       </div>
 
