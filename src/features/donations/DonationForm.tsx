@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { donationFormSchema, DONATION_TYPES, PAYMENT_METHODS, type DonationFormValues } from '@/schemas/donation.schema'
+import { todayISO } from '@/lib/format'
 
 const PAYMENT_LABELS: Record<(typeof PAYMENT_METHODS)[number], string> = {
   CASH: 'Cash',
@@ -24,11 +25,6 @@ const DONATION_TYPE_LABELS: Record<(typeof DONATION_TYPES)[number], string> = {
 }
 
 const REFERENCE_REQUIRED = new Set(['UPI', 'ONLINE', 'BANK_TRANSFER'])
-
-function todayISO() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
 
 export function DonationForm({
   memberId,
@@ -52,7 +48,7 @@ export function DonationForm({
       member_id: memberId,
       donation_date: todayISO(),
       amount_inr: 0,
-      donation_type: 'GENERAL',
+      donation_type: 'SADAQAH',
       payment_method: 'CASH',
       transaction_reference: '',
       notes: '',
@@ -72,7 +68,7 @@ export function DonationForm({
             <FormItem>
               <FormLabel>Donation Date</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input type="date" max={todayISO()} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

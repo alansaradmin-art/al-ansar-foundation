@@ -98,6 +98,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (req.method === 'POST') {
       const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string; confirmDuplicate?: boolean }>(req)
 
+      // Authoritative check — the client can't be trusted to enforce this,
+      // and the server can't rely on any particular caller's own clock, so
+      // "today" is computed explicitly in this foundation's timezone rather
+      // than the server process's own (Vercel runs functions in UTC).
+      // Mirrors api/followups.ts's identical check.
+      const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+      if (values.donation_date > todayIST) {
+        return sendError(res, 400, 'Donation date cannot be in the future.')
+      }
+
       // Fetched once, for both the manager-scope permission check below and
       // the auto-reactivation check after the donation is inserted (a
       // member's current status can only be known by reading the row).
@@ -200,6 +210,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (oldRow.is_deleted) return sendError(res, 400, 'Cannot edit a removed donation.')
 
       const values = await readJsonBody<Partial<DonationInsert> & { donation_date: string; confirmDuplicate?: boolean }>(req)
+
+      const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+      if (values.donation_date > todayIST) {
+        return sendError(res, 400, 'Donation date cannot be in the future.')
+      }
 
       // Same soft check as create — editing a donation into an accidental
       // collision with another real donation should be caught too.

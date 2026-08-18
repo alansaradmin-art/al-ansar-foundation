@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   followupFormSchema,
-  todayISO,
   FOLLOW_UP_STATUSES,
   FOLLOW_UP_METHODS,
   CONTACTED_PERSON_TYPES,
   type FollowupFormValues,
 } from '@/schemas/followup.schema'
+import { todayISO } from '@/lib/format'
 import type { Member } from '@/types'
 
 const STATUS_LABELS: Record<(typeof FOLLOW_UP_STATUSES)[number], string> = {

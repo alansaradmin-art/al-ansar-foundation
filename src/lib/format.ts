@@ -24,6 +24,16 @@ export function formatPeriod(month: number, year: number): string {
   return `${monthName(month)} ${year}`
 }
 
+/** Local-machine "today" as YYYY-MM-DD — used as both a date field's
+ * default value and to reject a future date client-side (donation and
+ * follow-up forms). The server is always the authoritative check and
+ * uses IST explicitly instead, since it can't rely on any particular
+ * caller's clock/timezone. */
+export function todayISO(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
 /** "YYYY-MM-DD" -> "10 Aug 2026" */
 export function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number)

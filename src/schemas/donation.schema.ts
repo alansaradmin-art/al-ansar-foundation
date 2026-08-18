@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { todayISO } from '@/lib/format'
 
 export const PAYMENT_METHODS = ['CASH', 'UPI', 'ONLINE', 'BANK_TRANSFER', 'OTHER'] as const
 export const DONATION_TYPES = ['ZAKAT', 'SADAQAH', 'FITRA', 'GENERAL', 'OTHER'] as const
@@ -13,7 +14,10 @@ export const donationFormSchema = z
     // required for them in practice. The server is the real gate on who
     // may omit it (api/donations.ts).
     member_id: z.string().uuid('Select a member.').optional(),
-    donation_date: z.string().min(1, 'Donation date is required.'),
+    donation_date: z
+      .string()
+      .min(1, 'Donation date is required.')
+      .refine((date) => date <= todayISO(), 'Donation date cannot be in the future.'),
     amount_inr: z.coerce
       .number({ message: 'Enter a valid amount.' })
       .positive('Amount must be greater than ₹0.'),
