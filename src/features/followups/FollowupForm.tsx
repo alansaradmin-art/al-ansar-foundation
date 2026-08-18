@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   followupFormSchema,
+  todayISO,
   FOLLOW_UP_STATUSES,
   FOLLOW_UP_METHODS,
   CONTACTED_PERSON_TYPES,
@@ -34,11 +35,6 @@ const CONTACTED_LABELS: Record<(typeof CONTACTED_PERSON_TYPES)[number], string> 
   ADDED_BY: 'Added By',
   REFERENCE_CONTACT: 'Reference Contact',
   OTHER: 'Someone else',
-}
-
-function todayISO() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
 function contactInfoFor(member: Member, type: string) {
@@ -104,7 +100,7 @@ export function FollowupForm({
             <FormItem>
               <FormLabel>Follow-up Date</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input type="date" max={todayISO()} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

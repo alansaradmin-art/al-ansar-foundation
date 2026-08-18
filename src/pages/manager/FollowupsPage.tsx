@@ -15,6 +15,20 @@ import { FollowupStatusBadge } from '@/components/StatusBadge'
 import { PendingMemberCard } from '@/features/followups/PendingMemberCard'
 import { formatDate } from '@/lib/format'
 
+const METHOD_LABELS: Record<string, string> = {
+  PHONE: 'Phone',
+  WHATSAPP: 'WhatsApp',
+  IN_PERSON: 'In Person',
+  OTHER: 'Other',
+}
+
+const CONTACTED_LABELS: Record<string, string> = {
+  MEMBER: 'Member',
+  ADDED_BY: 'Added By',
+  REFERENCE_CONTACT: 'Reference Contact',
+  OTHER: 'Other',
+}
+
 export default function ManagerFollowupsPage() {
   const { profile } = useProfile()
   const { period, setPeriod } = usePeriodSelector()
@@ -90,7 +104,15 @@ export default function ManagerFollowupsPage() {
                     </div>
                     <FollowupStatusBadge status={f.follow_up_status} />
                   </div>
-                  <p className="text-xs text-muted-foreground">{formatDate(f.follow_up_date)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(f.follow_up_date)}
+                    {f.follow_up_method && ` · ${METHOD_LABELS[f.follow_up_method]}`}
+                    {' · '}
+                    {f.contacted_person_type === 'OTHER'
+                      ? f.contacted_person_name || 'Other'
+                      : CONTACTED_LABELS[f.contacted_person_type ?? 'OTHER']}
+                  </p>
+                  {f.remarks && <p className="text-sm text-muted-foreground">{f.remarks}</p>}
                 </Link>
               ))}
             </div>

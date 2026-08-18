@@ -25,6 +25,20 @@ const STATUS_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
+const METHOD_LABELS: Record<string, string> = {
+  PHONE: 'Phone',
+  WHATSAPP: 'WhatsApp',
+  IN_PERSON: 'In Person',
+  OTHER: 'Other',
+}
+
+const CONTACTED_LABELS: Record<string, string> = {
+  MEMBER: 'Member',
+  ADDED_BY: 'Added By',
+  REFERENCE_CONTACT: 'Reference Contact',
+  OTHER: 'Other',
+}
+
 const VALID_TABS = new Set(['history', 'overdue'])
 
 export default function AdminFollowupsPage() {
@@ -104,7 +118,7 @@ export default function AdminFollowupsPage() {
             </SelectContent>
           </Select>
 
-          {isLoading && <TableSkeleton cols={5} />}
+          {isLoading && <TableSkeleton cols={6} />}
           {isError && <ErrorState message="Unable to load follow-ups. Please try again." onRetry={refetch} />}
           {data && data.rows.length === 0 && <EmptyState title="No follow-ups recorded for this month." />}
 
@@ -116,7 +130,9 @@ export default function AdminFollowupsPage() {
                   <TableHead>Member</TableHead>
                   <TableHead>Manager</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Method</TableHead>
                   <TableHead>Contacted</TableHead>
+                  <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,7 +152,15 @@ export default function AdminFollowupsPage() {
                       <FollowupStatusBadge status={f.follow_up_status} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {f.contacted_person_type === 'OTHER' ? f.contacted_person_name : f.contacted_person_type}
+                      {f.follow_up_method ? METHOD_LABELS[f.follow_up_method] : '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {f.contacted_person_type === 'OTHER'
+                        ? f.contacted_person_name || 'Other'
+                        : CONTACTED_LABELS[f.contacted_person_type ?? 'OTHER']}
+                    </TableCell>
+                    <TableCell className="max-w-56 text-muted-foreground">
+                      {f.remarks ? <span className="line-clamp-2">{f.remarks}</span> : '—'}
                     </TableCell>
                   </TableRow>
                 ))}

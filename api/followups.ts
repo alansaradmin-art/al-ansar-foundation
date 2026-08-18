@@ -100,6 +100,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const values = await readJsonBody<Partial<FollowupInsert> & { follow_up_date: string }>(req)
       if (!values.member_id) return sendError(res, 400, 'member_id is required.')
 
+      // Authoritative check — the client can't be trusted to enforce this,
+      // and the server can't rely on any particular caller's own clock, so
+      // "today" is computed explicitly in this foundation's timezone rather
+      // than the server process's own (Vercel runs functions in UTC).
+      const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+      if (values.follow_up_date > todayIST) {
+        return sendError(res, 400, 'Follow-up date cannot be in the future.')
+      }
+
       const { data: member, error: memberError } = await supabase
         .from('members')
         .select('assigned_manager_id')
