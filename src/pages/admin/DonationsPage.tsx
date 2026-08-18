@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDonations } from '@/hooks/useDonations'
 import { useManagers } from '@/hooks/useManagers'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -43,14 +45,18 @@ const DONATION_TYPE_LABELS: Record<string, string> = {
 
 export default function AdminDonationsPage() {
   const { period, setPeriod } = usePeriodSelector()
-  const [managerId, setManagerId] = useState('ALL')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | 'ALL'>('ALL')
-  const [donationType, setDonationType] = useState<DonationType | 'ALL'>('ALL')
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useUrlFilters({
+    managerId: 'ALL',
+    paymentMethod: 'ALL' as PaymentMethod | 'ALL',
+    donationType: 'ALL' as DonationType | 'ALL',
+    page: 1,
+  })
+  const { managerId, paymentMethod, donationType, page } = filters
 
   const { data: managers = [] } = useManagers()
   const { pageSize } = useDefaultPageSize()
-  useEffect(() => setPage(1), [pageSize])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setFilters({ page: 1 }), [pageSize])
   const { data, isLoading, isError, refetch } = useAdminDonations({
     month: period?.month,
     year: period?.year,
@@ -86,7 +92,7 @@ export default function AdminDonationsPage() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={managerId} onValueChange={setManagerId}>
+        <Select value={managerId} onValueChange={(v) => setFilters({ managerId: v })}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All managers" />
           </SelectTrigger>
@@ -99,7 +105,7 @@ export default function AdminDonationsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod | 'ALL')}>
+        <Select value={paymentMethod} onValueChange={(v) => setFilters({ paymentMethod: v as PaymentMethod | 'ALL' })}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All methods" />
           </SelectTrigger>
@@ -112,7 +118,7 @@ export default function AdminDonationsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={donationType} onValueChange={(v) => setDonationType(v as DonationType | 'ALL')}>
+        <Select value={donationType} onValueChange={(v) => setFilters({ donationType: v as DonationType | 'ALL' })}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
@@ -183,7 +189,9 @@ export default function AdminDonationsPage() {
                   <TableCell>
                     {donation.member ? (
                       <>
-                        <p>{donation.member.member_name}</p>
+                        <Link to={`/admin/members/${donation.member_id}`} className="font-medium hover:underline">
+                          {donation.member.member_name}
+                        </Link>
                         {(() => {
                           const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
                             .filter(Boolean)
@@ -217,7 +225,9 @@ export default function AdminDonationsPage() {
         </>
       )}
 
-      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
+      {data && (
+        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+      )}
     </div>
   )
 }

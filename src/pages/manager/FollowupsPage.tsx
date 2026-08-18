@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, PartyPopper } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminFollowups, usePendingFollowups } from '@/hooks/useFollowups'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -18,15 +19,19 @@ export default function ManagerFollowupsPage() {
   const { profile } = useProfile()
   const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
-  const [historyPage, setHistoryPage] = useState(1)
+  const [filters, setFilters] = useUrlFilters({ tab: 'pending', historyPage: 1 })
+  const { historyPage } = filters
+  const tab = filters.tab === 'history' ? 'history' : 'pending'
   const { pageSize } = useDefaultPageSize()
-  useEffect(() => setHistoryPage(1), [pageSize])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setFilters({ historyPage: 1 }), [pageSize])
 
   // Both tabs' data is fetched once at page mount (see the two useQuery
   // calls below) — switching tabs re-fetches that tab's own data so a
   // follow-up recorded elsewhere in the same session shows up without a
   // full reload.
   function handleTabChange(value: string) {
+    setFilters({ tab: value })
     if (value === 'pending') queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
     if (value === 'history') queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
   }
@@ -49,7 +54,7 @@ export default function ManagerFollowupsPage() {
     <div className="space-y-4 p-4">
       <PageHeader title="Follow-ups" actions={period && <PeriodSelector period={period} onChange={setPeriod} />} />
 
-      <Tabs defaultValue="pending" onValueChange={handleTabChange}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList className="w-full">
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
@@ -91,7 +96,14 @@ export default function ManagerFollowupsPage() {
               ))}
             </div>
           )}
-          {history && <Pagination page={historyPage} pageSize={pageSize} total={history.count} onPageChange={setHistoryPage} />}
+          {history && (
+            <Pagination
+              page={historyPage}
+              pageSize={pageSize}
+              total={history.count}
+              onPageChange={(p) => setFilters({ historyPage: p })}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

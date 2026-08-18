@@ -1,9 +1,8 @@
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useManagerWiseReport, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
@@ -38,11 +37,11 @@ const PAYMENT_LABELS: Record<string, string> = {
 const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement'])
 
 export default function ReportsPage() {
-  const [searchParams] = useSearchParams()
-  const initialTab = searchParams.get('tab')
   const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
-  const [year, setYear] = useState(new Date().getFullYear())
+  const [filters, setFilters] = useUrlFilters({ tab: 'manager', year: new Date().getFullYear() })
+  const tab = VALID_TABS.has(filters.tab) ? filters.tab : 'manager'
+  const { year } = filters
 
   const { data: managerRows, isLoading: isManagerLoading } = useManagerWiseReport(period?.month, period?.year)
   const { data: monthRows, isLoading: isMonthLoading } = useMonthWiseReport(year)
@@ -52,6 +51,7 @@ export default function ReportsPage() {
   // re-fetches that tab's own report so changes made elsewhere in the
   // same session (a new donation, a follow-up) show up without a reload.
   function handleTabChange(value: string) {
+    setFilters({ tab: value })
     if (value === 'manager') queryClient.invalidateQueries({ queryKey: ['reports', 'manager-wise'] })
     if (value === 'month') queryClient.invalidateQueries({ queryKey: ['reports', 'month-wise'] })
     if (value === 'donations') queryClient.invalidateQueries({ queryKey: ['reports', 'monthly-donation'] })
@@ -116,7 +116,7 @@ export default function ReportsPage() {
     <div className="space-y-4">
       <PageHeader title="Reports" description="Manager performance and month-over-month donation trends" />
 
-      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'manager'} onValueChange={handleTabChange}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="manager">Manager-wise</TabsTrigger>
           <TabsTrigger value="month">Month-wise</TabsTrigger>
@@ -170,7 +170,7 @@ export default function ReportsPage() {
             <Input
               type="number"
               value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              onChange={(e) => setFilters({ year: Number(e.target.value) })}
               className="w-28"
             />
             <Button variant="outline" onClick={exportMonthReport} disabled={!monthRows?.length}>

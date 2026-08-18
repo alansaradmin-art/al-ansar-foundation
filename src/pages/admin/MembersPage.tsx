@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Upload, UserX, Users, FileWarning } from 'lucide-react'
 import { useMembers, useUnassignedMembersCount, useIncompleteMembersCount, useMemberLastDonationDates } from '@/hooks/useMembers'
 import { useManagers } from '@/hooks/useManagers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
 import { AdminMemberCard, AdminMemberTableRow } from '@/features/members/AdminMemberRow'
 import { MemberFormDialog } from '@/features/members/MemberFormDialog'
@@ -21,19 +22,24 @@ import type { MemberStatus } from '@/types'
 const UNASSIGNED = 'UNASSIGNED'
 
 export default function AdminMembersPage() {
-  const [searchParams] = useSearchParams()
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<MemberStatus | 'ALL'>('ALL')
-  const [managerId, setManagerId] = useState<string>(searchParams.get('manager') === UNASSIGNED ? UNASSIGNED : 'ALL')
-  const [incomplete, setIncomplete] = useState(searchParams.get('incomplete') === 'true')
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useUrlFilters({
+    search: '',
+    status: 'ALL' as MemberStatus | 'ALL',
+    manager: 'ALL',
+    incomplete: false as boolean,
+    page: 1,
+  })
+  const { search, status, manager: managerId, incomplete, page } = filters
   const debouncedSearch = useDebouncedValue(search)
 
   const { data: managers = [] } = useManagers()
   const { data: unassignedCount = 0 } = useUnassignedMembersCount()
   const { data: incompleteCount = 0 } = useIncompleteMembersCount()
   const { pageSize } = useDefaultPageSize()
-  useEffect(() => setPage(1), [pageSize])
+  // Only ever re-run when the page size setting itself changes, not on
+  // every filter change (setFilters is a fresh closure every render).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setFilters({ page: 1 }), [pageSize])
   const { data, isLoading, isError, refetch } = useMembers({
     search: debouncedSearch,
     status: status === 'ALL' ? undefined : status,
@@ -69,23 +75,14 @@ export default function AdminMembersPage() {
         <div className="flex-1">
           <MembersFilterBar
             search={search}
-            onSearchChange={(v) => {
-              setSearch(v)
-              setPage(1)
-            }}
+            onSearchChange={(v) => setFilters({ search: v, page: 1 })}
             status={status}
-            onStatusChange={(v) => {
-              setStatus(v)
-              setPage(1)
-            }}
+            onStatusChange={(v) => setFilters({ status: v, page: 1 })}
           />
         </div>
         <Select
           value={managerId}
-          onValueChange={(v) => {
-            setManagerId(v)
-            setPage(1)
-          }}
+          onValueChange={(v) => setFilters({ manager: v, page: 1 })}
         >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All managers" />
@@ -104,10 +101,7 @@ export default function AdminMembersPage() {
         {unassignedCount > 0 && (
           <button
             type="button"
-            onClick={() => {
-              setManagerId(UNASSIGNED)
-              setPage(1)
-            }}
+            onClick={() => setFilters({ manager: UNASSIGNED, page: 1 })}
             className="flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning-foreground transition-colors hover:bg-warning/20"
           >
             <UserX className="size-3.5" /> {unassignedCount} Unassigned
@@ -117,10 +111,7 @@ export default function AdminMembersPage() {
         {incompleteCount > 0 && (
           <button
             type="button"
-            onClick={() => {
-              setIncomplete((v) => !v)
-              setPage(1)
-            }}
+            onClick={() => setFilters({ incomplete: !incomplete, page: 1 })}
             className={cn(
               'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
               incomplete
@@ -189,7 +180,9 @@ export default function AdminMembersPage() {
         </>
       )}
 
-      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
+      {data && (
+        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+      )}
     </div>
   )
 }

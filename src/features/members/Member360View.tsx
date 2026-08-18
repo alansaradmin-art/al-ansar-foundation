@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/StateViews'
 import { MemberStatusBadge } from '@/components/StatusBadge'
 import { MemberInfoCard } from './MemberInfoCard'
 import { ContactSection } from './ContactSection'
+import { FamilyInformationCard } from './FamilyInformationCard'
+import { AuditInformationCard } from './AuditInformationCard'
 import { AssignedManagerCard } from './AssignedManagerCard'
 import { FinancialSummaryCard } from '@/features/donations/FinancialSummaryCard'
 import { DonationTrendChart } from '@/features/donations/DonationTrendChart'
@@ -128,8 +130,10 @@ export function Member360View({
         <TabsContent value="overview" className="space-y-4 p-4">
           <MemberInfoCard member={member} />
           <ContactSection member={member} />
+          <FamilyInformationCard member={member} />
           <AssignedManagerCard managerId={member.assigned_manager_id} />
           {isDonationsLoading ? <CardListSkeleton count={2} /> : <FinancialSummaryCard donations={donations} />}
+          <AuditInformationCard member={member} />
         </TabsContent>
 
         <TabsContent value="donations" className="space-y-4 p-4">

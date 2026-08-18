@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminFollowups, useOverdueFollowups } from '@/hooks/useFollowups'
 import { useManagers } from '@/hooks/useManagers'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -70,23 +71,28 @@ function OverdueRowCard({ row }: { row: OverdueFollowupRow }) {
 }
 
 export default function AdminFollowupsPage() {
-  const [searchParams] = useSearchParams()
-  const initialTab = searchParams.get('tab')
   const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
-  const [managerId, setManagerId] = useState('ALL')
-  const [status, setStatus] = useState<FollowUpStatus | 'ALL'>('ALL')
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useUrlFilters({
+    tab: 'history',
+    managerId: 'ALL',
+    status: 'ALL' as FollowUpStatus | 'ALL',
+    page: 1,
+  })
+  const tab = VALID_TABS.has(filters.tab) ? filters.tab : 'history'
+  const { managerId, status, page } = filters
 
   const { data: managers = [] } = useManagers()
   const { pageSize } = useDefaultPageSize()
-  useEffect(() => setPage(1), [pageSize])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setFilters({ page: 1 }), [pageSize])
   const scopedManagerId = managerId === 'ALL' ? undefined : managerId
 
   // Both tabs' data is fetched once at page mount — switching tabs
   // re-fetches that tab's own data so a follow-up recorded elsewhere in
   // the same session shows up without a full reload.
   function handleTabChange(value: string) {
+    setFilters({ tab: value })
     if (value === 'history') queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
     if (value === 'overdue') queryClient.invalidateQueries({ queryKey: ['followups', 'overdue'] })
   }
@@ -114,13 +120,7 @@ export default function AdminFollowupsPage() {
         actions={period && <PeriodSelector period={period} onChange={setPeriod} />}
       />
 
-      <Select
-        value={managerId}
-        onValueChange={(v) => {
-          setManagerId(v)
-          setPage(1)
-        }}
-      >
+      <Select value={managerId} onValueChange={(v) => setFilters({ managerId: v, page: 1 })}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="All managers" />
         </SelectTrigger>
@@ -134,14 +134,14 @@ export default function AdminFollowupsPage() {
         </SelectContent>
       </Select>
 
-      <Tabs defaultValue={initialTab && VALID_TABS.has(initialTab) ? initialTab : 'history'} onValueChange={handleTabChange}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="overdue">Overdue</TabsTrigger>
         </TabsList>
 
         <TabsContent value="history" className="space-y-4">
-          <Select value={status} onValueChange={(v) => setStatus(v as FollowUpStatus | 'ALL')}>
+          <Select value={status} onValueChange={(v) => setFilters({ status: v as FollowUpStatus | 'ALL' })}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
@@ -222,7 +222,9 @@ export default function AdminFollowupsPage() {
             </>
           )}
 
-          {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
+          {data && (
+            <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+          )}
         </TabsContent>
 
         <TabsContent value="overdue" className="space-y-4">

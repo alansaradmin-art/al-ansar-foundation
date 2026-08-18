@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Receipt } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDonations } from '@/hooks/useDonations'
 import { useManagerDashboard } from '@/hooks/useDashboard'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -17,9 +18,11 @@ import { formatINR, formatPeriod } from '@/lib/format'
 export default function DonationsPage() {
   const { profile } = useProfile()
   const { period, setPeriod } = usePeriodSelector()
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useUrlFilters({ page: 1 })
+  const { page } = filters
   const { pageSize } = useDefaultPageSize()
-  useEffect(() => setPage(1), [pageSize])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setFilters({ page: 1 }), [pageSize])
   const { data, isLoading, isError, refetch } = useAdminDonations({
     month: period?.month,
     year: period?.year,
@@ -68,7 +71,9 @@ export default function DonationsPage() {
         </div>
       )}
 
-      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
+      {data && (
+        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+      )}
     </div>
   )
 }

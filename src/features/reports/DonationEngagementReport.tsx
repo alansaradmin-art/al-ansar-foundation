@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowUpDown, ChevronDown, ChevronUp, Download, IndianRupee, Search, UserCheck, Users, UserX } from 'lucide-react'
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from 'date-fns'
@@ -14,6 +14,7 @@ import { DonationStatusBadge, UnassignedManagerBadge } from '@/components/Status
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { DateRangePicker, type DateRangeValue } from '@/components/DateRangePicker'
 import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
@@ -55,6 +56,27 @@ type SortKey =
   | 'totalAmount'
   | 'donationCount'
   | 'latestDonationDate'
+
+const SORT_KEYS: SortKey[] = [
+  'memberName',
+  'fatherName',
+  'mobileNumber',
+  'managerName',
+  'donated',
+  'totalAmount',
+  'donationCount',
+  'latestDonationDate',
+]
+
+/** The reverse of statusFilterFromParam — kept next to it so the URL's
+ * short, link-friendly spelling stays the single encoding written AND
+ * read back (never the internal StatusFilter enum value itself, which
+ * statusFilterFromParam wouldn't recognize on the next read). */
+function statusFilterToParam(value: StatusFilter): string | undefined {
+  if (value === 'DONATED') return 'donated'
+  if (value === 'NOT_DONATED') return 'notDonated'
+  return undefined
+}
 
 function toISO(date: Date): string {
   return format(date, 'yyyy-MM-dd')
@@ -115,7 +137,7 @@ function SortableHeader({
 }) {
   const isActive = activeKey === sortKey
   return (
-    <th className="p-3 font-medium">
+    <TableHead>
       <button
         type="button"
         onClick={() => onSort(sortKey)}
@@ -128,7 +150,7 @@ function SortableHeader({
           <ArrowUpDown className="size-3 opacity-40" />
         )}
       </button>
-    </th>
+    </TableHead>
   )
 }
 
@@ -164,17 +186,49 @@ function EngagementRowCard({ row }: { row: DonationEngagementRow }) {
 }
 
 export function DonationEngagementReport() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { period } = usePeriodSelector()
-  const [preset, setPreset] = useState<Preset>('THIS_MONTH')
-  const [customRange, setCustomRange] = useState<DateRangeValue | undefined>(undefined)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(statusFilterFromParam(searchParams.get('status')))
-  const [search, setSearch] = useState(searchParams.get('search') ?? '')
-  const [sortKey, setSortKey] = useState<SortKey>('memberName')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [page, setPage] = useState(1)
+
+  const presetParam = searchParams.get('preset')
+  const preset: Preset = presetParam && presetParam in PRESET_LABELS ? (presetParam as Preset) : 'THIS_MONTH'
+  const dateFrom = searchParams.get('dateFrom')
+  const dateTo = searchParams.get('dateTo')
+  // Memoized on the primitive from/to strings, not recreated as a fresh
+  // object every render — otherwise the params useMemo below (which depends
+  // on customRange) would never see a stable reference and recompute on
+  // every render regardless of whether the actual range changed.
+  const customRange: DateRangeValue | undefined = useMemo(
+    () => (dateFrom && dateTo ? { from: dateFrom, to: dateTo } : undefined),
+    [dateFrom, dateTo],
+  )
+  const statusFilter = statusFilterFromParam(searchParams.get('status'))
+  const search = searchParams.get('search') ?? ''
+  const sortKeyParam = searchParams.get('sortKey')
+  const sortKey: SortKey = sortKeyParam && SORT_KEYS.includes(sortKeyParam as SortKey) ? (sortKeyParam as SortKey) : 'memberName'
+  const sortDir: 'asc' | 'desc' = searchParams.get('sortDir') === 'desc' ? 'desc' : 'asc'
+  const page = Number(searchParams.get('page') ?? '1')
+
+  // Every filter/sort/page change goes through here — replace (not push) so
+  // adjusting a filter never spams browser history, matching the app's
+  // useUrlFilters hook pattern. This report doesn't reuse that hook
+  // directly because `status` uses a short, link-friendly URL vocabulary
+  // (see statusFilterFromParam/statusFilterToParam, kept for the Dashboard's
+  // existing ?status=notDonated deep link) and customRange is a two-field
+  // object, neither of which fit useUrlFilters' plain scalar model.
+  function updateParams(patch: Record<string, string | undefined>) {
+    const next = new URLSearchParams(searchParams)
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value === '') next.delete(key)
+      else next.set(key, value)
+    }
+    setSearchParams(next, { replace: true })
+  }
+
   const { pageSize: PAGE_SIZE } = useDefaultPageSize()
-  useEffect(() => setPage(1), [PAGE_SIZE])
+  // Only ever re-run when the page size setting itself changes, not on
+  // every filter change (updateParams is a fresh closure every render).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => updateParams({ page: undefined }), [PAGE_SIZE])
 
   const params = useMemo(() => resolveDateRange(preset, period, customRange), [preset, period, customRange])
   const { data: rows, isLoading, isError, refetch } = useDonationEngagementReport(params)
@@ -206,17 +260,15 @@ export function DonationEngagementReport() {
   const totalAmount = rows?.reduce((sum, r) => sum + r.totalAmount, 0) ?? 0
 
   function handlePresetChange(value: string) {
-    setPreset(value as Preset)
-    setPage(1)
+    updateParams({ preset: value === 'THIS_MONTH' ? undefined : value, page: undefined })
   }
 
   function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    else {
-      setSortKey(key)
-      setSortDir('asc')
+    if (sortKey === key) {
+      updateParams({ sortDir: sortDir === 'asc' ? 'desc' : undefined, page: undefined })
+    } else {
+      updateParams({ sortKey: key === 'memberName' ? undefined : key, sortDir: undefined, page: undefined })
     }
-    setPage(1)
   }
 
   function handleExport() {
@@ -237,7 +289,7 @@ export function DonationEngagementReport() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <Select value={preset} onValueChange={handlePresetChange}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -252,22 +304,16 @@ export function DonationEngagementReport() {
         {preset === 'CUSTOM' && (
           <DateRangePicker
             value={customRange}
-            onChange={(v) => {
-              setCustomRange(v)
-              setPage(1)
-            }}
+            onChange={(v) => updateParams({ dateFrom: v?.from, dateTo: v?.to, page: undefined })}
           />
         )}
 
         {preset !== 'NEVER_DONATED' && (
           <Select
             value={statusFilter}
-            onValueChange={(v) => {
-              setStatusFilter(v as StatusFilter)
-              setPage(1)
-            }}
+            onValueChange={(v) => updateParams({ status: statusFilterToParam(v as StatusFilter), page: undefined })}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -318,10 +364,7 @@ export function DonationEngagementReport() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            onChange={(e) => updateParams({ search: e.target.value, page: undefined })}
             placeholder="Search by member, father's name, mobile, or manager…"
             className="pl-9"
           />
@@ -341,10 +384,9 @@ export function DonationEngagementReport() {
             ))}
           </div>
 
-          <div className="hidden overflow-x-auto rounded-xl border bg-card shadow-sm md:block">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
+          <Table className="hidden md:block">
+            <TableHeader>
+              <TableRow>
                   <SortableHeader label="Member" sortKey="memberName" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
                   <SortableHeader
                     label="Father's Name"
@@ -389,37 +431,41 @@ export function DonationEngagementReport() {
                     dir={sortDir}
                     onSort={handleSort}
                   />
-                </tr>
-              </thead>
-              <tbody>
-                {pageRows.map((row) => (
-                  <tr key={row.memberId} className="border-b last:border-0">
-                    <td className="p-3">
-                      <Link to={`/admin/members/${row.memberId}`} className="font-medium hover:underline">
-                        {row.memberName}
-                      </Link>
-                    </td>
-                    <td className="p-3 text-muted-foreground">{row.fatherName || '—'}</td>
-                    <td className="p-3 text-muted-foreground">{formatMobileNumber(row.mobileNumber) || '—'}</td>
-                    <td className="p-3 text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</td>
-                    <td className="p-3">
-                      <DonationStatusBadge received={row.donated} label={row.donated ? 'Donated' : 'Not Donated'} />
-                    </td>
-                    <td className="p-3 tabular-nums">{formatINR(row.totalAmount)}</td>
-                    <td className="p-3 tabular-nums">{row.donationCount}</td>
-                    <td className="p-3 text-muted-foreground">
-                      {row.latestDonationDate ? formatDate(row.latestDonationDate) : 'Never'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageRows.map((row) => (
+                <TableRow key={row.memberId} className="border-b last:border-0">
+                  <TableCell>
+                    <Link to={`/admin/members/${row.memberId}`} className="font-medium hover:underline">
+                      {row.memberName}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{row.fatherName || '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatMobileNumber(row.mobileNumber) || '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</TableCell>
+                  <TableCell>
+                    <DonationStatusBadge received={row.donated} label={row.donated ? 'Donated' : 'Not Donated'} />
+                  </TableCell>
+                  <TableCell className="tabular-nums">{formatINR(row.totalAmount)}</TableCell>
+                  <TableCell className="tabular-nums">{row.donationCount}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {row.latestDonationDate ? formatDate(row.latestDonationDate) : 'Never'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </>
       )}
 
       {filtered.length > 0 && (
-        <Pagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={filtered.length}
+          onPageChange={(p) => updateParams({ page: p === 1 ? undefined : String(p) })}
+        />
       )}
     </div>
   )

@@ -1,38 +1,46 @@
-import { UserRound, UserPlus, Contact } from 'lucide-react'
+import { UserRound, UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContactBlock } from './ContactBlock'
+import { formatMobileNumber } from '@/lib/format'
 import type { Member } from '@/types'
 
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-sm">{value || '—'}</p>
+    </div>
+  )
+}
+
+/** Reference Contact deliberately lives in FamilyInformationCard, not here —
+ * its relationship field is the closest thing this schema has to "family"
+ * data, so it's split out into its own Member 360 section. */
 export function ContactSection({ member }: { member: Member }) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
-  const hasReference = member.reference_contact_name || member.reference_contact_phone
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Who should I contact?</CardTitle>
+        <CardTitle className="text-base">Contact Information</CardTitle>
       </CardHeader>
-      <CardContent className="divide-y">
-        <ContactBlock label="Member" name={member.member_name} phone={member.mobile_number} icon={UserRound} tone="primary" />
-        {hasAddedBy && (
-          <ContactBlock
-            label="Added By"
-            name={member.added_by_name}
-            phone={member.added_by_phone}
-            icon={UserPlus}
-            tone="gold"
-          />
-        )}
-        {hasReference && (
-          <ContactBlock
-            label="Reference Contact"
-            name={member.reference_contact_name}
-            phone={member.reference_contact_phone}
-            relationship={member.reference_contact_relationship}
-            icon={Contact}
-            tone="info"
-          />
-        )}
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Mobile" value={formatMobileNumber(member.mobile_number)} />
+          <Field label="Address" value={member.address} />
+        </div>
+        <div className="divide-y border-t pt-3">
+          <ContactBlock label="Member" name={member.member_name} phone={member.mobile_number} icon={UserRound} tone="primary" />
+          {hasAddedBy && (
+            <ContactBlock
+              label="Added By"
+              name={member.added_by_name}
+              phone={member.added_by_phone}
+              icon={UserPlus}
+              tone="gold"
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   )

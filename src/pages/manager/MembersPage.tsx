@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Users } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useMembers } from '@/hooks/useMembers'
@@ -6,6 +6,7 @@ import { useMemberPeriodSummaries } from '@/hooks/useMemberPeriodSummaries'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { MembersFilterBar } from '@/features/members/MembersFilterBar'
 import { MemberCard } from '@/features/members/MemberCard'
 import { PeriodSelector } from '@/components/PeriodSelector'
@@ -18,13 +19,17 @@ import type { MemberStatus } from '@/types'
 export default function MembersPage() {
   const { profile } = useProfile()
   const { period, setPeriod } = usePeriodSelector()
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<MemberStatus | 'ALL'>('ACTIVE')
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useUrlFilters({
+    search: '',
+    status: 'ACTIVE' as MemberStatus | 'ALL',
+    page: 1,
+  })
+  const { search, status, page } = filters
   const debouncedSearch = useDebouncedValue(search)
 
   const { pageSize } = useDefaultPageSize()
-  useEffect(() => setPage(1), [pageSize])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setFilters({ page: 1 }), [pageSize])
   const params = {
     managerId: profile!.manager_id!,
     search: debouncedSearch,
@@ -46,15 +51,9 @@ export default function MembersPage() {
 
       <MembersFilterBar
         search={search}
-        onSearchChange={(v) => {
-          setSearch(v)
-          setPage(1)
-        }}
+        onSearchChange={(v) => setFilters({ search: v, page: 1 })}
         status={status}
-        onStatusChange={(v) => {
-          setStatus(v)
-          setPage(1)
-        }}
+        onStatusChange={(v) => setFilters({ status: v, page: 1 })}
       />
 
       {isLoading && <CardListSkeleton />}
@@ -81,7 +80,9 @@ export default function MembersPage() {
         </div>
       )}
 
-      {data && <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={setPage} />}
+      {data && (
+        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+      )}
     </div>
   )
 }
