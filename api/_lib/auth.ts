@@ -161,8 +161,16 @@ export async function getOrProvisionProfile(clerkUserId: string): Promise<Caller
     return toCallerProfile(provisioned)
   }
 
-  // No match: leave unprovisioned. Admin needs to add/correct this email in
-  // the managers table (or the FOUNDATION_ADMIN_EMAIL setting).
+  // No match: this email is not an authorized Admin/Manager — reject and
+  // clean up immediately rather than leaving a live, unlinked Clerk user
+  // around. Never lets a delete failure block the caller from seeing the
+  // rejection (requireActiveProfile still sends 403 either way); any
+  // still-live session simply retries this same delete on its next call.
+  try {
+    await getClerkClient().users.deleteUser(clerkUserId)
+  } catch (deleteError) {
+    console.error('[auth] failed to delete unauthorized Clerk user', clerkUserId, deleteError)
+  }
   return null
 }
 

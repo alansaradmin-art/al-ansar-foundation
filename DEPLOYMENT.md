@@ -538,10 +538,18 @@ new environment variable values retroactively.
 
 ## 12. Troubleshooting
 
-**"Account not set up yet" for someone who should have access** — check, in order: (1) did
-the migrations actually run (`select * from managers;` should return 11 rows), (2) is their
-email in `managers.email` (or matches `FOUNDATION_ADMIN_EMAIL`) exactly, (3) is
-`managers.status` for them `ACTIVE`.
+**"Not authorized" for someone who should have access** — an email that doesn't match
+`FOUNDATION_ADMIN_EMAIL` or any `managers.email` row is now rejected immediately: the app
+signs them out, and the server deletes the Clerk user it just created for that sign-up
+attempt (see `api/_lib/auth.ts`'s `getOrProvisionProfile` and `api/webhooks/clerk.ts` — both
+call Clerk's Backend API `deleteUser`, never just leaving an unlinked account around). This
+is expected for anyone not yet added — check, in order: (1) did the migrations actually run
+(`select * from managers;` should return 11 rows), (2) is their email in `managers.email` (or
+matches `FOUNDATION_ADMIN_EMAIL`) exactly. Once you add/correct their email, have them try
+"Continue with Google" again — since the earlier attempt's Clerk user was deleted, this
+creates a fresh account and provisions normally; there's nothing to manually clean up first.
+(A manager already present in `managers` but with `status` other than `ACTIVE` is a different
+case — they provision normally but see "Your account has been deactivated" instead.)
 
 **401 errors in the browser console / the app is stuck loading for everyone** — the API
 layer (`api/_lib/auth.ts`) can't verify the caller's Clerk session token. Check: (1)

@@ -10,12 +10,15 @@ interface ProfileContextValue {
   isLoading: boolean
   /** true once we've checked (the API self-provisions on first sign-in) and
    * there's still no linked profile — the signed-in email doesn't match the
-   * Foundation Admin email or any manager's email in the system. */
-  isUnprovisioned: boolean
+   * Foundation Admin email or any manager's email in the system. By the
+   * time this is true, the server has already rejected and deleted the
+   * underlying Clerk user (see api/_lib/auth.ts's getOrProvisionProfile) —
+   * this is a hard "not authorized," not a pending state. */
+  isUnauthorized: boolean
   /** true if the profile lookup itself failed (bad server config, network
-   * error, ...). Kept distinct from isUnprovisioned so a real failure is
-   * never shown as "just sign in with the right email" — those need very
-   * different fixes. */
+   * error, ...). Kept distinct from isUnauthorized so a real failure is
+   * never shown as "you're not authorized" — those need very different
+   * fixes. */
   isError: boolean
   error: unknown
   isAdmin: boolean
@@ -49,7 +52,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const value: ProfileContextValue = {
     profile: resolvedProfile,
     isLoading,
-    isUnprovisioned: isUserLoaded && !!user && !isLoading && !isError && !profile,
+    isUnauthorized: isUserLoaded && !!user && !isLoading && !isError && !profile,
     isError,
     error,
     isAdmin: resolvedProfile?.role === 'ADMIN',

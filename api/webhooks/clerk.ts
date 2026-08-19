@@ -1,5 +1,6 @@
 import { Webhook } from 'svix'
 import { createClient } from '@supabase/supabase-js'
+import { createClerkClient } from '@clerk/backend'
 
 // Raw body access is required for svix signature verification.
 export const config = {
@@ -131,9 +132,25 @@ export default async function handler(req: IncomingRequest, res: ServerResponse)
     return
   }
 
-  // No matching manager email — leave unprovisioned. The app shows a
-  // "waiting for setup" screen; once Admin corrects managers.email, the
-  // next Clerk event for this user (e.g. a profile edit) reconciles it.
+  // No matching admin/manager email. For a brand-new sign-up specifically
+  // (not a later profile edit on an already-existing user — see the
+  // reasoning in api/_lib/auth.ts's getOrProvisionProfile, which this
+  // mirrors), reject and clean up immediately: this is defense-in-depth
+  // for the window before that same check runs on the user's first
+  // authenticated request, not the only place it happens.
+  if (event.type === 'user.created') {
+    const secretKey = process.env.CLERK_SECRET_KEY
+    if (secretKey) {
+      try {
+        await createClerkClient({ secretKey }).users.deleteUser(clerkUserId)
+      } catch (deleteError) {
+        console.error('[webhooks/clerk] failed to delete unauthorized Clerk user', clerkUserId, deleteError)
+      }
+    } else {
+      console.error('[webhooks/clerk] CLERK_SECRET_KEY missing — cannot clean up unauthorized user', clerkUserId)
+    }
+  }
+
   res.statusCode = 200
-  res.end('unmatched, left unprovisioned')
+  res.end('unmatched, rejected')
 }

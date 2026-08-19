@@ -4,11 +4,11 @@ import { useProfile } from '@/contexts/ProfileContext'
 import { LoadingState, ErrorState } from '@/components/StateViews'
 import { InactivityTimeoutGuard } from '@/components/InactivityTimeoutGuard'
 import { getFriendlyErrorMessage } from '@/lib/errors'
-import WaitingForSetupPage from '@/pages/WaitingForSetupPage'
+import UnauthorizedPage from '@/pages/UnauthorizedPage'
 
 export default function RequireAuth() {
   const { isLoaded: isClerkLoaded, isSignedIn } = useAuth()
-  const { profile, isLoading, isUnprovisioned, isError, error } = useProfile()
+  const { profile, isLoading, isUnauthorized, isError, error } = useProfile()
 
   if (!isClerkLoaded) {
     return <LoadingState label="Loading…" />
@@ -36,8 +36,8 @@ export default function RequireAuth() {
     )
   }
 
-  if (isUnprovisioned || !profile) {
-    return <WaitingForSetupPage />
+  if (isUnauthorized || !profile) {
+    return <UnauthorizedPage />
   }
 
   return (
