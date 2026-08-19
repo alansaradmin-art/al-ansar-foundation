@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@clerk/clerk-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { LoadingState, ErrorState } from '@/components/StateViews'
+import { InactivityTimeoutGuard } from '@/components/InactivityTimeoutGuard'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import WaitingForSetupPage from '@/pages/WaitingForSetupPage'
 
@@ -39,5 +40,10 @@ export default function RequireAuth() {
     return <WaitingForSetupPage />
   }
 
-  return <Outlet />
+  return (
+    <>
+      <InactivityTimeoutGuard />
+      <Outlet />
+    </>
+  )
 }
