@@ -352,6 +352,22 @@ export interface Database {
         Args: { p_member_ids: string[] }
         Returns: { member_id: string; last_donation_date: string | null }[]
       }
+      manager_followup_report: {
+        Args: { p_date_from: string | null; p_date_to: string | null }
+        Returns: {
+          manager_id: string
+          manager_name: string
+          assigned_members: number
+          pending_count: number
+          started_count: number
+          in_progress_count: number
+          completed_count: number
+          not_interested_count: number
+          callback_required_count: number
+          other_count: number
+          total_followups: number
+        }[]
+      }
     }
   }
 }

@@ -90,6 +90,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { rows: data ?? [] })
     }
 
+    if (type === 'managerFollowupReport') {
+      if (!requireAdmin(res, profile)) return
+      const dateFrom = readQueryParam(req, 'dateFrom')
+      const dateTo = readQueryParam(req, 'dateTo')
+      const { data, error } = await supabase.rpc('manager_followup_report', {
+        p_date_from: dateFrom ?? null,
+        p_date_to: dateTo ?? null,
+      })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
     if (type === 'monthlyDonationReport') {
       if (!requireAdmin(res, profile)) return
       const month = Number(readQueryParam(req, 'month'))

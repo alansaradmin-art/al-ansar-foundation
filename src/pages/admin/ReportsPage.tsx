@@ -14,6 +14,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
 import { MonthlyDonationReport } from '@/features/reports/MonthlyDonationReport'
 import { DonationEngagementReport } from '@/features/reports/DonationEngagementReport'
+import { ManagerFollowupReport } from '@/features/reports/ManagerFollowupReport'
 import { formatINR, formatMobileNumber, formatPeriod, monthName } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import type { ManagerWiseReportRow, MonthWiseReportRow, DonationReportRow } from '@/services/dashboard'
@@ -34,7 +35,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
-const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement'])
+const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement', 'followups'])
 
 export default function ReportsPage() {
   const queryClient = useQueryClient()
@@ -56,6 +57,7 @@ export default function ReportsPage() {
     if (value === 'month') queryClient.invalidateQueries({ queryKey: ['reports', 'month-wise'] })
     if (value === 'donations') queryClient.invalidateQueries({ queryKey: ['reports', 'monthly-donation'] })
     if (value === 'engagement') queryClient.invalidateQueries({ queryKey: ['reports', 'donation-engagement'] })
+    if (value === 'followups') queryClient.invalidateQueries({ queryKey: ['reports', 'manager-followup'] })
   }
 
   function exportManagerReport() {
@@ -122,6 +124,7 @@ export default function ReportsPage() {
           <TabsTrigger value="month">Month-wise</TabsTrigger>
           <TabsTrigger value="donations">Donation Report</TabsTrigger>
           <TabsTrigger value="engagement">Donation Engagement</TabsTrigger>
+          <TabsTrigger value="followups">Manager Follow-ups</TabsTrigger>
         </TabsList>
 
         <TabsContent value="manager" className="space-y-4">
@@ -223,6 +226,10 @@ export default function ReportsPage() {
 
         <TabsContent value="engagement" className="space-y-4">
           <DonationEngagementReport />
+        </TabsContent>
+
+        <TabsContent value="followups" className="space-y-4">
+          <ManagerFollowupReport />
         </TabsContent>
       </Tabs>
     </div>

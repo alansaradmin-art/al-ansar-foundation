@@ -2,7 +2,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import * as dashboardService from '@/services/dashboard'
-import type { DonationEngagementParams } from '@/services/dashboard'
+import type { DonationEngagementParams, ManagerFollowupReportParams } from '@/services/dashboard'
 import type { DonationType } from '@/types'
 
 export function useManagerDashboard(managerId: string | undefined, month: number | undefined, year: number | undefined) {
@@ -58,6 +58,17 @@ export function useDonationEngagementReport(params: DonationEngagementParams | u
   return useQuery({
     queryKey: queryKeys.dashboard.donationEngagement(params ?? {}),
     queryFn: () => dashboardService.getDonationEngagementReport(getToken, params!),
+    enabled: !!params,
+  })
+}
+
+/** params === undefined means "not ready yet" (Custom Range selected but
+ * no range picked), same convention as useDonationEngagementReport. */
+export function useManagerFollowupReport(params: ManagerFollowupReportParams | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.managerFollowupReport(params ?? {}),
+    queryFn: () => dashboardService.getManagerFollowupReport(getToken, params!),
     enabled: !!params,
   })
 }

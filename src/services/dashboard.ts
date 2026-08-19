@@ -148,6 +148,63 @@ export async function getDonationEngagementReport(
   }))
 }
 
+export interface ManagerFollowupReportRow {
+  managerId: string
+  managerName: string
+  assignedMembers: number
+  pendingCount: number
+  startedCount: number
+  inProgressCount: number
+  completedCount: number
+  notInterestedCount: number
+  callbackRequiredCount: number
+  otherCount: number
+  totalFollowups: number
+}
+
+export interface ManagerFollowupReportParams {
+  dateFrom?: string
+  dateTo?: string
+}
+
+export async function getManagerFollowupReport(
+  getToken: GetToken,
+  params: ManagerFollowupReportParams = {},
+): Promise<ManagerFollowupReportRow[]> {
+  const { rows } = await apiClient.get<{
+    rows: {
+      manager_id: string
+      manager_name: string
+      assigned_members: number
+      pending_count: number
+      started_count: number
+      in_progress_count: number
+      completed_count: number
+      not_interested_count: number
+      callback_required_count: number
+      other_count: number
+      total_followups: number
+    }[]
+  }>('/api/dashboard', getToken, {
+    type: 'managerFollowupReport',
+    ...(params.dateFrom ? { dateFrom: params.dateFrom } : {}),
+    ...(params.dateTo ? { dateTo: params.dateTo } : {}),
+  })
+  return rows.map((r) => ({
+    managerId: r.manager_id,
+    managerName: r.manager_name,
+    assignedMembers: r.assigned_members,
+    pendingCount: r.pending_count,
+    startedCount: r.started_count,
+    inProgressCount: r.in_progress_count,
+    completedCount: r.completed_count,
+    notInterestedCount: r.not_interested_count,
+    callbackRequiredCount: r.callback_required_count,
+    otherCount: r.other_count,
+    totalFollowups: r.total_followups,
+  }))
+}
+
 export interface MemberGrowthRow {
   month: number
   year: number
