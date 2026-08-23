@@ -1,6 +1,8 @@
 import { UserRound, UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContactBlock } from './ContactBlock'
+import { useProfile } from '@/contexts/ProfileContext'
+import { buildDonationReminderMessage } from '@/features/followups/donationReminderMessage'
 import { formatMobileNumber } from '@/lib/format'
 import type { Member } from '@/types'
 
@@ -18,6 +20,11 @@ function Field({ label, value }: { label: string; value: string | null | undefin
  * data, so it's split out into its own Member 360 section. */
 export function ContactSection({ member }: { member: Member }) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
+  const { profile } = useProfile()
+  // Same donation-reminder text as the dedicated Follow-up section WhatsApp
+  // action (WhatsAppReminderButton) — this is the same action, just also
+  // reachable from the member's own contact block.
+  const memberWhatsappMessage = profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined
 
   return (
     <Card>
@@ -30,7 +37,14 @@ export function ContactSection({ member }: { member: Member }) {
           <Field label="Address" value={member.address} />
         </div>
         <div className="divide-y border-t pt-3">
-          <ContactBlock label="Member" name={member.member_name} phone={member.mobile_number} icon={UserRound} tone="primary" />
+          <ContactBlock
+            label="Member"
+            name={member.member_name}
+            phone={member.mobile_number}
+            icon={UserRound}
+            tone="primary"
+            whatsappMessage={memberWhatsappMessage}
+          />
           {hasAddedBy && (
             <ContactBlock
               label="Added By"

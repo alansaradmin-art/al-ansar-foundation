@@ -7,13 +7,24 @@ export function ContactActions({
   phone,
   name,
   size = 'default',
+  message: messageOverride,
 }: {
   phone: string | null | undefined
   name?: string | null
   size?: 'default' | 'sm'
+  /** Overrides the default generic greeting — used for the member's own
+   * contact block (ContactSection.tsx, PendingMemberCard.tsx), which sends
+   * the same donation-reminder message as the dedicated Follow-up section
+   * WhatsApp action (WhatsAppReminderButton) rather than a generic
+   * greeting, since this is the same "message the member" action just
+   * reachable from a second location. Added-By/Reference-Contact/Assigned-
+   * Manager keep the generic greeting — the reminder text is written from
+   * the member's own donation, so it wouldn't make sense addressed to
+   * someone else. */
+  message?: string
 }) {
   const callUsable = hasUsablePhone(phone)
-  const message = name ? `Assalamu alaikum ${name}, this is Al Ansar Foundation.` : undefined
+  const message = messageOverride ?? (name ? `Assalamu alaikum ${name}, this is Al Ansar Foundation.` : undefined)
   // hasUsableWhatsAppNumber is the real gate (stricter than callUsable — see
   // its doc comment); whatsappUrl is only non-null once that's already true,
   // but TypeScript can't see that across the two calls.
