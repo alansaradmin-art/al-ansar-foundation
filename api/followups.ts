@@ -90,6 +90,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { rows: data ?? [] })
     }
 
+    if (req.method === 'GET' && action === 'adminOpen') {
+      if (!requireAdmin(res, profile)) return
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
+      const { data, error } = await supabase.rpc('admin_open_followups', {
+        p_manager_id: managerScope ?? null,
+        p_month: month,
+        p_year: year,
+      })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
     if (req.method === 'GET') {
       const month = readQueryParam(req, 'month')
       const year = readQueryParam(req, 'year')

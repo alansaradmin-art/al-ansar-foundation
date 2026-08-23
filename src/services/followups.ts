@@ -75,26 +75,19 @@ export interface OverdueFollowupRow {
   lastFollowUpStatus: FollowUpStatus | null
 }
 
-/** managerId = undefined -> Admin view across every manager. */
-export async function listOverdueFollowups(
-  getToken: GetToken,
-  managerId: string | undefined,
-  month: number,
-  year: number,
-): Promise<OverdueFollowupRow[]> {
-  const { rows } = await apiClient.get<{
-    rows: {
-      member_id: string
-      member_name: string
-      father_name: string | null
-      member_display_id: string
-      assigned_manager_id: string | null
-      manager_name: string | null
-      last_follow_up_date: string | null
-      last_follow_up_status: FollowUpStatus | null
-    }[]
-  }>('/api/followups', getToken, { action: 'overdue', managerId, month, year })
-  return rows.map((r) => ({
+type RawFollowupSummaryRow = {
+  member_id: string
+  member_name: string
+  father_name: string | null
+  member_display_id: string
+  assigned_manager_id: string | null
+  manager_name: string | null
+  last_follow_up_date: string | null
+  last_follow_up_status: FollowUpStatus | null
+}
+
+function mapFollowupSummaryRow(r: RawFollowupSummaryRow): OverdueFollowupRow {
+  return {
     memberId: r.member_id,
     memberName: r.member_name,
     fatherName: r.father_name,
@@ -103,7 +96,42 @@ export async function listOverdueFollowups(
     managerName: r.manager_name,
     lastFollowUpDate: r.last_follow_up_date,
     lastFollowUpStatus: r.last_follow_up_status,
-  }))
+  }
+}
+
+/** managerId = undefined -> Admin view across every manager. */
+export async function listOverdueFollowups(
+  getToken: GetToken,
+  managerId: string | undefined,
+  month: number,
+  year: number,
+): Promise<OverdueFollowupRow[]> {
+  const { rows } = await apiClient.get<{ rows: RawFollowupSummaryRow[] }>('/api/followups', getToken, {
+    action: 'overdue',
+    managerId,
+    month,
+    year,
+  })
+  return rows.map(mapFollowupSummaryRow)
+}
+
+/** Admin's counterpart to the Manager In Progress tab — same enriched
+ * member+manager+latest-attempt shape as listOverdueFollowups, filtered to
+ * open statuses instead of the overdue predicate. managerId = undefined ->
+ * Admin view across every manager. */
+export async function listAdminOpenFollowups(
+  getToken: GetToken,
+  managerId: string | undefined,
+  month: number,
+  year: number,
+): Promise<OverdueFollowupRow[]> {
+  const { rows } = await apiClient.get<{ rows: RawFollowupSummaryRow[] }>('/api/followups', getToken, {
+    action: 'adminOpen',
+    managerId,
+    month,
+    year,
+  })
+  return rows.map(mapFollowupSummaryRow)
 }
 
 export interface AdminFollowupFilters {

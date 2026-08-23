@@ -348,6 +348,19 @@ export interface Database {
           last_follow_up_status: string | null
         }[]
       }
+      admin_open_followups: {
+        Args: { p_manager_id: string | null; p_month: number; p_year: number }
+        Returns: {
+          member_id: string
+          member_name: string
+          father_name: string | null
+          member_display_id: string
+          assigned_manager_id: string | null
+          manager_name: string | null
+          last_follow_up_date: string | null
+          last_follow_up_status: string | null
+        }[]
+      }
       stale_active_member_ids: {
         Args: Record<string, never>
         Returns: { member_id: string }[]
