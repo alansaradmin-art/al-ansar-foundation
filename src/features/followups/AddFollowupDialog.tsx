@@ -18,11 +18,15 @@ export function AddFollowupDialog({
   label = 'Add Follow-up',
   icon: Icon = Plus,
   variant = 'outline',
+  size = 'lg',
+  className = 'flex-1',
 }: {
   member: Member
   label?: string
   icon?: LucideIcon
   variant?: 'outline' | 'default'
+  size?: 'default' | 'sm' | 'lg'
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const { profile } = useProfile()
@@ -62,7 +66,7 @@ export function AddFollowupDialog({
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button size="lg" variant={variant} className="flex-1">
+          <Button size={size} variant={variant} className={className}>
             <Icon className="size-4" /> {label}
           </Button>
         </DialogTrigger>

@@ -1,7 +1,7 @@
 import { Phone, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { hasUsablePhone, telHref, whatsappHref } from '@/lib/contact'
+import { hasUsablePhone, hasUsableWhatsAppNumber, telHref, whatsappHref } from '@/lib/contact'
 
 export function ContactActions({
   phone,
@@ -12,19 +12,23 @@ export function ContactActions({
   name?: string | null
   size?: 'default' | 'sm'
 }) {
-  const usable = hasUsablePhone(phone)
+  const callUsable = hasUsablePhone(phone)
   const message = name ? `Assalamu alaikum ${name}, this is Al Ansar Foundation.` : undefined
+  // hasUsableWhatsAppNumber is the real gate (stricter than callUsable — see
+  // its doc comment); whatsappUrl is only non-null once that's already true,
+  // but TypeScript can't see that across the two calls.
+  const whatsappUrl = hasUsableWhatsAppNumber(phone) ? whatsappHref(phone!, message) : null
   const height = size === 'sm' ? 'h-9' : 'h-10'
 
   return (
     <div className="flex gap-2">
       <Button
-        asChild={usable}
+        asChild={callUsable}
         variant="outline"
-        disabled={!usable}
+        disabled={!callUsable}
         className={cn('flex-1 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary', height)}
       >
-        {usable ? (
+        {callUsable ? (
           <a href={telHref(phone)}>
             <Phone className="size-4" /> Call
           </a>
@@ -35,13 +39,13 @@ export function ContactActions({
         )}
       </Button>
       <Button
-        asChild={usable}
+        asChild={!!whatsappUrl}
         variant="outline"
-        disabled={!usable}
+        disabled={!whatsappUrl}
         className={cn('flex-1 border-teal/40 text-teal hover:bg-teal/10 hover:text-teal', height)}
       >
-        {usable ? (
-          <a href={whatsappHref(phone, message)} target="_blank" rel="noreferrer">
+        {whatsappUrl ? (
+          <a href={whatsappUrl} target="_blank" rel="noreferrer">
             <MessageCircle className="size-4" /> WhatsApp
           </a>
         ) : (

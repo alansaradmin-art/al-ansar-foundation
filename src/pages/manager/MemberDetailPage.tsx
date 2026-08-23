@@ -8,6 +8,7 @@ import { Member360View } from '@/features/members/Member360View'
 import { MonthlyDonationSummary } from '@/features/donations/MonthlyDonationSummary'
 import { AddDonationDialog } from '@/features/donations/AddDonationDialog'
 import { AddFollowupDialog } from '@/features/followups/AddFollowupDialog'
+import { WhatsAppReminderButton } from '@/features/followups/WhatsAppReminderButton'
 
 export default function MemberDetailPage() {
   const { memberId } = useParams<{ memberId: string }>()
@@ -40,6 +41,7 @@ export default function MemberDetailPage() {
       }
       bottomActions={
         <>
+          <WhatsAppReminderButton member={member} />
           <AddDonationDialog memberId={member.id} />
           <AddFollowupDialog member={member} />
         </>

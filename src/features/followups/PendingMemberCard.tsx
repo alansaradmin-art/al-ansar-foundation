@@ -5,6 +5,7 @@ import { ContactBlock } from '@/features/members/ContactBlock'
 import { DonationStatusBadge, PendingFollowupBadge } from '@/components/StatusBadge'
 import { AddDonationDialog } from '@/features/donations/AddDonationDialog'
 import { AddFollowupDialog } from '@/features/followups/AddFollowupDialog'
+import { WhatsAppReminderButton } from '@/features/followups/WhatsAppReminderButton'
 import type { Member } from '@/types'
 
 export function PendingMemberCard({ member, memberHref }: { member: Member; memberHref: string }) {
@@ -43,9 +44,17 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
           />
         )}
       </CardContent>
-      <div className="flex gap-2 border-t bg-muted/30 p-3">
-        <AddDonationDialog memberId={member.id} variant="outline" />
-        <AddFollowupDialog member={member} label="Complete Follow-up" icon={CheckCircle2} variant="default" />
+      <div className="flex flex-wrap gap-2 border-t bg-muted/30 p-3">
+        <WhatsAppReminderButton member={member} variant="outline" size="default" />
+        <AddDonationDialog memberId={member.id} variant="outline" size="default" className="flex-1" />
+        <AddFollowupDialog
+          member={member}
+          label="Complete Follow-up"
+          icon={CheckCircle2}
+          variant="default"
+          size="default"
+          className="flex-1"
+        />
       </div>
     </Card>
   )

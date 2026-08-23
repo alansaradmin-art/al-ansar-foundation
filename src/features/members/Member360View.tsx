@@ -181,7 +181,7 @@ export function Member360View({
       </Tabs>
 
       {bottomActions && (
-        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex gap-2 border-t bg-background/95 p-3 shadow-lg backdrop-blur">
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap gap-2 border-t bg-background/95 p-3 shadow-lg backdrop-blur">
           {bottomActions}
         </div>
       )}

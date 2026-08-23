@@ -105,3 +105,26 @@ export function formatMobileNumber(phone: string | null | undefined): string {
   if (!phone) return ''
   return normalizeMobileNumber(phone)
 }
+
+/** The inverse of normalizeMobileNumber — wa.me/tel: links need the full
+ * international number (country code + local number), but members.mobile_number
+ * is always stored with the country code already stripped (see
+ * normalizeMobileNumber's own doc comment), so it has to be re-attached
+ * here rather than read back from storage.
+ *
+ * Re-attaching is only unambiguous when the stored number's length matches
+ * exactly one country's local length — true for India (10 digits, the only
+ * one of that length here) but genuinely ambiguous for Gulf numbers, since
+ * Saudi Arabia/UAE share a 9-digit local length and Qatar/Kuwait/Bahrain/Oman
+ * share 8. There's no data left after stripping to disambiguate further
+ * (the original country code was never stored), so this picks the first
+ * match in COUNTRY_CODES' existing priority order — Saudi Arabia over UAE,
+ * Qatar over the other three 8-digit countries — the same order
+ * normalizeMobileNumber already uses for stripping. Returns null rather
+ * than guessing when the length doesn't match any known country at all. */
+export function toWhatsAppNumber(phone: string | null | undefined): string | null {
+  if (!phone) return null
+  const digits = normalizeMobileNumber(phone)
+  const match = COUNTRY_CODES.find((c) => c.localLength === digits.length)
+  return match ? `${match.code}${digits}` : null
+}
