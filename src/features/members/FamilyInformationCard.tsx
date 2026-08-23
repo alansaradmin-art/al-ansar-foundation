@@ -35,7 +35,6 @@ export function FamilyInformationCard({ member }: { member: Member }) {
                   )
                 : undefined
             }
-            includeScannerImage
           />
         ) : (
           <p className="text-sm text-muted-foreground">No family/reference contact on file.</p>

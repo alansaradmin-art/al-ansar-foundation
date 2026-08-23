@@ -40,7 +40,6 @@ export function ContactSection({ member }: { member: Member }) {
             icon={UserRound}
             tone="primary"
             whatsappMessage={profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined}
-            includeScannerImage
           />
           {hasAddedBy && (
             <ContactBlock
@@ -54,7 +53,6 @@ export function ContactSection({ member }: { member: Member }) {
                   ? buildAddedByReminderMessage(member.member_name, member.added_by_name?.trim() || '', profile.full_name)
                   : undefined
               }
-              includeScannerImage
             />
           )}
         </div>
