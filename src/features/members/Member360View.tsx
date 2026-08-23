@@ -138,8 +138,8 @@ export function Member360View({
 
         <TabsContent value="overview" className="space-y-4 p-4">
           <MemberInfoCard member={member} />
-          <ContactSection member={member} hideFollowupWhatsApp={!!bottomActions} />
-          <FamilyInformationCard member={member} hideFollowupWhatsApp={!!bottomActions} />
+          <ContactSection member={member} />
+          <FamilyInformationCard member={member} />
           <AssignedManagerCard managerId={member.assigned_manager_id} />
           {isDonationsLoading ? <CardListSkeleton count={2} /> : <FinancialSummaryCard donations={donations} />}
           <AuditInformationCard member={member} />
