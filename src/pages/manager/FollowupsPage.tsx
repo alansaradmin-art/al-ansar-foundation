@@ -10,6 +10,7 @@ import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { PendingMemberCard } from '@/features/followups/PendingMemberCard'
@@ -66,9 +67,30 @@ export default function ManagerFollowupsPage() {
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList className="w-full">
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="inProgress">In Progress</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="pending">
+            Pending
+            {pendingMembers && (
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                {pendingMembers.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="inProgress">
+            In Progress
+            {openMembers && (
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                {openMembers.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            History
+            {history && (
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                {history.count}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-3 pt-3">
