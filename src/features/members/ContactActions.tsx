@@ -3,11 +3,16 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { hasUsablePhone, hasUsableWhatsAppNumber, telHref, whatsappHref } from '@/lib/contact'
 
+// Served from public/scanner.jpeg — a static file lives at the site root
+// under Vite, not through the api/ layer, so this is just a plain path.
+const SCANNER_IMAGE_PATH = '/scanner.jpeg'
+
 export function ContactActions({
   phone,
   name,
   size = 'default',
   message: messageOverride,
+  includeScannerImage = false,
 }: {
   phone: string | null | undefined
   name?: string | null
@@ -20,6 +25,14 @@ export function ContactActions({
    * still uses the generic greeting below — there's no reminder template
    * addressed to a manager. */
   message?: string
+  /** True for the same three donation-reminder callers as `message` above
+   * (never Assigned Manager — there's nothing to donate to them). WhatsApp's
+   * own click-to-chat links (wa.me) have no way to pre-attach an image to
+   * the message itself — that's a hard platform limitation, not something
+   * fixable client-side — so the best available approximation is opening
+   * the donation scanner image in a second tab alongside WhatsApp, for the
+   * sender to attach themselves in one extra tap. */
+  includeScannerImage?: boolean
 }) {
   const callUsable = hasUsablePhone(phone)
   const message = messageOverride ?? (name ? `Assalamu alaikum ${name}, this is Al Ansar Foundation.` : undefined)
@@ -28,6 +41,17 @@ export function ContactActions({
   // but TypeScript can't see that across the two calls.
   const whatsappUrl = hasUsableWhatsAppNumber(phone) ? whatsappHref(phone!, message) : null
   const height = size === 'sm' ? 'h-9' : 'h-10'
+
+  // Runs alongside the WhatsApp link's own native target="_blank" navigation
+  // (both triggered by the same click, so neither counts as an unexpected
+  // popup) — opens a second tab with the scanner image ready to save/share
+  // into the chat. Best-effort: a strict popup blocker could still suppress
+  // this second window in rare cases; WhatsApp itself always still opens.
+  function handleWhatsAppClick() {
+    if (includeScannerImage) {
+      window.open(SCANNER_IMAGE_PATH, '_blank', 'noopener,noreferrer')
+    }
+  }
 
   return (
     <div className="flex gap-2">
@@ -54,7 +78,7 @@ export function ContactActions({
         className={cn('flex-1 border-teal/40 text-teal hover:bg-teal/10 hover:text-teal', height)}
       >
         {whatsappUrl ? (
-          <a href={whatsappUrl} target="_blank" rel="noreferrer">
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={handleWhatsAppClick}>
             <MessageCircle className="size-4" /> WhatsApp
           </a>
         ) : (

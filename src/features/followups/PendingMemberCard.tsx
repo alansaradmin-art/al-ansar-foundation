@@ -42,6 +42,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
           icon={UserRound}
           tone="primary"
           whatsappMessage={profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined}
+          includeScannerImage
         />
         {hasAddedBy && (
           <ContactBlock
@@ -55,6 +56,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
                 ? buildAddedByReminderMessage(member.member_name, member.added_by_name?.trim() || '', profile.full_name)
                 : undefined
             }
+            includeScannerImage
           />
         )}
         {hasReference && (
@@ -74,6 +76,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
                   )
                 : undefined
             }
+            includeScannerImage
           />
         )}
       </CardContent>
