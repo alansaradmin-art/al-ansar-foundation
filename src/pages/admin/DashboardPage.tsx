@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Users, UserCheck, UserX, UserCog, Wallet, IndianRupee, Receipt, CheckCircle2, Clock } from 'lucide-react'
+import { Users, UserCheck, UserX, UserCog, Wallet, IndianRupee, Receipt, CheckCircle2, ClipboardX, Hourglass } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDashboard, useMemberGrowthTrend, useMonthlyDonationReport } from '@/hooks/useDashboard'
+import { useOverdueFollowups, useAdminOpenFollowups } from '@/hooks/useFollowups'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
@@ -39,7 +40,22 @@ function MemberGrowthChart({ rows }: { rows: MemberGrowthRow[] }) {
 export default function AdminDashboardPage() {
   const { period, setPeriod } = usePeriodSelector()
 
-  const { data: stats, isLoading, isError, refetch } = useAdminDashboard(period?.month, period?.year)
+  const { data: stats, isLoading: isStatsLoading, isError, refetch } = useAdminDashboard(period?.month, period?.year)
+
+  // Dashboard-wide (undefined managerId) counterparts of the exact same
+  // queries the Follow-ups page's Overdue/In Progress tabs use — sharing
+  // the hooks (not stats.pending_followups, a looser is_pending_followup()
+  // count that also includes open attempts) keeps these numbers from ever
+  // disagreeing with what the tabs themselves show.
+  const {
+    data: overdueRows,
+    isLoading: isOverdueLoading,
+  } = useOverdueFollowups(undefined, period?.month, period?.year)
+  const {
+    data: openRows,
+    isLoading: isOpenLoading,
+  } = useAdminOpenFollowups(undefined, period?.month, period?.year)
+  const isLoading = isStatsLoading || isOverdueLoading || isOpenLoading
 
   const {
     data: growthRows,
@@ -68,7 +84,7 @@ export default function AdminDashboardPage() {
         actions={period && <PeriodSelector period={period} onChange={setPeriod} />}
       />
 
-      {isLoading && <StatGridSkeleton count={9} />}
+      {isLoading && <StatGridSkeleton count={10} />}
       {isError && <ErrorState message="Unable to load the dashboard. Please try again." onRetry={refetch} />}
 
       {stats && period && (
@@ -138,12 +154,20 @@ export default function AdminDashboardPage() {
             to="/admin/followups"
           />
           <DashboardCard
-            label="Pending Follow-ups"
-            value={stats.pending_followups}
+            label="Overdue Follow-ups"
+            value={overdueRows?.length ?? 0}
             description="Requires attention"
-            icon={Clock}
+            icon={ClipboardX}
             tone="warning"
-            to="/admin/followups"
+            to="/admin/followups?tab=overdue"
+          />
+          <DashboardCard
+            label="In Progress Follow-ups"
+            value={openRows?.length ?? 0}
+            description="Started, ongoing, or callback required"
+            icon={Hourglass}
+            tone="info"
+            to="/admin/followups?tab=inProgress"
           />
         </div>
       )}
