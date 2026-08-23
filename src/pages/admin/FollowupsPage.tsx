@@ -28,7 +28,6 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Completed',
   NOT_INTERESTED: 'Not Interested',
   CALLBACK_REQUIRED: 'Callback Required',
-  OTHER: 'Other',
 }
 
 const METHOD_LABELS: Record<string, string> = {

@@ -7,8 +7,8 @@ type FollowupInsert = Database['public']['Tables']['monthly_followups']['Insert'
 
 // STARTED/IN_PROGRESS/CALLBACK_REQUIRED are all "open" — the Manager
 // Follow-ups In Progress tab shows exactly these, and ?action=update only
-// lets an open attempt be continued; COMPLETED/NOT_INTERESTED/OTHER are
-// final outcomes, immutable once recorded.
+// lets an open attempt be continued; COMPLETED/NOT_INTERESTED are final
+// outcomes, immutable once recorded.
 const OPEN_FOLLOWUP_STATUSES = new Set<FollowUpStatus>(['STARTED', 'IN_PROGRESS', 'CALLBACK_REQUIRED'])
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
@@ -232,8 +232,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (!oldRow) return sendError(res, 404, 'Follow-up not found.')
 
       // Only an open attempt can be continued — a finished outcome
-      // (COMPLETED/NOT_INTERESTED/OTHER) stays immutable, same as every
-      // other follow-up today; logging a new one is still the only way to
+      // (COMPLETED/NOT_INTERESTED) stays immutable, same as every other
+      // follow-up today; logging a new one is still the only way to
       // record another attempt after this point.
       if (!OPEN_FOLLOWUP_STATUSES.has(oldRow.follow_up_status)) {
         return sendError(res, 400, 'Only a Started, In Progress, or Callback Required follow-up can be updated.')

@@ -13,7 +13,7 @@ export type MemberStatus = 'ACTIVE' | 'INACTIVE'
 export type ContactType = 'REGISTERED_MEMBER' | 'MANAGER' | 'EXTERNAL_CONTACT'
 export type PaymentMethod = 'CASH' | 'UPI' | 'ONLINE' | 'BANK_TRANSFER' | 'OTHER'
 export type DonationType = 'ZAKAT' | 'SADAQAH' | 'FITRA' | 'GENERAL' | 'OTHER'
-export type FollowUpStatus = 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'NOT_INTERESTED' | 'CALLBACK_REQUIRED' | 'OTHER'
+export type FollowUpStatus = 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'NOT_INTERESTED' | 'CALLBACK_REQUIRED'
 export type FollowUpMethod = 'PHONE' | 'WHATSAPP' | 'IN_PERSON' | 'OTHER'
 export type ContactedPersonType = 'MEMBER' | 'ADDED_BY' | 'REFERENCE_CONTACT' | 'OTHER'
 

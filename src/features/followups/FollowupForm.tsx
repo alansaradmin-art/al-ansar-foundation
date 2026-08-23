@@ -21,7 +21,6 @@ const STATUS_LABELS: Record<(typeof FOLLOW_UP_STATUSES)[number], string> = {
   COMPLETED: 'Completed',
   NOT_INTERESTED: 'Not Interested',
   CALLBACK_REQUIRED: 'Callback Required',
-  OTHER: 'Other',
 }
 
 const METHOD_LABELS: Record<(typeof FOLLOW_UP_METHODS)[number], string> = {

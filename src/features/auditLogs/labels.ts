@@ -14,7 +14,6 @@ export const FOLLOW_UP_STATUS_LABELS: Record<FollowUpStatus, string> = {
   COMPLETED: 'Completed',
   NOT_INTERESTED: 'Not Interested',
   CALLBACK_REQUIRED: 'Callback Required',
-  OTHER: 'Other',
 }
 
 export const FOLLOW_UP_METHOD_LABELS: Record<FollowUpMethod, string> = {

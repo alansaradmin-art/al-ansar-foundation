@@ -2,14 +2,7 @@ import { z } from 'zod'
 import { optionalPhoneSchema } from './common.schema'
 import { todayISO } from '@/lib/format'
 
-export const FOLLOW_UP_STATUSES = [
-  'STARTED',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'NOT_INTERESTED',
-  'CALLBACK_REQUIRED',
-  'OTHER',
-] as const
+export const FOLLOW_UP_STATUSES = ['STARTED', 'IN_PROGRESS', 'COMPLETED', 'NOT_INTERESTED', 'CALLBACK_REQUIRED'] as const
 export const FOLLOW_UP_METHODS = ['PHONE', 'WHATSAPP', 'IN_PERSON', 'OTHER'] as const
 export const CONTACTED_PERSON_TYPES = ['MEMBER', 'ADDED_BY', 'REFERENCE_CONTACT', 'OTHER'] as const
 

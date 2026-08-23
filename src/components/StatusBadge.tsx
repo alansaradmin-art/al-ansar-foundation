@@ -8,7 +8,6 @@ import {
   PlayCircle,
   Hourglass,
   XCircle,
-  MoreHorizontal,
   IndianRupee,
   UserX,
 } from 'lucide-react'
@@ -76,7 +75,6 @@ const FOLLOW_UP_CONFIG: Record<FollowUpStatus, { label: string; tone: Tone; icon
   COMPLETED: { label: 'Completed', tone: 'success', icon: <CheckCircle2 className="size-3.5" /> },
   NOT_INTERESTED: { label: 'Not Interested', tone: 'neutral', icon: <XCircle className="size-3.5" /> },
   CALLBACK_REQUIRED: { label: 'Callback Required', tone: 'info', icon: <PhoneCall className="size-3.5" /> },
-  OTHER: { label: 'Other', tone: 'neutral', icon: <MoreHorizontal className="size-3.5" /> },
 }
 
 export function FollowupStatusBadge({ status }: { status: FollowUpStatus }) {
