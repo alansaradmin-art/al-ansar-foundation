@@ -18,7 +18,19 @@ function Field({ label, value }: { label: string; value: string | null | undefin
 /** Reference Contact deliberately lives in FamilyInformationCard, not here —
  * its relationship field is the closest thing this schema has to "family"
  * data, so it's split out into its own Member 360 section. */
-export function ContactSection({ member }: { member: Member }) {
+export function ContactSection({
+  member,
+  hideMemberWhatsApp = false,
+}: {
+  member: Member
+  /** True when a dedicated WhatsAppReminderButton for this same member is
+   * already visible elsewhere on screen (Member 360's Manager bottom
+   * action bar, which stays visible across every tab including this one)
+   * — showing both would be a redundant second icon for the identical
+   * action. Admin's Member 360 has no such bar, so this stays false
+   * (visible) there. */
+  hideMemberWhatsApp?: boolean
+}) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
   const { profile } = useProfile()
   // Same donation-reminder text as the dedicated Follow-up section WhatsApp
@@ -44,6 +56,7 @@ export function ContactSection({ member }: { member: Member }) {
             icon={UserRound}
             tone="primary"
             whatsappMessage={memberWhatsappMessage}
+            showWhatsApp={!hideMemberWhatsApp}
           />
           {hasAddedBy && (
             <ContactBlock

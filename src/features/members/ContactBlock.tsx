@@ -17,6 +17,7 @@ export function ContactBlock({
   icon: Icon,
   tone = 'primary',
   whatsappMessage,
+  showWhatsApp,
 }: {
   label: string
   name: string | null | undefined
@@ -27,6 +28,8 @@ export function ContactBlock({
   /** Passed straight through to ContactActions' message override — see its
    * doc comment. */
   whatsappMessage?: string
+  /** Passed straight through to ContactActions — see its doc comment. */
+  showWhatsApp?: boolean
 }) {
   return (
     <div className="flex gap-3 py-3 first:pt-0 last:pb-0">
@@ -38,7 +41,13 @@ export function ContactBlock({
         <p className="font-medium leading-tight">{name || 'Not provided'}</p>
         {relationship && <p className="text-sm text-muted-foreground">{relationship}</p>}
         <p className="text-sm text-muted-foreground">{formatMobileNumber(phone) || 'No phone on file'}</p>
-        <ContactActions phone={phone} name={name ?? undefined} size="sm" message={whatsappMessage} />
+        <ContactActions
+          phone={phone}
+          name={name ?? undefined}
+          size="sm"
+          message={whatsappMessage}
+          showWhatsApp={showWhatsApp}
+        />
       </div>
     </div>
   )

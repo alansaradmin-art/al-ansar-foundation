@@ -6,18 +6,11 @@ import { DonationStatusBadge, PendingFollowupBadge } from '@/components/StatusBa
 import { AddDonationDialog } from '@/features/donations/AddDonationDialog'
 import { AddFollowupDialog } from '@/features/followups/AddFollowupDialog'
 import { WhatsAppReminderButton } from '@/features/followups/WhatsAppReminderButton'
-import { buildDonationReminderMessage } from '@/features/followups/donationReminderMessage'
-import { useProfile } from '@/contexts/ProfileContext'
 import type { Member } from '@/types'
 
 export function PendingMemberCard({ member, memberHref }: { member: Member; memberHref: string }) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
   const hasReference = member.reference_contact_name || member.reference_contact_phone
-  const { profile } = useProfile()
-  // Same donation-reminder text as the WhatsApp action below — this
-  // ContactBlock's own WhatsApp button is the same "message the member"
-  // action, just reachable from the contact row instead of the action bar.
-  const memberWhatsappMessage = profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined
 
   return (
     <Card className="overflow-hidden border-l-4 border-l-warning py-0">
@@ -36,13 +29,16 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
         <DonationStatusBadge received={false} />
       </div>
       <CardContent className="divide-y py-2">
+        {/* No WhatsApp button here — WhatsAppReminderButton in the action
+         * row below already covers this exact member, and showing both
+         * would be a redundant second icon for the identical action. */}
         <ContactBlock
           label="Member"
           name={member.member_name}
           phone={member.mobile_number}
           icon={UserRound}
           tone="primary"
-          whatsappMessage={memberWhatsappMessage}
+          showWhatsApp={false}
         />
         {hasAddedBy && (
           <ContactBlock label="Added By" name={member.added_by_name} phone={member.added_by_phone} icon={UserPlus} tone="gold" />

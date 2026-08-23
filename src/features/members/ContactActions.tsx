@@ -8,6 +8,7 @@ export function ContactActions({
   name,
   size = 'default',
   message: messageOverride,
+  showWhatsApp = true,
 }: {
   phone: string | null | undefined
   name?: string | null
@@ -22,6 +23,12 @@ export function ContactActions({
    * the member's own donation, so it wouldn't make sense addressed to
    * someone else. */
   message?: string
+  /** False wherever a dedicated WhatsAppReminderButton already covers the
+   * same "message this member" action nearby (PendingMemberCard's action
+   * row, Member 360's Manager bottom bar) — showing both is a redundant
+   * second icon for the identical action. Call has no such duplicate, so
+   * it's never hidden. */
+  showWhatsApp?: boolean
 }) {
   const callUsable = hasUsablePhone(phone)
   const message = messageOverride ?? (name ? `Assalamu alaikum ${name}, this is Al Ansar Foundation.` : undefined)
@@ -49,22 +56,24 @@ export function ContactActions({
           </span>
         )}
       </Button>
-      <Button
-        asChild={!!whatsappUrl}
-        variant="outline"
-        disabled={!whatsappUrl}
-        className={cn('flex-1 border-teal/40 text-teal hover:bg-teal/10 hover:text-teal', height)}
-      >
-        {whatsappUrl ? (
-          <a href={whatsappUrl} target="_blank" rel="noreferrer">
-            <MessageCircle className="size-4" /> WhatsApp
-          </a>
-        ) : (
-          <span>
-            <MessageCircle className="size-4" /> WhatsApp
-          </span>
-        )}
-      </Button>
+      {showWhatsApp && (
+        <Button
+          asChild={!!whatsappUrl}
+          variant="outline"
+          disabled={!whatsappUrl}
+          className={cn('flex-1 border-teal/40 text-teal hover:bg-teal/10 hover:text-teal', height)}
+        >
+          {whatsappUrl ? (
+            <a href={whatsappUrl} target="_blank" rel="noreferrer">
+              <MessageCircle className="size-4" /> WhatsApp
+            </a>
+          ) : (
+            <span>
+              <MessageCircle className="size-4" /> WhatsApp
+            </span>
+          )}
+        </Button>
+      )}
     </div>
   )
 }
