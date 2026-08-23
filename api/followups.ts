@@ -117,6 +117,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         .from('monthly_followups')
         .select('*, member:members(member_name, member_id, father_name), manager:managers(full_name)', { count: 'exact' })
         .order('follow_up_date', { ascending: false })
+        // History is the finished/closed record — an open attempt
+        // (IN_PROGRESS/CALLBACK_REQUIRED) belongs on the In Progress tab
+        // instead (see list_open_followups/admin_open_followups), never
+        // both at once. Unconditional, not just the default: selecting
+        // either status from the History filter dropdown would otherwise
+        // always return zero rows, so the frontend also excludes them
+        // from that dropdown's options.
+        .not('follow_up_status', 'in', '(IN_PROGRESS,CALLBACK_REQUIRED)')
 
       if (month) query = query.eq('month', Number(month))
       if (year) query = query.eq('year', Number(year))

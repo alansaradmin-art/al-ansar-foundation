@@ -47,6 +47,12 @@ const CONTACTED_LABELS: Record<string, string> = {
 
 const VALID_TABS = new Set(['overdue', 'inProgress', 'history'])
 
+// IN_PROGRESS/CALLBACK_REQUIRED never appear in History (the API excludes
+// them unconditionally — see api/followups.ts) — they belong to the In
+// Progress tab, so offering them in this filter would just return zero
+// rows every time.
+const HISTORY_STATUSES = FOLLOW_UP_STATUSES.filter((s) => s !== 'IN_PROGRESS' && s !== 'CALLBACK_REQUIRED')
+
 function FollowupSummaryRowCard({ row }: { row: OverdueFollowupRow }) {
   return (
     <Link
@@ -270,7 +276,7 @@ export default function AdminFollowupsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All statuses</SelectItem>
-              {FOLLOW_UP_STATUSES.map((s) => (
+              {HISTORY_STATUSES.map((s) => (
                 <SelectItem key={s} value={s}>
                   {STATUS_LABELS[s]}
                 </SelectItem>
