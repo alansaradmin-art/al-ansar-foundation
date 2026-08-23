@@ -20,16 +20,16 @@ function Field({ label, value }: { label: string; value: string | null | undefin
  * data, so it's split out into its own Member 360 section. */
 export function ContactSection({
   member,
-  hideMemberWhatsApp = false,
+  hideFollowupWhatsApp = false,
 }: {
   member: Member
-  /** True when a dedicated WhatsAppReminderButton for this same member is
-   * already visible elsewhere on screen (Member 360's Manager bottom
-   * action bar, which stays visible across every tab including this one)
-   * — showing both would be a redundant second icon for the identical
-   * action. Admin's Member 360 has no such bar, so this stays false
-   * (visible) there. */
-  hideMemberWhatsApp?: boolean
+  /** True when FollowupWhatsAppActions (Member + Added By WhatsApp buttons)
+   * is already visible elsewhere on screen — Member 360's Manager bottom
+   * action bar, which stays visible across every tab including this one —
+   * so both of this card's own WhatsApp buttons would be a redundant
+   * second icon for the identical actions. Admin's Member 360 has no such
+   * bar, so this stays false (visible) there. */
+  hideFollowupWhatsApp?: boolean
 }) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
   const { profile } = useProfile()
@@ -56,7 +56,7 @@ export function ContactSection({
             icon={UserRound}
             tone="primary"
             whatsappMessage={memberWhatsappMessage}
-            showWhatsApp={!hideMemberWhatsApp}
+            showWhatsApp={!hideFollowupWhatsApp}
           />
           {hasAddedBy && (
             <ContactBlock
@@ -65,6 +65,7 @@ export function ContactSection({
               phone={member.added_by_phone}
               icon={UserPlus}
               tone="gold"
+              showWhatsApp={!hideFollowupWhatsApp}
             />
           )}
         </div>

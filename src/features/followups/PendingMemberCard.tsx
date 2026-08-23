@@ -5,7 +5,7 @@ import { ContactBlock } from '@/features/members/ContactBlock'
 import { DonationStatusBadge, PendingFollowupBadge } from '@/components/StatusBadge'
 import { AddDonationDialog } from '@/features/donations/AddDonationDialog'
 import { AddFollowupDialog } from '@/features/followups/AddFollowupDialog'
-import { WhatsAppReminderButton } from '@/features/followups/WhatsAppReminderButton'
+import { FollowupWhatsAppActions } from '@/features/followups/FollowupWhatsAppActions'
 import type { Member } from '@/types'
 
 export function PendingMemberCard({ member, memberHref }: { member: Member; memberHref: string }) {
@@ -29,9 +29,10 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
         <DonationStatusBadge received={false} />
       </div>
       <CardContent className="divide-y py-2">
-        {/* No WhatsApp button here — WhatsAppReminderButton in the action
-         * row below already covers this exact member, and showing both
-         * would be a redundant second icon for the identical action. */}
+        {/* No WhatsApp buttons on any of these contact blocks — the action
+         * row below already has one for each contact this member actually
+         * has, and showing both would be a redundant second icon for the
+         * identical action. */}
         <ContactBlock
           label="Member"
           name={member.member_name}
@@ -41,7 +42,14 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
           showWhatsApp={false}
         />
         {hasAddedBy && (
-          <ContactBlock label="Added By" name={member.added_by_name} phone={member.added_by_phone} icon={UserPlus} tone="gold" />
+          <ContactBlock
+            label="Added By"
+            name={member.added_by_name}
+            phone={member.added_by_phone}
+            icon={UserPlus}
+            tone="gold"
+            showWhatsApp={false}
+          />
         )}
         {hasReference && (
           <ContactBlock
@@ -51,11 +59,12 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
             relationship={member.reference_contact_relationship}
             icon={Contact}
             tone="info"
+            showWhatsApp={false}
           />
         )}
       </CardContent>
       <div className="flex flex-wrap gap-2 border-t bg-muted/30 p-3">
-        <WhatsAppReminderButton member={member} variant="outline" size="default" />
+        <FollowupWhatsAppActions member={member} size="default" />
         <AddDonationDialog memberId={member.id} variant="outline" size="default" className="flex-1" />
         <AddFollowupDialog
           member={member}

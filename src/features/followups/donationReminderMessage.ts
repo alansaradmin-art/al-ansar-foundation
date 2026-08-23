@@ -1,7 +1,8 @@
-/** The fixed donation-reminder template a manager sends via WhatsApp from
- * the Follow-up section — {{member_name}}/{{manager_name}} are the only
- * two variables, substituted directly rather than through a generic
- * templating mechanism since there's nothing else to parametrize. */
+/** The three fixed WhatsApp templates for the Follow-up section — one per
+ * recipient (the member directly, their Added By, or their Reference
+ * Contact). Variables are substituted directly rather than through a
+ * generic templating mechanism since each template has a small, fixed set
+ * of them. */
 export function buildDonationReminderMessage(memberName: string, managerName: string): string {
   return `Assalamu Alaikum ${memberName} Bhai,
 
@@ -12,6 +13,38 @@ Agar aapne abhi tak is mahine ka donation nahi kiya hai, to apni sahulat ke muta
 Agar aap is mahine ka donation already kar chuke hain, to barah-e-karam is message ko ignore karein.
 
 JazakAllahu Khairan 🤲
+${managerName}
+Al Ansar Foundation, Hatwa Bazar`
+}
+
+export function buildAddedByReminderMessage(memberName: string, addedByName: string, managerName: string): string {
+  return `Assalamu Alaikum ${addedByName} Bhai,
+
+Umeed hai aap khairiyat se honge. Main ${managerName} Al Ansar Foundation, Hatwa Bazar ki taraf se aapse rabta kar raha hoon regarding ${memberName}.
+
+Agar mumkin ho to barah-e-karam unse is mahine ke donation ke silsile mein baat kar dein aur apni sahulat ke mutabiq contribution karne ke liye yaad dila dein.
+
+Aapke ta'awun ka bahut shukriya. 🤲
+
+JazakAllahu Khairan
+${managerName}
+Al Ansar Foundation, Hatwa Bazar`
+}
+
+export function buildReferenceContactReminderMessage(
+  memberName: string,
+  referenceName: string,
+  managerName: string,
+): string {
+  return `Assalamu Alaikum ${referenceName} Bhai,
+
+Umeed hai aap khairiyat se honge. Main ${managerName} Al Ansar Foundation, Hatwa Bazar ki taraf se aapse rabta kar raha hoon regarding ${memberName}, jinke reference mein aapka naam diya gaya hai.
+
+Agar mumkin ho to barah-e-karam unse is mahine ke donation ke silsile mein baat kar dein aur apni sahulat ke mutabiq contribution karne ke liye yaad dila dein.
+
+Aapke ta'awun ka bahut shukriya. 🤲
+
+JazakAllahu Khairan
 ${managerName}
 Al Ansar Foundation, Hatwa Bazar`
 }
