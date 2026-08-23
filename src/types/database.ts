@@ -46,6 +46,7 @@ export interface Database {
           id: string
           full_name: string
           phone: string
+          phone_country: string | null
           email: string
           status: ManagerStatus
           created_at: string
@@ -66,15 +67,18 @@ export interface Database {
           member_name: string
           father_name: string | null
           mobile_number: string | null
+          mobile_country: string | null
           address: string | null
           added_by_type: ContactType | null
           added_by_id: string | null
           added_by_name: string | null
           added_by_phone: string | null
+          added_by_country: string | null
           reference_contact_type: ContactType | null
           reference_contact_id: string | null
           reference_contact_name: string | null
           reference_contact_phone: string | null
+          reference_contact_country: string | null
           reference_contact_relationship: string | null
           assigned_manager_id: string | null
           status: MemberStatus
@@ -133,6 +137,7 @@ export interface Database {
           contacted_person_type: ContactedPersonType | null
           contacted_person_name: string | null
           contacted_person_phone: string | null
+          contacted_person_country: string | null
           contacted_person_relationship: string | null
           remarks: string | null
           next_follow_up_date: string | null
@@ -326,6 +331,7 @@ export interface Database {
           member_name: string
           father_name: string | null
           mobile_number: string | null
+          mobile_country: string | null
           member_display_id: string
           assigned_manager_id: string | null
           manager_name: string | null

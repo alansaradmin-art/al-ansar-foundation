@@ -13,6 +13,7 @@ import { CardListSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState } from '@/components/StateViews'
 import { Input } from '@/components/ui/input'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { formatMobileNumber } from '@/lib/format'
 
 export default function ManagersPage() {
   const [filters, setFilters] = useUrlFilters({ search: '', page: 1 })
@@ -64,7 +65,7 @@ export default function ManagersPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{manager.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{manager.phone}</p>
+                    <p className="text-sm text-muted-foreground">{formatMobileNumber(manager.phone, manager.phone_country)}</p>
                     <p className="text-sm text-muted-foreground">{manager.email}</p>
                   </div>
                   <MemberStatusBadge status={manager.status} />
@@ -91,7 +92,7 @@ export default function ManagersPage() {
               {managers.map((manager) => (
                 <TableRow key={manager.id} className="border-b last:border-0">
                   <TableCell className="font-medium">{manager.full_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{manager.phone}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatMobileNumber(manager.phone, manager.phone_country)}</TableCell>
                   <TableCell className="text-muted-foreground">{manager.email}</TableCell>
                   <TableCell>
                     <MemberStatusBadge status={manager.status} />

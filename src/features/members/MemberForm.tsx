@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CountryPhoneField } from '@/components/CountryPhoneField'
 import { MemberPicker } from './MemberPicker'
 import { memberFormSchema, type MemberFormValues } from '@/schemas/member.schema'
 import { CONTACT_TYPES, RELATIONSHIPS } from '@/schemas/common.schema'
@@ -99,19 +100,7 @@ export function MemberForm({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="mobile_number"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mobile Number</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CountryPhoneField<MemberFormValues> countryField="mobile_country" numberField="mobile_number" />
         </div>
 
         <FormField
@@ -203,6 +192,7 @@ export function MemberForm({
                   form.setValue('added_by_id', m.id)
                   form.setValue('added_by_name', m.member_name)
                   form.setValue('added_by_phone', m.mobile_number ?? '')
+                  form.setValue('added_by_country', m.mobile_country ?? undefined)
                 }}
               />
             </div>
@@ -223,19 +213,7 @@ export function MemberForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="added_by_phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <CountryPhoneField<MemberFormValues> countryField="added_by_country" numberField="added_by_phone" numberLabel="Phone" />
             </div>
           )}
         </div>
@@ -271,6 +249,7 @@ export function MemberForm({
                   form.setValue('reference_contact_id', m.id)
                   form.setValue('reference_contact_name', m.member_name)
                   form.setValue('reference_contact_phone', m.mobile_number ?? '')
+                  form.setValue('reference_contact_country', m.mobile_country ?? undefined)
                 }}
               />
             </div>
@@ -291,18 +270,10 @@ export function MemberForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="reference_contact_phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <CountryPhoneField<MemberFormValues>
+                countryField="reference_contact_country"
+                numberField="reference_contact_phone"
+                numberLabel="Phone"
               />
             </div>
           )}

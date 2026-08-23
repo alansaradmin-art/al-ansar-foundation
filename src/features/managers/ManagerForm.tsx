@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { CountryPhoneField } from '@/components/CountryPhoneField'
 import { managerFormSchema, type ManagerFormValues } from '@/schemas/manager.schema'
 
 export function ManagerForm({
@@ -41,19 +42,7 @@ export function ManagerForm({
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <CountryPhoneField<ManagerFormValues> countryField="phone_country" numberField="phone" numberLabel="Phone" />
         <FormField
           control={form.control}
           name="email"

@@ -96,7 +96,7 @@ export default function ReportsPage() {
           ...d,
           memberLabel: m.memberName,
           fatherNameLabel: m.memberFatherName ?? '',
-          mobileLabel: formatMobileNumber(m.memberMobileNumber),
+          mobileLabel: formatMobileNumber(m.memberMobileNumber, m.memberMobileCountry),
         })),
       ),
       ...donationReport.anonymous.donations.map((d) => ({ ...d, memberLabel: 'Anonymous', fatherNameLabel: '', mobileLabel: '' })),

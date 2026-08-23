@@ -18,7 +18,14 @@ export function AssignedManagerCard({ managerId }: { managerId: string | null })
         {isLoading ? (
           <LoadingState label="Loading manager…" />
         ) : manager ? (
-          <ContactBlock label="Manager" name={manager.full_name} phone={manager.phone} icon={UserCog} tone="info" />
+          <ContactBlock
+            label="Manager"
+            name={manager.full_name}
+            phone={manager.phone}
+            country={manager.phone_country}
+            icon={UserCog}
+            tone="info"
+          />
         ) : (
           <p className="text-sm text-muted-foreground">Manager details unavailable.</p>
         )}

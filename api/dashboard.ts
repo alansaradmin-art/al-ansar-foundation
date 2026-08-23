@@ -112,7 +112,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const { data, error } = await supabase
         .from('donations')
         .select(
-          'id, donation_id, donation_date, donation_type, amount_inr, payment_method, transaction_reference, member_id, member:members(id, member_name, member_id, father_name, mobile_number)',
+          'id, donation_id, donation_date, donation_type, amount_inr, payment_method, transaction_reference, member_id, member:members(id, member_name, member_id, father_name, mobile_number, mobile_country)',
         )
         .eq('donation_month', month)
         .eq('donation_year', year)
@@ -130,6 +130,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           memberDisplayId: string
           memberFatherName: string | null
           memberMobileNumber: string | null
+          memberMobileCountry: string | null
           total: number
           donations: DonationReportRow[]
         }
@@ -160,6 +161,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           member_id: string
           father_name: string | null
           mobile_number: string | null
+          mobile_country: string | null
         } | null
         if (member) {
           const existing = membersById.get(member.id)
@@ -173,6 +175,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
               memberDisplayId: member.member_id,
               memberFatherName: member.father_name,
               memberMobileNumber: member.mobile_number,
+              memberMobileCountry: member.mobile_country,
               total: amount,
               donations: [reportRow],
             })

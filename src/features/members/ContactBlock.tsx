@@ -13,6 +13,7 @@ export function ContactBlock({
   label,
   name,
   phone,
+  country,
   relationship,
   icon: Icon,
   tone = 'primary',
@@ -21,6 +22,8 @@ export function ContactBlock({
   label: string
   name: string | null | undefined
   phone: string | null | undefined
+  /** ISO2 country code paired with phone — see src/lib/countries.ts. */
+  country?: string | null
   relationship?: string | null
   icon: LucideIcon
   tone?: 'primary' | 'gold' | 'info'
@@ -37,8 +40,8 @@ export function ContactBlock({
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <p className="font-medium leading-tight">{name || 'Not provided'}</p>
         {relationship && <p className="text-sm text-muted-foreground">{relationship}</p>}
-        <p className="text-sm text-muted-foreground">{formatMobileNumber(phone) || 'No phone on file'}</p>
-        <ContactActions phone={phone} name={name ?? undefined} size="sm" message={whatsappMessage} />
+        <p className="text-sm text-muted-foreground">{formatMobileNumber(phone, country) || 'No phone on file'}</p>
+        <ContactActions phone={phone} country={country} name={name ?? undefined} size="sm" message={whatsappMessage} />
       </div>
     </div>
   )

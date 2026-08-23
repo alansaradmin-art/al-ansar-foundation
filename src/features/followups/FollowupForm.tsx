@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CountryPhoneField } from '@/components/CountryPhoneField'
 import {
   followupFormSchema,
   FOLLOW_UP_STATUSES,
@@ -38,12 +39,17 @@ const CONTACTED_LABELS: Record<(typeof CONTACTED_PERSON_TYPES)[number], string> 
 }
 
 function contactInfoFor(member: Member, type: string) {
-  if (type === 'MEMBER') return { name: member.member_name, phone: member.mobile_number, relationship: null }
-  if (type === 'ADDED_BY') return { name: member.added_by_name, phone: member.added_by_phone, relationship: null }
+  if (type === 'MEMBER') {
+    return { name: member.member_name, phone: member.mobile_number, country: member.mobile_country, relationship: null }
+  }
+  if (type === 'ADDED_BY') {
+    return { name: member.added_by_name, phone: member.added_by_phone, country: member.added_by_country, relationship: null }
+  }
   if (type === 'REFERENCE_CONTACT') {
     return {
       name: member.reference_contact_name,
       phone: member.reference_contact_phone,
+      country: member.reference_contact_country,
       relationship: member.reference_contact_relationship,
     }
   }
@@ -78,6 +84,7 @@ export function FollowupForm({
       contacted_person_type: 'MEMBER',
       contacted_person_name: '',
       contacted_person_phone: '',
+      contacted_person_country: '',
       contacted_person_relationship: '',
       remarks: '',
       next_follow_up_date: '',
@@ -93,10 +100,12 @@ export function FollowupForm({
       const info = contactInfoFor(member, type)
       form.setValue('contacted_person_name', info?.name ?? '')
       form.setValue('contacted_person_phone', info?.phone ?? '')
+      form.setValue('contacted_person_country', info?.country ?? undefined)
       form.setValue('contacted_person_relationship', info?.relationship ?? '')
     } else {
       form.setValue('contacted_person_name', '')
       form.setValue('contacted_person_phone', '')
+      form.setValue('contacted_person_country', undefined)
       form.setValue('contacted_person_relationship', '')
     }
   }
@@ -158,18 +167,10 @@ export function FollowupForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="contacted_person_phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Phone</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <CountryPhoneField<FollowupFormValues>
+              countryField="contacted_person_country"
+              numberField="contacted_person_phone"
+              numberLabel="Contact Phone"
             />
             <FormField
               control={form.control}

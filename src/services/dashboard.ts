@@ -94,6 +94,7 @@ export interface DonationEngagementRow {
   memberName: string
   fatherName: string | null
   mobileNumber: string | null
+  mobileCountry: string | null
   memberDisplayId: string
   assignedManagerId: string | null
   managerName: string | null
@@ -119,6 +120,7 @@ export async function getDonationEngagementReport(
       member_name: string
       father_name: string | null
       mobile_number: string | null
+      mobile_country: string | null
       member_display_id: string
       assigned_manager_id: string | null
       manager_name: string | null
@@ -138,6 +140,7 @@ export async function getDonationEngagementReport(
     memberName: r.member_name,
     fatherName: r.father_name,
     mobileNumber: r.mobile_number,
+    mobileCountry: r.mobile_country,
     memberDisplayId: r.member_display_id,
     assignedManagerId: r.assigned_manager_id,
     managerName: r.manager_name,
@@ -235,6 +238,7 @@ export interface DonationReportMemberGroup {
   memberDisplayId: string
   memberFatherName: string | null
   memberMobileNumber: string | null
+  memberMobileCountry: string | null
   total: number
   donations: DonationReportRow[]
 }

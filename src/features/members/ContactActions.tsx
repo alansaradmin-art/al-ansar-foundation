@@ -5,11 +5,16 @@ import { hasUsablePhone, hasUsableWhatsAppNumber, telHref, whatsappHref } from '
 
 export function ContactActions({
   phone,
+  country,
   name,
   size = 'default',
   message: messageOverride,
 }: {
   phone: string | null | undefined
+  /** ISO2 country code paired with phone — see src/lib/countries.ts. A
+   * legacy row with no stored country still resolves via the old
+   * length-guess fallback inside hasUsableWhatsAppNumber/whatsappHref. */
+  country?: string | null
   name?: string | null
   size?: 'default' | 'sm'
   /** Overrides the default generic greeting — used for a member's own
@@ -26,7 +31,7 @@ export function ContactActions({
   // hasUsableWhatsAppNumber is the real gate (stricter than callUsable — see
   // its doc comment); whatsappUrl is only non-null once that's already true,
   // but TypeScript can't see that across the two calls.
-  const whatsappUrl = hasUsableWhatsAppNumber(phone) ? whatsappHref(phone!, message) : null
+  const whatsappUrl = hasUsableWhatsAppNumber(phone, country) ? whatsappHref(phone!, country, message) : null
   const height = size === 'sm' ? 'h-9' : 'h-10'
 
   return (

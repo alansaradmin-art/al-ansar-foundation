@@ -163,7 +163,7 @@ function EngagementRowCard({ row }: { row: DonationEngagementRow }) {
             {row.memberName}
           </Link>
           {(() => {
-            const subline = [row.fatherName, formatMobileNumber(row.mobileNumber)].filter(Boolean).join(' · ')
+            const subline = [row.fatherName, formatMobileNumber(row.mobileNumber, row.mobileCountry)].filter(Boolean).join(' · ')
             return subline && <p className="text-xs text-muted-foreground">{subline}</p>
           })()}
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -275,7 +275,7 @@ export function DonationEngagementReport() {
     const csv = toCsv<DonationEngagementRow>(filtered, [
       { key: 'member', label: 'Member Name', value: (r) => r.memberName },
       { key: 'father', label: "Father's Name", value: (r) => r.fatherName ?? '' },
-      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.mobileNumber) },
+      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.mobileNumber, r.mobileCountry) },
       { key: 'manager', label: 'Manager', value: (r) => r.managerName ?? 'Unassigned' },
       { key: 'status', label: 'Donation Status', value: (r) => (r.donated ? 'Donated' : 'Not Donated') },
       { key: 'amount', label: 'Total Amount (INR)', value: (r) => r.totalAmount },
@@ -442,7 +442,7 @@ export function DonationEngagementReport() {
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{row.fatherName || '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatMobileNumber(row.mobileNumber) || '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatMobileNumber(row.mobileNumber, row.mobileCountry) || '—'}</TableCell>
                   <TableCell className="text-muted-foreground">{row.managerName ?? <UnassignedManagerBadge />}</TableCell>
                   <TableCell>
                     <DonationStatusBadge received={row.donated} label={row.donated ? 'Donated' : 'Not Donated'} />

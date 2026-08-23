@@ -41,6 +41,7 @@ export type DonationWithRelations = Donation & {
     member_id: string
     father_name: string | null
     mobile_number: string | null
+    mobile_country: string | null
     assigned_manager_id: string | null
   } | null
   recorder: { full_name: string } | null

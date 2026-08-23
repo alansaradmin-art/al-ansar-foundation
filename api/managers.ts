@@ -1,10 +1,26 @@
 import { authenticate, getServiceRoleClient, requireAdmin } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
+import { isValidCountryIso2 } from './_lib/countries.js'
 import type { Database, ManagerStatus } from '../src/types/database'
 
 type ManagerRow = Database['public']['Tables']['managers']['Row']
 type ManagerInsert = Database['public']['Tables']['managers']['Insert']
+
+/** Sanitizes phone to digits-only whenever a recognized country came with
+ * it (ManagerForm's CountryPhoneField always sends both together); leaves
+ * phone untouched otherwise, since — unlike members.mobile_number —
+ * manager phone numbers never went through any normalization historically,
+ * so there's no established "guess" fallback to apply here. */
+function toManagerRow(values: Partial<ManagerInsert>): Partial<ManagerInsert> {
+  if (values.phone === undefined && values.phone_country === undefined) return values
+  const country = isValidCountryIso2(values.phone_country) ? values.phone_country.toUpperCase() : null
+  return {
+    ...values,
+    phone: values.phone !== undefined && country ? values.phone.replace(/\D/g, '') : values.phone,
+    phone_country: country,
+  }
+}
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const profile = await authenticate(req, res)
@@ -55,7 +71,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (req.method === 'POST') {
       if (!requireAdmin(res, profile)) return
       const values = await readJsonBody<Partial<ManagerInsert>>(req)
-      const { data, error } = await supabase.from('managers').insert(values as ManagerInsert).select('*').single()
+      const { data, error } = await supabase.from('managers').insert(toManagerRow(values) as ManagerInsert).select('*').single()
       if (error) return sendSupabaseError(res, error)
       await logInsert(supabase, 'managers', profile.id, data)
       return sendJson(res, 201, data)
@@ -68,7 +84,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (oldError) return sendSupabaseError(res, oldError)
       if (!oldRow) return sendError(res, 404, 'Manager not found.')
 
-      const { data, error } = await supabase.from('managers').update(values).eq('id', id).select('*').single()
+      const { data, error } = await supabase.from('managers').update(toManagerRow(values)).eq('id', id).select('*').single()
       if (error) return sendSupabaseError(res, error)
       await logUpdate(supabase, 'managers', profile.id, oldRow, data)
       return sendJson(res, 200, data)

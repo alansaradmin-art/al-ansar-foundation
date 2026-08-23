@@ -38,7 +38,7 @@ export function MemberCard({
         {member.mobile_number && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <Phone className="size-3" />
-            {formatMobileNumber(member.mobile_number)}
+            {formatMobileNumber(member.mobile_number, member.mobile_country)}
           </p>
         )}
         {member.address && (

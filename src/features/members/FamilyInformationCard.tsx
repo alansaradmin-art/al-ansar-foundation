@@ -23,6 +23,7 @@ export function FamilyInformationCard({ member }: { member: Member }) {
             label="Reference Contact"
             name={member.reference_contact_name}
             phone={member.reference_contact_phone}
+            country={member.reference_contact_country}
             relationship={member.reference_contact_relationship}
             icon={Contact}
             tone="info"

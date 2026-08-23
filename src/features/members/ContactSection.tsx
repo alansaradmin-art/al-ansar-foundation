@@ -29,7 +29,7 @@ export function ContactSection({ member }: { member: Member }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Mobile" value={formatMobileNumber(member.mobile_number)} />
+          <Field label="Mobile" value={formatMobileNumber(member.mobile_number, member.mobile_country)} />
           <Field label="Address" value={member.address} />
         </div>
         <div className="divide-y border-t pt-3">
@@ -37,6 +37,7 @@ export function ContactSection({ member }: { member: Member }) {
             label="Member"
             name={member.member_name}
             phone={member.mobile_number}
+            country={member.mobile_country}
             icon={UserRound}
             tone="primary"
             whatsappMessage={profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined}
@@ -46,6 +47,7 @@ export function ContactSection({ member }: { member: Member }) {
               label="Added By"
               name={member.added_by_name}
               phone={member.added_by_phone}
+              country={member.added_by_country}
               icon={UserPlus}
               tone="gold"
               whatsappMessage={

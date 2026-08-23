@@ -88,7 +88,7 @@ export function AdminMemberCard({
   showMissingFields?: boolean
   lastDonationDates?: Record<string, string | null>
 }) {
-  const subline = [member.father_name, formatMobileNumber(member.mobile_number)].filter(Boolean).join(' · ')
+  const subline = [member.father_name, formatMobileNumber(member.mobile_number, member.mobile_country)].filter(Boolean).join(' · ')
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
@@ -146,7 +146,7 @@ export function AdminMemberTableRow({
         )}
       </td>
       <td className="p-3 text-muted-foreground">{member.father_name || '—'}</td>
-      <td className="p-3 text-muted-foreground">{formatMobileNumber(member.mobile_number) || '—'}</td>
+      <td className="p-3 text-muted-foreground">{formatMobileNumber(member.mobile_number, member.mobile_country) || '—'}</td>
       <td className="max-w-48 truncate p-3 text-muted-foreground">{member.address || '—'}</td>
       <td className="p-3 text-muted-foreground">{managerName || <UnassignedManagerBadge />}</td>
       <td className="p-3">

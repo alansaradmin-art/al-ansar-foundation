@@ -94,6 +94,7 @@ export function EditFollowupDialog({
               contacted_person_type: followup.contacted_person_type ?? undefined,
               contacted_person_name: followup.contacted_person_name ?? '',
               contacted_person_phone: followup.contacted_person_phone ?? '',
+              contacted_person_country: followup.contacted_person_country ?? undefined,
               contacted_person_relationship: followup.contacted_person_relationship ?? '',
               remarks: followup.remarks ?? '',
               next_follow_up_date: followup.next_follow_up_date ?? '',

@@ -1,6 +1,7 @@
 import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope, sendForbiddenUnlessManager } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
+import { isValidCountryIso2 } from './_lib/countries.js'
 import type { Database, FollowUpStatus } from '../src/types/database'
 
 type FollowupInsert = Database['public']['Tables']['monthly_followups']['Insert']
@@ -10,6 +11,17 @@ type FollowupInsert = Database['public']['Tables']['monthly_followups']['Insert'
 // lets an open attempt be continued; COMPLETED/NOT_INTERESTED are final
 // outcomes, immutable once recorded.
 const OPEN_FOLLOWUP_STATUSES = new Set<FollowUpStatus>(['STARTED', 'IN_PROGRESS', 'CALLBACK_REQUIRED'])
+
+/** contacted_person_phone/_country only take manual entry when
+ * contacted_person_type is 'OTHER' (CountryPhoneField in FollowupForm) —
+ * every other type auto-fills both from the chosen member/added-by/
+ * reference-contact's own already-normalized phone+country. */
+function resolveContactedPersonPhone(number: string | null | undefined, country: string | null | undefined) {
+  if (isValidCountryIso2(country)) {
+    return { number: number ? number.replace(/\D/g, '') || null : null, country: country.toUpperCase() }
+  }
+  return { number: number || null, country: null }
+}
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const profile = await authenticate(req, res)
@@ -195,6 +207,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       }
 
       const [year, month] = values.follow_up_date.split('-').map(Number)
+      const contactedPersonPhone = resolveContactedPersonPhone(values.contacted_person_phone, values.contacted_person_country)
       const { data, error } = await supabase
         .from('monthly_followups')
         .insert({
@@ -209,7 +222,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           follow_up_method: values.follow_up_method ?? null,
           contacted_person_type: values.contacted_person_type ?? null,
           contacted_person_name: values.contacted_person_name || null,
-          contacted_person_phone: values.contacted_person_phone || null,
+          contacted_person_phone: contactedPersonPhone.number,
+          contacted_person_country: contactedPersonPhone.country,
           contacted_person_relationship: values.contacted_person_relationship || null,
           remarks: values.remarks || null,
           next_follow_up_date: values.next_follow_up_date || null,
@@ -280,6 +294,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       }
 
+      const contactedPersonPhone = resolveContactedPersonPhone(values.contacted_person_phone, values.contacted_person_country)
       const { data, error } = await supabase
         .from('monthly_followups')
         .update({
@@ -287,7 +302,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           follow_up_method: values.follow_up_method ?? null,
           contacted_person_type: values.contacted_person_type ?? null,
           contacted_person_name: values.contacted_person_name || null,
-          contacted_person_phone: values.contacted_person_phone || null,
+          contacted_person_phone: contactedPersonPhone.number,
+          contacted_person_country: contactedPersonPhone.country,
           contacted_person_relationship: values.contacted_person_relationship || null,
           remarks: values.remarks || null,
           next_follow_up_date: values.next_follow_up_date || null,

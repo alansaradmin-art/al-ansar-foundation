@@ -39,6 +39,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
           label="Member"
           name={member.member_name}
           phone={member.mobile_number}
+          country={member.mobile_country}
           icon={UserRound}
           tone="primary"
           whatsappMessage={profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined}
@@ -48,6 +49,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
             label="Added By"
             name={member.added_by_name}
             phone={member.added_by_phone}
+            country={member.added_by_country}
             icon={UserPlus}
             tone="gold"
             whatsappMessage={
@@ -62,6 +64,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
             label="Reference Contact"
             name={member.reference_contact_name}
             phone={member.reference_contact_phone}
+            country={member.reference_contact_country}
             relationship={member.reference_contact_relationship}
             icon={Contact}
             tone="info"

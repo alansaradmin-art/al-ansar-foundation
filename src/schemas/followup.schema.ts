@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { optionalPhoneSchema } from './common.schema'
+import { optionalCountryIso2Schema, optionalLocalNumberSchema } from './common.schema'
 import { todayISO } from '@/lib/format'
 
 export const FOLLOW_UP_STATUSES = ['STARTED', 'IN_PROGRESS', 'COMPLETED', 'NOT_INTERESTED', 'CALLBACK_REQUIRED'] as const
@@ -17,7 +17,8 @@ export const followupFormSchema = z
     follow_up_method: z.enum(FOLLOW_UP_METHODS).optional(),
     contacted_person_type: z.enum(CONTACTED_PERSON_TYPES),
     contacted_person_name: z.string().trim().optional().or(z.literal('')),
-    contacted_person_phone: optionalPhoneSchema,
+    contacted_person_phone: optionalLocalNumberSchema,
+    contacted_person_country: optionalCountryIso2Schema,
     contacted_person_relationship: z.string().trim().optional().or(z.literal('')),
     remarks: z.string().trim().optional().or(z.literal('')),
     next_follow_up_date: z.string().trim().optional().or(z.literal('')),
@@ -29,6 +30,9 @@ export const followupFormSchema = z
   .superRefine((data, ctx) => {
     if (data.contacted_person_type === 'OTHER' && !data.contacted_person_name) {
       ctx.addIssue({ code: 'custom', path: ['contacted_person_name'], message: 'Enter the contact’s name.' })
+    }
+    if (data.contacted_person_phone && !data.contacted_person_country) {
+      ctx.addIssue({ code: 'custom', path: ['contacted_person_country'], message: 'Select the phone number’s country.' })
     }
   })
 

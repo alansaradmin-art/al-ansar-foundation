@@ -73,7 +73,7 @@ export default function AdminDonationsPage() {
       { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
       { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
       { key: 'father_name', label: "Father's Name", value: (r) => r.member?.father_name ?? '' },
-      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.member?.mobile_number) },
+      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.member?.mobile_number, r.member?.mobile_country) },
       { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
       { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
       { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
@@ -193,7 +193,10 @@ export default function AdminDonationsPage() {
                           {donation.member.member_name}
                         </Link>
                         {(() => {
-                          const subline = [donation.member.father_name, formatMobileNumber(donation.member.mobile_number)]
+                          const subline = [
+                            donation.member.father_name,
+                            formatMobileNumber(donation.member.mobile_number, donation.member.mobile_country),
+                          ]
                             .filter(Boolean)
                             .join(' · ')
                           return subline && <p className="text-xs text-muted-foreground">{subline}</p>

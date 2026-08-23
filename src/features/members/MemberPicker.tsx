@@ -6,6 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useMemberPicker } from '@/hooks/useMembers'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { cn } from '@/lib/utils'
+import { formatMobileNumber } from '@/lib/format'
 import type { Member } from '@/types'
 
 export function MemberPicker({
@@ -15,7 +16,7 @@ export function MemberPicker({
   clearLabel = 'All members',
 }: {
   value: (Pick<Member, 'id' | 'member_name'> & Partial<Pick<Member, 'member_id' | 'father_name'>>) | null
-  onChange: (member: Pick<Member, 'id' | 'member_name' | 'member_id' | 'father_name' | 'mobile_number'>) => void
+  onChange: (member: Pick<Member, 'id' | 'member_name' | 'member_id' | 'father_name' | 'mobile_number' | 'mobile_country'>) => void
   /** When provided, renders a leading clear option that calls this instead
    * of onChange — used when this picker is a filter rather than a required
    * form field. Existing form call sites (MemberForm, RecordDonationDialog)
@@ -83,7 +84,9 @@ export function MemberPicker({
                   <div>
                     <p>{member.member_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {[member.father_name, member.mobile_number].filter(Boolean).join(' · ')}
+                      {[member.father_name, formatMobileNumber(member.mobile_number, member.mobile_country)]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   </div>
                 </CommandItem>

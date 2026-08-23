@@ -39,7 +39,9 @@ function DonationRow({ donation: d }: { donation: DonationReportRow }) {
 }
 
 function MemberDonationCard({ member }: { member: DonationReportMemberGroup }) {
-  const subline = [member.memberFatherName, formatMobileNumber(member.memberMobileNumber)].filter(Boolean).join(' · ')
+  const subline = [member.memberFatherName, formatMobileNumber(member.memberMobileNumber, member.memberMobileCountry)]
+    .filter(Boolean)
+    .join(' · ')
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">

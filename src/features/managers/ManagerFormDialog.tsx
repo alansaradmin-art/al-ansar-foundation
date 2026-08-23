@@ -9,6 +9,21 @@ import { getFriendlyErrorMessage } from '@/lib/errors'
 import type { Manager } from '@/types'
 import type { ManagerFormValues } from '@/schemas/manager.schema'
 
+/** A legacy manager whose phone predates the country picker (see migration
+ * 0035_phone_country_split.sql's backfill notes) may have phone_country
+ * still null — the form requires a country to save, so this just leaves
+ * the picker unset (forcing the admin to choose one) rather than passing
+ * an invalid null default through. */
+function managerToFormValues(manager: Manager): Partial<ManagerFormValues> {
+  return {
+    full_name: manager.full_name,
+    phone: manager.phone,
+    phone_country: manager.phone_country ?? undefined,
+    email: manager.email,
+    status: manager.status,
+  }
+}
+
 export function ManagerFormDialog({ manager }: { manager?: Manager }) {
   const [open, setOpen] = useState(false)
   const isEdit = !!manager
@@ -46,7 +61,7 @@ export function ManagerFormDialog({ manager }: { manager?: Manager }) {
           <DialogTitle>{isEdit ? 'Edit Manager' : 'Add Manager'}</DialogTitle>
         </DialogHeader>
         <ManagerForm
-          defaultValues={manager}
+          defaultValues={manager ? managerToFormValues(manager) : undefined}
           onSubmit={handleSubmit}
           isSubmitting={mutation.isPending}
         />

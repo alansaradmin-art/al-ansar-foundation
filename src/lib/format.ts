@@ -1,3 +1,5 @@
+import { buildInternationalNumber, countryFlag, findCountry } from './countries'
+
 const inrFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
@@ -99,18 +101,30 @@ export function normalizeMobileNumber(phone: string): string {
   return digits
 }
 
-/** Display-only wrapper around normalizeMobileNumber — see that function
- * for the actual stripping rules. */
-export function formatMobileNumber(phone: string | null | undefined): string {
+/** Display-only. Shows the flag + dial code when a country is known
+ * (post-redesign rows always have one); falls back to the bare
+ * country-code-stripped digits for legacy rows with no stored country —
+ * same display those rows have always had. */
+export function formatMobileNumber(phone: string | null | undefined, country?: string | null): string {
   if (!phone) return ''
-  return normalizeMobileNumber(phone)
+  const local = normalizeMobileNumber(phone)
+  const known = findCountry(country)
+  return known ? `${countryFlag(known.iso2)} +${known.dialCode} ${local}` : local
 }
 
-/** The inverse of normalizeMobileNumber — wa.me/tel: links need the full
- * international number (country code + local number), but members.mobile_number
- * is always stored with the country code already stripped (see
- * normalizeMobileNumber's own doc comment), so it has to be re-attached
- * here rather than read back from storage.
+/** LEGACY FALLBACK ONLY — kept for rows with no stored country (see
+ * migration 0035_phone_country_split.sql's backfill notes: only a bare
+ * 10-digit number could be reliably backfilled to India; genuinely
+ * ambiguous Gulf-length numbers were left with no country on purpose).
+ * The primary path for every row with a known country is
+ * buildInternationalNumber (src/lib/countries.ts) — deterministic, no
+ * guessing, since the country was chosen explicitly rather than inferred.
+ *
+ * This is the inverse of normalizeMobileNumber — wa.me/tel: links need
+ * the full international number (country code + local number), but
+ * members.mobile_number is always stored with the country code already
+ * stripped (see normalizeMobileNumber's own doc comment), so it has to be
+ * re-attached here rather than read back from storage.
  *
  * Re-attaching is only unambiguous when the stored number's length matches
  * exactly one country's local length — true for India (10 digits, the only
@@ -127,4 +141,12 @@ export function toWhatsAppNumber(phone: string | null | undefined): string | nul
   const digits = normalizeMobileNumber(phone)
   const match = COUNTRY_CODES.find((c) => c.localLength === digits.length)
   return match ? `${match.code}${digits}` : null
+}
+
+/** Primary path for building a full international number: deterministic
+ * from a known (country, local number) pair, no guessing. Falls back to
+ * the legacy length-guess (toWhatsAppNumber) only when no country is
+ * stored, so pre-migration rows keep working exactly as before. */
+export function resolveInternationalNumber(phone: string | null | undefined, country: string | null | undefined): string | null {
+  return buildInternationalNumber(country, phone ? normalizeMobileNumber(phone) : phone) ?? toWhatsAppNumber(phone)
 }

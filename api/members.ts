@@ -10,10 +10,27 @@ import {
 } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
 import { normalizeMobileNumber } from './_lib/phone.js'
+import { isValidCountryIso2 } from './_lib/countries.js'
 import type { Database, FollowUpStatus, MemberStatus } from '../src/types/database'
 
 type MemberRow = Database['public']['Tables']['members']['Row']
 type MemberInsert = Database['public']['Tables']['members']['Insert']
+
+/** Prefers the new (country, local-number) pair sent by CountryPhoneField;
+ * falls back to the old guess-based normalizeMobileNumber (country left
+ * null) when no valid country was sent — e.g. a CSV import row with no
+ * mapped country column. This is the one place old and new phone-entry
+ * paths reconcile, so every write path (create/update/import) stays
+ * correct whether or not the caller has been updated to send a country. */
+function resolvePhone(
+  number: string | null | undefined,
+  country: string | null | undefined,
+): { number: string | null; country: string | null } {
+  if (isValidCountryIso2(country)) {
+    return { number: number ? number.replace(/\D/g, '') || null : null, country: country.toUpperCase() }
+  }
+  return { number: number ? normalizeMobileNumber(number) : null, country: null }
+}
 
 // "Incomplete" = missing any of these — used by both ?action=incompleteCount
 // and the main list's ?incomplete=true filter, so the definition can't drift
@@ -32,20 +49,26 @@ const INCOMPLETE_MEMBER_OR = [
 ].join(',')
 
 function toMemberRow(values: Partial<MemberInsert>): MemberInsert {
+  const mobile = resolvePhone(values.mobile_number, values.mobile_country)
+  const addedBy = resolvePhone(values.added_by_phone, values.added_by_country)
+  const reference = resolvePhone(values.reference_contact_phone, values.reference_contact_country)
   return {
     member_name: values.member_name ?? '',
     father_name: values.father_name || null,
-    mobile_number: values.mobile_number ? normalizeMobileNumber(values.mobile_number) : null,
+    mobile_number: mobile.number,
+    mobile_country: mobile.country,
     address: values.address || null,
     added_by_type: values.added_by_type ?? null,
     added_by_id: values.added_by_type === 'REGISTERED_MEMBER' ? (values.added_by_id ?? null) : null,
     added_by_name: values.added_by_name || null,
-    added_by_phone: values.added_by_phone || null,
+    added_by_phone: addedBy.number,
+    added_by_country: addedBy.country,
     reference_contact_type: values.reference_contact_type ?? null,
     reference_contact_id:
       values.reference_contact_type === 'REGISTERED_MEMBER' ? (values.reference_contact_id ?? null) : null,
     reference_contact_name: values.reference_contact_name || null,
-    reference_contact_phone: values.reference_contact_phone || null,
+    reference_contact_phone: reference.number,
+    reference_contact_country: reference.country,
     reference_contact_relationship: values.reference_contact_relationship || null,
     assigned_manager_id: values.assigned_manager_id ?? null,
     status: values.status ?? 'ACTIVE',
@@ -65,7 +88,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const limit = Number(readQueryParam(req, 'limit') ?? '10')
       let query = supabase
         .from('members')
-        .select('id, member_id, member_name, father_name, mobile_number')
+        .select('id, member_id, member_name, father_name, mobile_number, mobile_country')
         .eq('status', 'ACTIVE')
         .order('updated_at', { ascending: false })
         .limit(limit)

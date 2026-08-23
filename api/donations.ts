@@ -68,8 +68,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       // anonymous donations from a manager-scoped view, which is right —
       // they belong to no manager.
       const memberEmbed = managerScope
-        ? 'member:members!inner(member_name, member_id, father_name, mobile_number, assigned_manager_id)'
-        : 'member:members(member_name, member_id, father_name, mobile_number, assigned_manager_id)'
+        ? 'member:members!inner(member_name, member_id, father_name, mobile_number, mobile_country, assigned_manager_id)'
+        : 'member:members(member_name, member_id, father_name, mobile_number, mobile_country, assigned_manager_id)'
 
       let query = supabase
         .from('donations')
