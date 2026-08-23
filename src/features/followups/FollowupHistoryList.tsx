@@ -5,7 +5,7 @@ import { EditFollowupDialog } from './EditFollowupDialog'
 import { formatDate } from '@/lib/format'
 import type { Member, MonthlyFollowup } from '@/types'
 
-const OPEN_STATUSES = new Set(['STARTED', 'IN_PROGRESS'])
+const OPEN_STATUSES = new Set(['STARTED', 'IN_PROGRESS', 'CALLBACK_REQUIRED'])
 
 const CONTACTED_LABELS: Record<string, string> = {
   MEMBER: 'Member',

@@ -286,6 +286,10 @@ export interface Database {
         Args: { p_manager_id: string | null; p_month: number; p_year: number }
         Returns: Database['public']['Tables']['members']['Row'][]
       }
+      list_open_followups: {
+        Args: { p_manager_id: string | null; p_month: number; p_year: number }
+        Returns: Database['public']['Tables']['members']['Row'][]
+      }
       is_pending_followup_batch: {
         Args: { p_member_ids: string[]; p_month: number; p_year: number }
         Returns: { member_id: string; is_pending: boolean }[]

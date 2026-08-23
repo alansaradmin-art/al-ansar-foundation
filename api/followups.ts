@@ -5,6 +5,12 @@ import type { Database, FollowUpStatus } from '../src/types/database'
 
 type FollowupInsert = Database['public']['Tables']['monthly_followups']['Insert']
 
+// STARTED/IN_PROGRESS/CALLBACK_REQUIRED are all "open" — the Manager
+// Follow-ups In Progress tab shows exactly these, and ?action=update only
+// lets an open attempt be continued; COMPLETED/NOT_INTERESTED/OTHER are
+// final outcomes, immutable once recorded.
+const OPEN_FOLLOWUP_STATUSES = new Set<FollowUpStatus>(['STARTED', 'IN_PROGRESS', 'CALLBACK_REQUIRED'])
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const profile = await authenticate(req, res)
   if (!profile) return
@@ -33,7 +39,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         .from('monthly_followups')
         .select('*')
         .eq('member_id', memberId)
+        // created_at as a secondary sort key keeps this order agreeing with
+        // list_open_followups()'s same-date tiebreak — the In Progress
+        // tab's card takes rows[0] from this endpoint as "the latest
+        // attempt", and it must always match what the RPC used to decide
+        // the member belongs there.
         .order('follow_up_date', { ascending: false })
+        .order('created_at', { ascending: false })
       if (error) return sendSupabaseError(res, error)
       return sendJson(res, 200, { rows: data ?? [] })
     }
@@ -43,6 +55,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const year = Number(readQueryParam(req, 'year'))
       const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
       const { data, error } = await supabase.rpc('list_pending_followups', {
+        p_manager_id: managerScope ?? null,
+        p_month: month,
+        p_year: year,
+      })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (req.method === 'GET' && action === 'open') {
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const managerScope = resolveManagerScope(profile, readQueryParam(req, 'managerId'))
+      const { data, error } = await supabase.rpc('list_open_followups', {
         p_manager_id: managerScope ?? null,
         p_month: month,
         p_year: year,
@@ -185,11 +210,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (!oldRow) return sendError(res, 404, 'Follow-up not found.')
 
       // Only an open attempt can be continued — a finished outcome
-      // (COMPLETED/NOT_INTERESTED/CALLBACK_REQUIRED/OTHER) stays immutable,
-      // same as every other follow-up today; logging a new one is still
-      // the only way to record another attempt after this point.
-      if (oldRow.follow_up_status !== 'STARTED' && oldRow.follow_up_status !== 'IN_PROGRESS') {
-        return sendError(res, 400, 'Only a Started or In Progress follow-up can be updated.')
+      // (COMPLETED/NOT_INTERESTED/OTHER) stays immutable, same as every
+      // other follow-up today; logging a new one is still the only way to
+      // record another attempt after this point.
+      if (!OPEN_FOLLOWUP_STATUSES.has(oldRow.follow_up_status)) {
+        return sendError(res, 400, 'Only a Started, In Progress, or Callback Required follow-up can be updated.')
       }
 
       // Re-checks the member's CURRENT manager, not the row's stored

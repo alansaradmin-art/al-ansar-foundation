@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ClipboardList, PartyPopper } from 'lucide-react'
+import { ClipboardList, PartyPopper, Hourglass } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useAdminFollowups, usePendingFollowups } from '@/hooks/useFollowups'
+import { useAdminFollowups, useOpenFollowups, usePendingFollowups } from '@/hooks/useFollowups'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
@@ -13,7 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { PendingMemberCard } from '@/features/followups/PendingMemberCard'
+import { InProgressMemberCard } from '@/features/followups/InProgressMemberCard'
 import { FollowupListItem } from '@/features/followups/FollowupListItem'
+
+const VALID_TABS = new Set(['pending', 'inProgress', 'history'])
 
 export default function ManagerFollowupsPage() {
   const { profile } = useProfile()
@@ -21,18 +24,18 @@ export default function ManagerFollowupsPage() {
   const { period, setPeriod } = usePeriodSelector()
   const [filters, setFilters] = useUrlFilters({ tab: 'pending', historyPage: 1 })
   const { historyPage } = filters
-  const tab = filters.tab === 'history' ? 'history' : 'pending'
+  const tab = VALID_TABS.has(filters.tab) ? filters.tab : 'pending'
   const { pageSize } = useDefaultPageSize()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => setFilters({ historyPage: 1 }), [pageSize])
 
-  // Both tabs' data is fetched once at page mount (see the two useQuery
-  // calls below) — switching tabs re-fetches that tab's own data so a
-  // follow-up recorded elsewhere in the same session shows up without a
-  // full reload.
+  // Every tab's data is fetched once at page mount (see the useQuery calls
+  // below) — switching tabs re-fetches that tab's own data so a follow-up
+  // recorded elsewhere in the same session shows up without a full reload.
   function handleTabChange(value: string) {
     setFilters({ tab: value })
     if (value === 'pending') queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+    if (value === 'inProgress') queryClient.invalidateQueries({ queryKey: ['followups', 'open'] })
     if (value === 'history') queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
   }
 
@@ -42,6 +45,13 @@ export default function ManagerFollowupsPage() {
     isError: isPendingError,
     refetch: refetchPending,
   } = usePendingFollowups(profile?.manager_id ?? undefined, period?.month, period?.year)
+
+  const {
+    data: openMembers,
+    isLoading: isOpenLoading,
+    isError: isOpenError,
+    refetch: refetchOpen,
+  } = useOpenFollowups(profile?.manager_id ?? undefined, period?.month, period?.year)
 
   const {
     data: history,
@@ -57,6 +67,7 @@ export default function ManagerFollowupsPage() {
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList className="w-full">
           <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="inProgress">In Progress</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
 
@@ -76,6 +87,27 @@ export default function ManagerFollowupsPage() {
             <div className="space-y-3">
               {pendingMembers.map((member) => (
                 <PendingMemberCard key={member.id} member={member} memberHref={`/manager/members/${member.id}`} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="inProgress" className="space-y-3 pt-3">
+          {isOpenLoading && <CardListSkeleton />}
+          {isOpenError && (
+            <ErrorState message="Unable to load in-progress follow-ups. Please try again." onRetry={refetchOpen} />
+          )}
+          {openMembers && openMembers.length === 0 && (
+            <EmptyState
+              icon={<Hourglass className="size-8" />}
+              title="Nothing in progress."
+              description="Follow-ups you start will show up here until they're completed."
+            />
+          )}
+          {openMembers && openMembers.length > 0 && (
+            <div className="space-y-3">
+              {openMembers.map((member) => (
+                <InProgressMemberCard key={member.id} member={member} memberHref={`/manager/members/${member.id}`} />
               ))}
             </div>
           )}

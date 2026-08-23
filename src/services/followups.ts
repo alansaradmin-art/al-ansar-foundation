@@ -48,6 +48,22 @@ export async function listPendingFollowups(
   return rows
 }
 
+/** managerId = undefined -> Admin view across every manager. */
+export async function listOpenFollowups(
+  getToken: GetToken,
+  managerId: string | undefined,
+  month: number,
+  year: number,
+): Promise<Member[]> {
+  const { rows } = await apiClient.get<{ rows: Member[] }>('/api/followups', getToken, {
+    action: 'open',
+    managerId,
+    month,
+    year,
+  })
+  return rows
+}
+
 export interface OverdueFollowupRow {
   memberId: string
   memberName: string

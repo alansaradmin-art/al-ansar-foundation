@@ -23,6 +23,15 @@ export function usePendingFollowups(managerId: string | undefined, month: number
   })
 }
 
+export function useOpenFollowups(managerId: string | undefined, month: number | undefined, year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.followups.open(managerId, month ?? 0, year ?? 0),
+    queryFn: () => followupsService.listOpenFollowups(getToken, managerId, month!, year!),
+    enabled: month != null && year != null,
+  })
+}
+
 export function useOverdueFollowups(managerId: string | undefined, month: number | undefined, year: number | undefined) {
   const { getToken } = useAuth()
   return useQuery({
@@ -50,6 +59,7 @@ export function useCreateFollowup(managerId: string, createdBy: string) {
     onSuccess: (_data, values) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.followups.forMember(values.member_id) })
       queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+      queryClient.invalidateQueries({ queryKey: ['followups', 'open'] })
       queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -71,6 +81,7 @@ export function useUpdateFollowup() {
     onSuccess: (_data, { values }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.followups.forMember(values.member_id) })
       queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
+      queryClient.invalidateQueries({ queryKey: ['followups', 'open'] })
       queryClient.invalidateQueries({ queryKey: ['followups', 'admin-list'] })
       queryClient.invalidateQueries({ queryKey: ['followups', 'overdue'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })

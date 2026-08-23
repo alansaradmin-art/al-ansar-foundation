@@ -18,6 +18,8 @@ export const queryKeys = {
     forMember: (memberId: string) => ['followups', 'member', memberId] as const,
     pending: (managerId: string | undefined, month: number, year: number) =>
       ['followups', 'pending', managerId, month, year] as const,
+    open: (managerId: string | undefined, month: number, year: number) =>
+      ['followups', 'open', managerId, month, year] as const,
     overdue: (managerId: string | undefined, month: number, year: number) =>
       ['followups', 'overdue', managerId, month, year] as const,
     adminList: (filters: unknown) => ['followups', 'admin-list', filters] as const,

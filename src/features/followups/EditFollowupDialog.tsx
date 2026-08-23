@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Pencil } from 'lucide-react'
+import { Pencil, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { DuplicateConfirmDialog } from '@/components/DuplicateConfirmDialog'
@@ -12,11 +12,30 @@ import { getFriendlyErrorMessage } from '@/lib/errors'
 import type { Member, MonthlyFollowup } from '@/types'
 import type { FollowupFormValues } from '@/schemas/followup.schema'
 
-/** Only ever rendered for a STARTED/IN_PROGRESS row by the caller — the
- * server also enforces this (api/followups.ts's ?action=update rejects a
- * finished outcome), this component just doesn't add its own duplicate
- * check for something the API already guards. */
-export function EditFollowupDialog({ followup, member }: { followup: MonthlyFollowup; member: Member }) {
+/** Only ever rendered for a STARTED/IN_PROGRESS/CALLBACK_REQUIRED row by
+ * the caller — the server also enforces this (api/followups.ts's
+ * ?action=update rejects a finished outcome), this component just doesn't
+ * add its own duplicate check for something the API already guards. */
+export function EditFollowupDialog({
+  followup,
+  member,
+  label,
+  icon: Icon = Pencil,
+  variant = 'ghost',
+  size = 'icon',
+  className,
+}: {
+  followup: MonthlyFollowup
+  member: Member
+  /** Omitted by the default icon-only trigger (Member 360's Follow-up
+   * History rows). The Manager Follow-ups In Progress tab passes "Update
+   * Follow-up" to render this as a full CTA button instead. */
+  label?: string
+  icon?: LucideIcon
+  variant?: 'ghost' | 'outline' | 'default'
+  size?: 'icon' | 'default' | 'sm' | 'lg'
+  className?: string
+}) {
   const [open, setOpen] = useState(false)
   const { mutate, isPending } = useUpdateFollowup()
   const { duplicate, checkError, clear } = useDuplicateConfirmation<FollowupFormValues, MonthlyFollowup>()
@@ -57,8 +76,8 @@ export function EditFollowupDialog({ followup, member }: { followup: MonthlyFoll
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <Pencil className="size-4" />
+          <Button variant={variant} size={size} className={className}>
+            <Icon className="size-4" /> {label}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
