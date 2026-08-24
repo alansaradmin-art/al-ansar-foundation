@@ -17,9 +17,19 @@ export default defineConfig({
       // financial data while offline, which is worse than the request
       // just failing. No runtimeCaching rules means API calls always hit
       // the network exactly as they do today.
+      //
+      // navigateFallbackDenylist makes every OTHER top-level navigation
+      // (any client-side route — /manager, /admin, etc.) get served the
+      // precached index.html directly from the service worker, which is
+      // what makes deep links/refreshes work offline. /sso-callback is
+      // explicitly excluded from that: it's the one-shot page Clerk's
+      // Google OAuth redirect lands back on, and it needs the network's
+      // actual response, not a cached shortcut — serving it from the SW
+      // broke sign-in for anyone with the app installed (a stale/cached
+      // response on this exact URL, every time).
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff,woff2,svg,png,jpeg,jpg,ico}'],
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/sso-callback/],
       },
       manifest: {
         name: 'Al Ansar Foundation',
