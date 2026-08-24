@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LogoutDialog } from './LogoutDialog'
-import { InstallAppMenuItem } from './InstallAppMenuItem'
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/)
@@ -66,7 +65,6 @@ export function UserMenu() {
             </span>
           </div>
           <DropdownMenuSeparator />
-          <InstallAppMenuItem />
           <DropdownMenuItem variant="destructive" onSelect={() => setLogoutOpen(true)}>
             <LogOut className="size-4" /> Logout
           </DropdownMenuItem>

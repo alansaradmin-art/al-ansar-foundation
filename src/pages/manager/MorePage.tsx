@@ -5,7 +5,6 @@ import { useProfile } from '@/contexts/ProfileContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ThemeSwitcher } from '@/components/ThemeSwitcher'
-import { InstallAppCard } from '@/components/InstallAppCard'
 import { AppFooter } from '@/components/AppFooter'
 
 export default function MorePage() {
@@ -47,8 +46,6 @@ export default function MorePage() {
           <ThemeSwitcher />
         </CardContent>
       </Card>
-
-      <InstallAppCard />
 
       <Button variant="outline" className="w-full" onClick={handleSignOut} disabled={isSigningOut}>
         <LogOut className="size-4" /> {isSigningOut ? 'Signing out…' : 'Sign out'}
