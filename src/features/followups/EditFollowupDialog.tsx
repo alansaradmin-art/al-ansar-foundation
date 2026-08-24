@@ -80,7 +80,7 @@ export function EditFollowupDialog({
             <Icon className="size-4" /> {label}
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Follow-up</DialogTitle>
           </DialogHeader>

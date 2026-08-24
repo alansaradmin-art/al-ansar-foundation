@@ -70,7 +70,7 @@ export function EditDonationDialog({ donation }: { donation: DonationWithRelatio
             <Pencil className="size-4" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Donation</DialogTitle>
           </DialogHeader>

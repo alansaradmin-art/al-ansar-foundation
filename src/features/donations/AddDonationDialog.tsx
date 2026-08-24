@@ -66,7 +66,7 @@ export function AddDonationDialog({
             <Plus className="size-4" /> Add Donation
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Record a Donation</DialogTitle>
           </DialogHeader>
