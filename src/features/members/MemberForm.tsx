@@ -66,16 +66,7 @@ export function MemberForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit, (errors) => {
-          // TEMPORARY diagnostic — a silent client-side validation failure
-          // was reported (Save does nothing, no visible error) and this is
-          // the only way to see which field/message is actually blocking
-          // without being able to reproduce locally. Remove once diagnosed.
-          console.error('[MemberForm] validation failed', errors)
-        })}
-        className="space-y-5"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         {existingMemberId && (
           <p className="text-sm text-muted-foreground">
             Member ID <span className="font-medium text-foreground">{existingMemberId}</span>
