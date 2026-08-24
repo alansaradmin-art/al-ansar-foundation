@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '@clerk/clerk-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Palette, SlidersHorizontal, ClipboardList, IndianRupee, type LucideIcon } from 'lucide-react'
+import { Palette, SlidersHorizontal, ClipboardList, IndianRupee, Download, type LucideIcon } from 'lucide-react'
+import { InstallAppCard } from '@/components/InstallAppCard'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import {
@@ -176,6 +177,15 @@ export default function SettingsPage() {
             <ThemeSwitcher />
           </CardContent>
         </Card>
+      </SettingsSection>
+
+      <SettingsSection
+        icon={Download}
+        title="Progressive Web App"
+        description="Use Al Ansar Foundation as an installed app instead of a browser tab."
+        tone="neutral"
+      >
+        <InstallAppCard />
       </SettingsSection>
 
       <SettingsSection
