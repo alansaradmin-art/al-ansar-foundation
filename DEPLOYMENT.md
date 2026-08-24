@@ -539,17 +539,35 @@ new environment variable values retroactively.
 ## 12. Troubleshooting
 
 **"Not authorized" for someone who should have access** — an email that doesn't match
-`FOUNDATION_ADMIN_EMAIL` or any `managers.email` row is now rejected immediately: the app
-signs them out, and the server deletes the Clerk user it just created for that sign-up
-attempt (see `api/_lib/auth.ts`'s `getOrProvisionProfile` and `api/webhooks/clerk.ts` — both
-call Clerk's Backend API `deleteUser`, never just leaving an unlinked account around). This
-is expected for anyone not yet added — check, in order: (1) did the migrations actually run
-(`select * from managers;` should return 11 rows), (2) is their email in `managers.email` (or
-matches `FOUNDATION_ADMIN_EMAIL`) exactly. Once you add/correct their email, have them try
-"Continue with Google" again — since the earlier attempt's Clerk user was deleted, this
-creates a fresh account and provisions normally; there's nothing to manually clean up first.
+`FOUNDATION_ADMIN_EMAIL` or any `managers.email` row is rejected: the app signs them out.
+Only a genuinely brand-new, never-before-seen Clerk user also gets deleted server-side, and
+only once — via the Clerk `user.created` webhook (`api/webhooks/clerk.ts`). The per-request
+check in `api/_lib/auth.ts`'s `getOrProvisionProfile` (which runs on every device's every
+`/api/profile` call, not just first sign-up) rejects the same way but deliberately does
+**not** delete the Clerk user — it used to, and that meant any single ambiguous request from
+any device could permanently delete a legitimate admin/manager's account with no way back
+short of re-inviting them. Check `getOrProvisionProfile`'s `console.error` log line (Vercel
+function logs) for the exact `clerkUserId`/`email` it rejected. This is expected for anyone
+not yet added — check, in order: (1) did the migrations actually run (`select * from
+managers;` should return 11 rows), (2) is their email in `managers.email` (or matches
+`FOUNDATION_ADMIN_EMAIL`) exactly. Once you add/correct their email, have them try "Continue
+with Google" again.
 (A manager already present in `managers` but with `status` other than `ACTIVE` is a different
 case — they provision normally but see "Your account has been deactivated" instead.)
+
+**Same account shows "Not authorized" on a second device/browser after working fine on the
+first** — this should never legitimately happen (Clerk resolves a repeat sign-in with the
+same account, on any device, to the same `clerk_user_id`; `getOrProvisionProfile` finds the
+existing `profiles` row for it immediately and never re-runs the admin/manager match at all).
+If it does, it means the second device's Clerk sign-in resolved to a genuinely *different*
+`clerk_user_id` than the first device's — check, in order: (1) both devices are hitting the
+exact same deployment URL, not a preview deployment or an old bookmarked link pointing at a
+different Vercel environment with a different `VITE_CLERK_PUBLISHABLE_KEY`/`CLERK_SECRET_KEY`
+pair (a Development-instance Clerk key on one and Production on the other means two entirely
+separate user databases — the same Google account looks brand-new on whichever instance
+hasn't seen it before), (2) the rejected-request log line above, to see whether the two
+devices' requests actually carried different `clerkUserId` values for what's assumed to be
+one account.
 
 **401 errors in the browser console / the app is stuck loading for everyone** — the API
 layer (`api/_lib/auth.ts`) can't verify the caller's Clerk session token. Check: (1)

@@ -161,16 +161,21 @@ export async function getOrProvisionProfile(clerkUserId: string): Promise<Caller
     return toCallerProfile(provisioned)
   }
 
-  // No match: this email is not an authorized Admin/Manager — reject and
-  // clean up immediately rather than leaving a live, unlinked Clerk user
-  // around. Never lets a delete failure block the caller from seeing the
-  // rejection (requireActiveProfile still sends 403 either way); any
-  // still-live session simply retries this same delete on its next call.
-  try {
-    await getClerkClient().users.deleteUser(clerkUserId)
-  } catch (deleteError) {
-    console.error('[auth] failed to delete unauthorized Clerk user', clerkUserId, deleteError)
-  }
+  // No match: this email is not an authorized Admin/Manager — reject
+  // (requireActiveProfile sends 403) but do NOT delete the Clerk user here.
+  // This function runs on every authenticated device's every /api/profile
+  // call, not just on first-ever sign-up, so "no match" here doesn't
+  // reliably mean "brand-new unauthorized signup" — it can also mean a
+  // legitimate admin/manager whose profiles row is momentarily out of sync
+  // with this specific clerk_user_id (e.g. Clerk resolved their sign-in to
+  // a different Clerk user than usual). Deleting the Clerk user on every
+  // such mismatch previously meant one ambiguous request from any device
+  // could permanently lock the real account out everywhere, with no way
+  // back short of manually re-inviting them. Cleanup for genuinely new,
+  // never-authorized sign-ups still happens exactly once, in
+  // api/webhooks/clerk.ts, which is gated to the Clerk `user.created` event
+  // rather than firing on every unmatched request.
+  console.error('[auth] no admin/manager match for clerk user — rejecting, not deleting', { clerkUserId, email })
   return null
 }
 

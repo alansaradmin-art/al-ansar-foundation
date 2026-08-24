@@ -7,11 +7,14 @@ import { FoundationMark } from '@/components/FoundationMark'
 import { Button } from '@/components/ui/button'
 
 /** Rendered whenever the signed-in email isn't an authorized Admin/Manager
- * — by that point api/_lib/auth.ts's getOrProvisionProfile (or, for a
- * brand-new sign-up, api/webhooks/clerk.ts) has already rejected and
- * deleted the underlying Clerk user server-side. Signs out automatically
- * on mount ("immediately reject," not waiting on a click) — the button
- * stays as a fallback in case that automatic call fails for any reason. */
+ * (or an authorized manager has been deactivated) — api/_lib/auth.ts's
+ * getOrProvisionProfile has rejected this request. For a genuinely
+ * brand-new, never-authorized sign-up, api/webhooks/clerk.ts also deletes
+ * the underlying Clerk user server-side (once, on the Clerk `user.created`
+ * event) — this page itself doesn't know or depend on whether that
+ * happened. Signs out automatically on mount ("immediately reject," not
+ * waiting on a click) — the button stays as a fallback in case that
+ * automatic call fails for any reason. */
 export default function UnauthorizedPage() {
   const { signOut } = useClerk()
   const queryClient = useQueryClient()
