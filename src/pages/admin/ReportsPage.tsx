@@ -37,6 +37,72 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement', 'followups'])
 
+/** Mobile card view for the Manager-wise tab's table — same dl/dt/dd
+ * pattern already used by ManagerFollowupReport/DonationEngagementReport's
+ * own row cards, so this reads as the same list style rather than a
+ * one-off. */
+function ManagerWiseRowCard({ row }: { row: ManagerWiseReportRow }) {
+  return (
+    <div className="space-y-2 rounded-xl border bg-card p-4 shadow-sm">
+      <p className="font-medium">{row.manager_name}</p>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Assigned</dt>
+          <dd className="tabular-nums">{row.assigned_members}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Donors</dt>
+          <dd className="tabular-nums">{row.members_with_donation}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Donations</dt>
+          <dd className="tabular-nums">{row.donation_count}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Amount</dt>
+          <dd className="font-semibold tabular-nums">{formatINR(row.donation_amount)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Completed</dt>
+          <dd className="tabular-nums">{row.completed_followups}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Pending</dt>
+          <dd className="tabular-nums">{row.pending_followups}</dd>
+        </div>
+      </dl>
+    </div>
+  )
+}
+
+/** Mobile card view for the Month-wise tab's table — same pattern as
+ * ManagerWiseRowCard above. */
+function MonthWiseRowCard({ row }: { row: MonthWiseReportRow }) {
+  return (
+    <div className="space-y-2 rounded-xl border bg-card p-4 shadow-sm">
+      <p className="font-medium">{formatPeriod(row.month, row.year)}</p>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm sm:grid-cols-4">
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Donations</dt>
+          <dd className="tabular-nums">{row.donation_count}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Amount</dt>
+          <dd className="font-semibold tabular-nums">{formatINR(row.donation_amount)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Completed</dt>
+          <dd className="tabular-nums">{row.completed_followups}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground/70">Pending</dt>
+          <dd className="tabular-nums">{row.pending_followups}</dd>
+        </div>
+      </dl>
+    </div>
+  )
+}
+
 export default function ReportsPage() {
   const queryClient = useQueryClient()
   const { period, setPeriod } = usePeriodSelector()
@@ -119,13 +185,20 @@ export default function ReportsPage() {
       <PageHeader title="Reports" description="Manager performance and month-over-month donation trends" />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="manager">Manager-wise</TabsTrigger>
-          <TabsTrigger value="month">Month-wise</TabsTrigger>
-          <TabsTrigger value="donations">Donation Report</TabsTrigger>
-          <TabsTrigger value="engagement">Donation Engagement</TabsTrigger>
-          <TabsTrigger value="followups">Manager Follow-ups</TabsTrigger>
-        </TabsList>
+        {/* Five tab labels don't fit a phone-width bar — TabsList is
+         * inline-flex/w-fit (never wraps), so without this it would widen
+         * past the viewport and push the whole page into horizontal
+         * scroll. Scoping the scroll to just this bar (swipeable on
+         * mobile) instead keeps the rest of the page from moving. */}
+        <div className="overflow-x-auto">
+          <TabsList>
+            <TabsTrigger value="manager">Manager-wise</TabsTrigger>
+            <TabsTrigger value="month">Month-wise</TabsTrigger>
+            <TabsTrigger value="donations">Donation Report</TabsTrigger>
+            <TabsTrigger value="engagement">Donation Engagement</TabsTrigger>
+            <TabsTrigger value="followups">Manager Follow-ups</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="manager" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -139,32 +212,39 @@ export default function ReportsPage() {
           {managerRows && managerRows.length === 0 && <EmptyState title="No managers found." />}
 
           {managerRows && managerRows.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Manager</TableHead>
-                  <TableHead>Assigned</TableHead>
-                  <TableHead>Donors</TableHead>
-                  <TableHead>Donations</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Completed</TableHead>
-                  <TableHead>Pending</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="space-y-2 md:hidden">
                 {managerRows.map((row) => (
-                  <TableRow key={row.manager_id} className="border-b last:border-0">
-                    <TableCell className="font-medium">{row.manager_name}</TableCell>
-                    <TableCell className="tabular-nums">{row.assigned_members}</TableCell>
-                    <TableCell className="tabular-nums">{row.members_with_donation}</TableCell>
-                    <TableCell className="tabular-nums">{row.donation_count}</TableCell>
-                    <TableCell className="tabular-nums">{formatINR(row.donation_amount)}</TableCell>
-                    <TableCell className="tabular-nums">{row.completed_followups}</TableCell>
-                    <TableCell className="tabular-nums">{row.pending_followups}</TableCell>
-                  </TableRow>
+                  <ManagerWiseRowCard key={row.manager_id} row={row} />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              <Table className="hidden md:block">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Manager</TableHead>
+                    <TableHead>Assigned</TableHead>
+                    <TableHead>Donors</TableHead>
+                    <TableHead>Donations</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Completed</TableHead>
+                    <TableHead>Pending</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {managerRows.map((row) => (
+                    <TableRow key={row.manager_id} className="border-b last:border-0">
+                      <TableCell className="font-medium">{row.manager_name}</TableCell>
+                      <TableCell className="tabular-nums">{row.assigned_members}</TableCell>
+                      <TableCell className="tabular-nums">{row.members_with_donation}</TableCell>
+                      <TableCell className="tabular-nums">{row.donation_count}</TableCell>
+                      <TableCell className="tabular-nums">{formatINR(row.donation_amount)}</TableCell>
+                      <TableCell className="tabular-nums">{row.completed_followups}</TableCell>
+                      <TableCell className="tabular-nums">{row.pending_followups}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </TabsContent>
 
@@ -186,7 +266,12 @@ export default function ReportsPage() {
           {monthRows && monthRows.length > 0 && (
             <>
               <MonthlyBarChart rows={monthRows} />
-              <Table>
+              <div className="space-y-2 md:hidden">
+                {monthRows.map((row) => (
+                  <MonthWiseRowCard key={row.month} row={row} />
+                ))}
+              </div>
+              <Table className="hidden md:block">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Month</TableHead>
