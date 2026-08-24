@@ -31,7 +31,14 @@ export const followupFormSchema = z
     if (data.contacted_person_type === 'OTHER' && !data.contacted_person_name) {
       ctx.addIssue({ code: 'custom', path: ['contacted_person_name'], message: 'Enter the contact’s name.' })
     }
-    if (data.contacted_person_phone && !data.contacted_person_country) {
+    // Only when the phone was actually typed through CountryPhoneField
+    // (contacted_person_type = 'OTHER') — MEMBER/ADDED_BY/REFERENCE_CONTACT
+    // auto-fill from that contact's own record, which may be a legacy one
+    // with a phone but no stored country. That's a data-quality gap on the
+    // member's record, not something that should silently block logging a
+    // follow-up — and the CountryPhoneField that would show this error
+    // isn't even rendered for those auto-filled types.
+    if (data.contacted_person_type === 'OTHER' && data.contacted_person_phone && !data.contacted_person_country) {
       ctx.addIssue({ code: 'custom', path: ['contacted_person_country'], message: 'Select the phone number’s country.' })
     }
   })

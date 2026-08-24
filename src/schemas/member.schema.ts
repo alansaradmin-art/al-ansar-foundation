@@ -43,10 +43,22 @@ export const memberFormSchema = z
     if (data.mobile_number && !data.mobile_country) {
       ctx.addIssue({ code: 'custom', path: ['mobile_country'], message: 'Select the mobile number’s country.' })
     }
-    if (data.added_by_phone && !data.added_by_country) {
+    // Only when the phone was actually typed through CountryPhoneField
+    // (Manager/External Contact) — Registered Member copies whatever the
+    // linked member has on file, including a possibly-missing country for
+    // a legacy/un-migrated record. That's a data-quality gap on THAT
+    // member, not something that should silently block saving THIS one —
+    // and the CountryPhoneField that would show this error isn't even
+    // rendered in Registered Member mode, so this issue would otherwise
+    // never be visible.
+    if (data.added_by_type !== 'REGISTERED_MEMBER' && data.added_by_phone && !data.added_by_country) {
       ctx.addIssue({ code: 'custom', path: ['added_by_country'], message: 'Select the phone number’s country.' })
     }
-    if (data.reference_contact_phone && !data.reference_contact_country) {
+    if (
+      data.reference_contact_type !== 'REGISTERED_MEMBER' &&
+      data.reference_contact_phone &&
+      !data.reference_contact_country
+    ) {
       ctx.addIssue({ code: 'custom', path: ['reference_contact_country'], message: 'Select the phone number’s country.' })
     }
   })
