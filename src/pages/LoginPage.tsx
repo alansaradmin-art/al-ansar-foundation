@@ -174,7 +174,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-muted/30 px-4 py-10 sm:px-6">
+    <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-background bg-[url('/loginbackmob.png')] bg-cover bg-center bg-no-repeat px-4 py-10 sm:bg-[url('/loginbackdesk.png')] sm:px-6">
       <div className="w-full max-w-sm space-y-2 text-center">
         <img src="/Banner.jpeg" alt="Al Ansar Foundation, Hatwa Bazar Basti" className="w-full rounded-xl" />
         <p className="text-sm text-muted-foreground">Member &amp; Donation Management System</p>
