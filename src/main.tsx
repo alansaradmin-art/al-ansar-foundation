@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { queryClient } from '@/lib/queryClient'
 import { ProfileProvider } from '@/contexts/ProfileContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { registerServiceWorker } from './registerServiceWorker'
 import App from './App.tsx'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
@@ -27,6 +28,8 @@ const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || undefined
 if (!clerkPublishableKey) {
   throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY. Copy .env.example to .env.local and fill it in.')
 }
+
+registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

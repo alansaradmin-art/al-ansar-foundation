@@ -11,6 +11,12 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registration is handled explicitly by src/registerServiceWorker.ts
+      // (imported from main.tsx) instead of the plugin's auto-injected
+      // fallback script, which only calls navigator.serviceWorker.register()
+      // with no update-detection/reload wiring — that gap is what let a
+      // device stay on a stale cached build indefinitely.
+      injectRegister: false,
       // Precaches only the built app shell (JS/CSS/fonts/images) — never
       // /api/* responses. This is a live donation/member-management
       // system; caching API calls risks a manager acting on stale
