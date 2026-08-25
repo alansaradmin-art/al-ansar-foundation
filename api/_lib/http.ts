@@ -43,9 +43,16 @@ export function sendError(res: ApiResponse, status: number, message: string, cod
 
 /** Forwards a Postgres/PostgREST error as a 400 with its code/message/details
  * intact, so the frontend's getFriendlyErrorMessage keeps recognizing
- * 23505/23514 the same way it always has. Anything else is a 500. */
+ * 23505/23514 the same way it always has. Anything else is a 500.
+ *
+ * Logs every call — unlike the catch-all in each handler's try/catch, a
+ * Postgres error reaching here is already "handled" (it produces a proper
+ * JSON error response, not a crash), so nothing was printing it to Vercel's
+ * function logs. That left every 500 originating here invisible server-side,
+ * with the actual reason only ever visible in the response body. */
 export function sendSupabaseError(res: ApiResponse, error: { code?: string; message?: string; details?: string }): void {
   const status = error.code === '23505' || error.code === '23514' ? 400 : 500
+  if (status === 500) console.error('[supabase]', error)
   sendError(res, status, error.message ?? 'Database error.', error.code, error.details ?? undefined)
 }
 
