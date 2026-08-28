@@ -1,52 +1,76 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import type { ReceiptData } from './receiptData'
 
+// Warm neutral/gold palette matching this app's own brand tokens
+// (bg-gold/text-primary elsewhere in the UI) — no red anywhere, and no
+// heavy borders/boxes; the banner and logo carry the branding, so
+// everything below them stays quiet and typographic.
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#241f19' },
-  header: { alignItems: 'center', marginBottom: 16 },
-  logo: { width: 64, height: 64, marginBottom: 8, borderRadius: 32 },
-  foundationName: { fontSize: 18, fontWeight: 700, letterSpacing: 1 },
-  foundationSubtitle: { fontSize: 10, color: '#6b6155', marginTop: 2 },
-  // No fixed height/objectFit — 'objectFit' isn't actually a style react-pdf
-  // supports (silently ignored), which was stretching/misplacing the
-  // banner inside a box its own aspect ratio didn't match. Full width with
-  // no height lets it scale proportionally instead, so it always displays
-  // at its own correct proportions with no empty gaps or distortion.
-  banner: { width: '100%', marginTop: 12 },
-  divider: { borderBottomWidth: 1, borderBottomColor: '#d8cfae', marginVertical: 16 },
-  title: { fontSize: 14, fontWeight: 700, textAlign: 'center', marginBottom: 16, letterSpacing: 2 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  sectionLabel: { fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#8a7d63', marginBottom: 6 },
-  section: { marginBottom: 16 },
-  fieldRow: { flexDirection: 'row', marginBottom: 4 },
-  fieldLabel: { width: 140, color: '#6b6155' },
+  page: { paddingTop: 40, paddingBottom: 40, paddingHorizontal: 46, fontSize: 10, fontFamily: 'Helvetica', color: '#2b2620' },
+
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  logo: { width: 46, height: 46, borderRadius: 23 },
+  headerContact: { flex: 1, textAlign: 'right', fontSize: 8.5, color: '#8a7d63', lineHeight: 1.5 },
+
+  // No fixed height and no 'objectFit' (not an actual react-pdf style —
+  // silently ignored, which previously stretched/mis-fit the banner).
+  // Full width, natural aspect ratio, no border/box around it — it reads
+  // as the page's own masthead rather than a pasted-in image.
+  banner: { width: '100%', marginTop: 14 },
+
+  divider: { borderBottomWidth: 0.75, borderBottomColor: '#e3dcc8', marginTop: 22, marginBottom: 22 },
+
+  title: { fontSize: 13, fontWeight: 700, textAlign: 'center', letterSpacing: 3, marginBottom: 24 },
+
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 26 },
+  metaLabel: { fontSize: 8, textTransform: 'uppercase', letterSpacing: 1, color: '#a39a83' },
+  metaValueLeft: { fontSize: 11, fontWeight: 700, marginTop: 3 },
+  metaValueRight: { fontSize: 11, fontWeight: 700, marginTop: 3, textAlign: 'right' },
+
+  section: { marginBottom: 20 },
+  sectionLabel: { fontSize: 8.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: '#a3813f', marginBottom: 11 },
+  fieldRow: { flexDirection: 'row', marginBottom: 8 },
+  fieldLabel: { width: 150, color: '#8a7d63' },
   fieldValue: { flex: 1, fontWeight: 500 },
+
   amountBox: {
-    borderWidth: 1,
-    borderColor: '#241f19',
-    borderRadius: 4,
-    padding: 12,
+    backgroundColor: '#faf6ea',
+    borderWidth: 0.75,
+    borderColor: '#e8dcb8',
+    borderRadius: 6,
+    paddingVertical: 20,
     alignItems: 'center',
-    marginVertical: 16,
+    marginTop: 6,
+    marginBottom: 26,
   },
-  amountLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: '#6b6155' },
-  amountValue: { fontSize: 20, fontWeight: 700, marginTop: 4 },
-  amountWords: { fontSize: 9, color: '#6b6155', marginTop: 6, textAlign: 'center' },
-  thankYou: { textAlign: 'center', marginTop: 8, marginBottom: 24, lineHeight: 1.5, color: '#3f382c' },
-  footer: { borderTopWidth: 1, borderTopColor: '#d8cfae', paddingTop: 12, textAlign: 'center' },
-  footerName: { fontWeight: 700, marginBottom: 2 },
-  footerContact: { color: '#6b6155', fontSize: 9 },
+  amountLabel: { fontSize: 8.5, textTransform: 'uppercase', letterSpacing: 1.5, color: '#a3813f' },
+  amountValue: { fontSize: 22, fontWeight: 700, marginTop: 6 },
+  amountWords: { fontSize: 8.5, color: '#8a7d63', marginTop: 6, textAlign: 'center' },
+
+  thankYou: { textAlign: 'center', lineHeight: 1.6, color: '#4a4235', marginBottom: 30 },
+
+  footer: { borderTopWidth: 0.75, borderTopColor: '#e3dcc8', paddingTop: 14, textAlign: 'center' },
+  footerContact: { fontSize: 8.5, color: '#8a7d63' },
+  footerNote: { fontSize: 7.5, color: '#b0a68f', marginTop: 5 },
 })
 
 /** The single source of truth for both the on-screen preview (<PDFViewer>
  * wraps this exact component, see ReceiptActions.tsx) and the exported PDF
  * (pdf(<ReceiptDocument .../>).toBlob(), see useDonationReceipt.ts) — the
  * two can never visually drift apart since there is only ever one
- * definition. <Image>s only render when a URL is actually configured
- * (blank Logo/Banner settings degrade to a clean text-only header, never a
- * broken layout); useDonationReceipt.ts additionally retries once with
- * `stripImages` when even a *configured* URL fails to load (broken/invalid
- * image), so a bad setting can never block generation either. */
+ * definition.
+ *
+ * Deliberately doesn't repeat "AL ANSAR FOUNDATION" as a heading — the
+ * banner already carries the name/branding, and the logo (top-left) plus
+ * banner (full-width, just below) are the only branding elements; the
+ * footer only ever shows contact info, never the name again.
+ *
+ * <Image>s only render when a URL is actually configured (blank Logo/
+ * Banner settings degrade to a clean layout with no logo/banner at all,
+ * never a broken one); useDonationReceipt.ts additionally retries once
+ * with `stripImages` when even a *configured* URL fails to load
+ * (broken/invalid image), so a bad setting can never block generation
+ * either. */
 export function ReceiptDocument({ data, stripImages = false }: { data: ReceiptData; stripImages?: boolean }) {
   const showLogo = !stripImages && !!data.logoUrl
   const showBanner = !stripImages && !!data.bannerUrl
@@ -54,25 +78,25 @@ export function ReceiptDocument({ data, stripImages = false }: { data: ReceiptDa
   return (
     <Document title={`Receipt ${data.receiptNumber}`}>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
+        <View style={styles.headerRow}>
           {showLogo && <Image src={data.logoUrl} style={styles.logo} />}
-          <Text style={styles.foundationName}>AL ANSAR FOUNDATION</Text>
-          {data.contactInfo && <Text style={styles.foundationSubtitle}>{data.contactInfo}</Text>}
-          {showBanner && <Image src={data.bannerUrl} style={styles.banner} />}
+          {data.contactInfo && <Text style={styles.headerContact}>{data.contactInfo}</Text>}
         </View>
+
+        {showBanner && <Image src={data.bannerUrl} style={styles.banner} />}
 
         <View style={styles.divider} />
         <Text style={styles.title}>DONATION RECEIPT</Text>
 
         <View style={styles.metaRow}>
-          <Text>
-            <Text style={{ color: '#6b6155' }}>Receipt No: </Text>
-            {data.receiptNumber}
-          </Text>
-          <Text>
-            <Text style={{ color: '#6b6155' }}>Date: </Text>
-            {data.donationDateFormatted}
-          </Text>
+          <View>
+            <Text style={styles.metaLabel}>Receipt No.</Text>
+            <Text style={styles.metaValueLeft}>{data.receiptNumber}</Text>
+          </View>
+          <View>
+            <Text style={styles.metaLabel}>Date</Text>
+            <Text style={styles.metaValueRight}>{data.donationDateFormatted}</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -82,7 +106,7 @@ export function ReceiptDocument({ data, stripImages = false }: { data: ReceiptDa
             <Text style={styles.fieldValue}>{data.donorName}</Text>
           </View>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Member</Text>
+            <Text style={styles.fieldLabel}>Member / Donor Type</Text>
             <Text style={styles.fieldValue}>
               {data.donorLabel}
               {data.memberDisplayId ? ` (${data.memberDisplayId})` : ''}
@@ -127,8 +151,8 @@ export function ReceiptDocument({ data, stripImages = false }: { data: ReceiptDa
         <Text style={styles.thankYou}>{data.footerText}</Text>
 
         <View style={styles.footer}>
-          <Text style={styles.footerName}>Al Ansar Foundation</Text>
           {data.contactInfo && <Text style={styles.footerContact}>{data.contactInfo}</Text>}
+          <Text style={styles.footerNote}>This is a computer-generated receipt and does not require a signature.</Text>
         </View>
       </Page>
     </Document>
