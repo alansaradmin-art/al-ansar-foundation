@@ -98,7 +98,6 @@ export function AddDonationDialog({
         <DonationSuccessDialog
           donation={successDonation}
           member={member}
-          recordedByName={profile!.full_name}
           open
           onOpenChange={(next) => !next && setSuccessDonation(null)}
         />

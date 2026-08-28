@@ -44,7 +44,7 @@ function DonationRow({
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         <span className="font-display font-semibold tabular-nums">{formatINR(d.amount_inr)}</span>
-        <ReceiptViewDialog donation={d} member={member} recordedByName={d.recorder?.full_name ?? 'Al Ansar Foundation'} />
+        <ReceiptViewDialog donation={d} member={member} />
       </div>
     </li>
   )

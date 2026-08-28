@@ -38,10 +38,13 @@ export async function setDefaultPageSize(getToken: GetToken, pageSize: number): 
 }
 
 export interface ReceiptBranding {
-  logoUrl: string
   bannerUrl: string
   footerText: string
   contactInfo: string
+  /** Shown as the receipt's "Received By" line for every donation — a
+   * single admin-set organizational designation (e.g. "Accounts of
+   * Al-Ansar Foundation"), not the individual manager who recorded it. */
+  receivedByLabel: string
 }
 
 export async function getReceiptBranding(getToken: GetToken): Promise<ReceiptBranding> {

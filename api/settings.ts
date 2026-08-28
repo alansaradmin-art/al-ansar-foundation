@@ -77,38 +77,42 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { pageSize })
     }
 
-    // Bundled as one action pair (not four, like the settings above) since
-    // these 4 values are always read/edited together — one round trip for
-    // every receipt render instead of four.
+    // Bundled as one action pair (not one-per-field, like the settings
+    // above) since these values are always read/edited together — one
+    // round trip for every receipt render instead of several.
+    // RECEIPT_LOGO_URL is deliberately not read/written here anymore — the
+    // receipt no longer displays a logo at all (see ReceiptDocument.tsx),
+    // so exposing it would just be a setting with no visible effect. The
+    // row itself is left alone in app_settings, just unused.
     if (req.method === 'GET' && action === 'receiptBranding') {
       const { data, error } = await supabase
         .from('app_settings')
         .select('key, value')
-        .in('key', ['RECEIPT_LOGO_URL', 'RECEIPT_BANNER_URL', 'RECEIPT_FOOTER_TEXT', 'RECEIPT_CONTACT_INFO'])
+        .in('key', ['RECEIPT_BANNER_URL', 'RECEIPT_FOOTER_TEXT', 'RECEIPT_CONTACT_INFO', 'RECEIPT_RECEIVED_BY_LABEL'])
       if (error) return sendSupabaseError(res, error)
       const byKey = new Map((data ?? []).map((row) => [row.key, String(row.value ?? '')]))
       return sendJson(res, 200, {
-        logoUrl: byKey.get('RECEIPT_LOGO_URL') ?? '',
         bannerUrl: byKey.get('RECEIPT_BANNER_URL') ?? '',
         footerText: byKey.get('RECEIPT_FOOTER_TEXT') ?? '',
         contactInfo: byKey.get('RECEIPT_CONTACT_INFO') ?? '',
+        receivedByLabel: byKey.get('RECEIPT_RECEIVED_BY_LABEL') ?? '',
       })
     }
 
     if (req.method === 'PUT' && action === 'receiptBranding') {
       if (!requireAdmin(res, profile)) return
-      const { logoUrl, bannerUrl, footerText, contactInfo } = await readJsonBody<{
-        logoUrl: string
+      const { bannerUrl, footerText, contactInfo, receivedByLabel } = await readJsonBody<{
         bannerUrl: string
         footerText: string
         contactInfo: string
+        receivedByLabel: string
       }>(req)
       const updatedAt = new Date().toISOString()
       const updates: [string, string][] = [
-        ['RECEIPT_LOGO_URL', logoUrl ?? ''],
         ['RECEIPT_BANNER_URL', bannerUrl ?? ''],
         ['RECEIPT_FOOTER_TEXT', footerText ?? ''],
         ['RECEIPT_CONTACT_INFO', contactInfo ?? ''],
+        ['RECEIPT_RECEIVED_BY_LABEL', receivedByLabel ?? ''],
       ]
       for (const [key, value] of updates) {
         const { error } = await supabase
@@ -117,7 +121,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           .eq('key', key)
         if (error) return sendSupabaseError(res, error)
       }
-      return sendJson(res, 200, { logoUrl, bannerUrl, footerText, contactInfo })
+      return sendJson(res, 200, { bannerUrl, footerText, contactInfo, receivedByLabel })
     }
 
     sendError(res, 404, 'Not found.')

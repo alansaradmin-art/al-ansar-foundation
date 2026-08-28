@@ -16,14 +16,12 @@ import type { Donation, Member } from '@/types'
 export function ReceiptViewDialog({
   donation,
   member,
-  recordedByName,
 }: {
   donation: Donation
   member?: Pick<Member, 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'> | null
-  recordedByName: string
 }) {
   const [open, setOpen] = useState(false)
-  const receipt = useDonationReceipt(donation, member ?? null, recordedByName)
+  const receipt = useDonationReceipt(donation, member ?? null)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

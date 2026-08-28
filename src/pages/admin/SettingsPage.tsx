@@ -131,7 +131,7 @@ export default function SettingsPage() {
     }
   }
 
-  const EMPTY_BRANDING: ReceiptBranding = { logoUrl: '', bannerUrl: '', footerText: '', contactInfo: '' }
+  const EMPTY_BRANDING: ReceiptBranding = { bannerUrl: '', footerText: '', contactInfo: '', receivedByLabel: '' }
   const { data: receiptBranding, isLoading: isReceiptBrandingLoading } = useQuery({
     queryKey: queryKeys.settings.receiptBranding,
     queryFn: () => getReceiptBranding(getToken),
@@ -356,8 +356,10 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-base">Receipt Branding</CardTitle>
             <CardDescription>
-              Logo and banner are plain image URLs — leave either blank to use this app's own default logo/banner
-              instead. Footer text and contact info appear at the bottom of every receipt.
+              The receipt no longer shows a logo — its banner carries the branding. Leave the banner blank to use
+              this app's own default banner instead. Footer text and contact info appear at the bottom of every
+              receipt; "Received By" appears on every receipt exactly as typed here, regardless of which manager
+              actually recorded the donation.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -366,21 +368,21 @@ export default function SettingsPage() {
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="receipt-logo-url">Logo URL</Label>
-                  <Input
-                    id="receipt-logo-url"
-                    placeholder="https://… (blank = use the app's default logo)"
-                    value={branding.logoUrl}
-                    onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="receipt-banner-url">Banner URL</Label>
                   <Input
                     id="receipt-banner-url"
                     placeholder="https://… (blank = use the app's default banner)"
                     value={branding.bannerUrl}
                     onChange={(e) => setBranding({ ...branding, bannerUrl: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receipt-received-by">Received By</Label>
+                  <Input
+                    id="receipt-received-by"
+                    placeholder="e.g. Accounts of Al-Ansar Foundation"
+                    value={branding.receivedByLabel}
+                    onChange={(e) => setBranding({ ...branding, receivedByLabel: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">

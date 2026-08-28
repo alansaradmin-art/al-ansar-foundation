@@ -45,7 +45,6 @@ export interface UseDonationReceiptResult {
 export function useDonationReceipt(
   donation: Donation,
   member: Pick<Member, 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'> | null,
-  recordedByName: string,
 ): UseDonationReceiptResult {
   const { getToken } = useAuth()
   const { data: branding } = useReceiptBranding()
@@ -53,8 +52,8 @@ export function useDonationReceipt(
 
   const data = useMemo(
     () =>
-      buildReceiptData(donation, member, recordedByName, branding ?? { logoUrl: '', bannerUrl: '', footerText: '', contactInfo: '' }),
-    [donation, member, recordedByName, branding],
+      buildReceiptData(donation, member, branding ?? { bannerUrl: '', footerText: '', contactInfo: '', receivedByLabel: '' }),
+    [donation, member, branding],
   )
 
   // Fire-and-forget — a lost audit-log write must never surface as a user-

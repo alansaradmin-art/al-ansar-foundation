@@ -108,8 +108,10 @@ export interface ReceiptData {
   paymentMethodLabel: string
   transactionReference: string | null
   notes: string | null
-  recordedByName: string
-  logoUrl: string
+  /** Admin-configured (Settings → Receipts → "Received By"), the same on
+   * every receipt regardless of which manager actually recorded the
+   * donation — see ReceiptBranding.receivedByLabel. */
+  receivedByLabel: string
   bannerUrl: string
   footerText: string
   contactInfo: string
@@ -122,7 +124,6 @@ export interface ReceiptData {
 export function buildReceiptData(
   donation: Donation,
   member: Pick<Member, 'member_name' | 'member_id'> | null,
-  recordedByName: string,
   branding: ReceiptBranding,
 ): ReceiptData {
   return {
@@ -138,8 +139,7 @@ export function buildReceiptData(
     paymentMethodLabel: PAYMENT_LABELS[donation.payment_method] ?? donation.payment_method,
     transactionReference: donation.transaction_reference,
     notes: donation.notes,
-    recordedByName,
-    logoUrl: branding.logoUrl.trim(),
+    receivedByLabel: branding.receivedByLabel.trim() || 'Al Ansar Foundation',
     bannerUrl: branding.bannerUrl.trim(),
     footerText: branding.footerText.trim() || 'Thank you for your valuable contribution to Al Ansar Foundation.',
     contactInfo: branding.contactInfo.trim(),

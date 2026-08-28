@@ -14,17 +14,15 @@ import type { Donation, Member } from '@/types'
 export function DonationSuccessDialog({
   donation,
   member,
-  recordedByName,
   open,
   onOpenChange,
 }: {
   donation: Donation
   member?: Pick<Member, 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'> | null
-  recordedByName: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const receipt = useDonationReceipt(donation, member ?? null, recordedByName)
+  const receipt = useDonationReceipt(donation, member ?? null)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

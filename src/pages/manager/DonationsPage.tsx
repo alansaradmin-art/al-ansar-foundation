@@ -75,7 +75,6 @@ export default function DonationsPage() {
                 <ReceiptViewDialog
                   donation={donation}
                   member={donation.member}
-                  recordedByName={donation.recorder?.full_name ?? profile?.full_name ?? 'Al Ansar Foundation'}
                 />
               }
             />

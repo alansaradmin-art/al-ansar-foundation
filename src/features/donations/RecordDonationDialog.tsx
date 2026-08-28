@@ -120,7 +120,6 @@ export function RecordDonationDialog({
         <DonationSuccessDialog
           donation={successDonation}
           member={successMember}
-          recordedByName={profile!.full_name}
           open
           onOpenChange={(next) => !next && setSuccessDonation(null)}
         />

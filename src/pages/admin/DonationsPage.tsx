@@ -165,7 +165,6 @@ export default function AdminDonationsPage() {
                     <ReceiptViewDialog
                       donation={donation}
                       member={donation.member}
-                      recordedByName={donation.recorder?.full_name ?? 'Al Ansar Foundation'}
                     />
                     <EditDonationDialog donation={donation} />
                     <SoftDeleteDonationDialog donationId={donation.id} />
@@ -228,11 +227,7 @@ export default function AdminDonationsPage() {
                   <TableCell className="text-muted-foreground">{donation.recorder?.full_name ?? '—'}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <ReceiptViewDialog
-                        donation={donation}
-                        member={donation.member}
-                        recordedByName={donation.recorder?.full_name ?? 'Al Ansar Foundation'}
-                      />
+                      <ReceiptViewDialog donation={donation} member={donation.member} />
                       <EditDonationDialog donation={donation} />
                       <SoftDeleteDonationDialog donationId={donation.id} />
                     </div>

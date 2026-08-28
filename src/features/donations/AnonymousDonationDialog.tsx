@@ -58,7 +58,6 @@ export function AnonymousDonationDialog() {
         <DonationSuccessDialog
           donation={successDonation}
           member={null}
-          recordedByName={profile!.full_name}
           open
           onOpenChange={(next) => !next && setSuccessDonation(null)}
         />
