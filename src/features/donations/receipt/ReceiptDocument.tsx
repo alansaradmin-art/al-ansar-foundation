@@ -8,20 +8,18 @@ import type { ReceiptData } from './receiptData'
 const styles = StyleSheet.create({
   page: { paddingTop: 36, paddingBottom: 36, paddingHorizontal: 46, fontSize: 10, fontFamily: 'Helvetica', color: '#2b2620' },
 
-  // No logo anymore — see the doc comment below. Contact info (if
-  // configured) is the only thing in the header, right-aligned; when it's
-  // blank this whole block renders nothing, no leftover space.
-  headerContact: { textAlign: 'right', fontSize: 8.5, color: '#8a7d63', lineHeight: 1.5 },
-
-  // Fixed height + objectFit: 'cover' — bounded so the banner can never
+  // Fixed height + objectFit: 'contain' — bounded so the banner can never
   // push the receipt onto a second page regardless of the configured
-  // image's own aspect ratio, and 'cover' crops to fill that box
-  // completely rather than leaving empty space around a letterboxed
-  // image. (objectFit genuinely is a supported react-pdf style — verified
-  // in @react-pdf/render's source — the earlier "banner not fitted" bug
-  // was this banner sitting inside a header row with alignItems: 'center',
-  // which isn't the case anymore now that it's a direct Page child.)
-  banner: { width: '100%', height: 76, objectFit: 'cover', marginTop: 8 },
+  // image's own aspect ratio, and 'contain' always shows the whole image
+  // uncropped (centered, shrinking width only if the image's own aspect
+  // ratio needs less than the full page width to stay under the height
+  // cap) rather than cutting off any of its content the way 'cover'
+  // would. (objectFit genuinely is a supported react-pdf style — verified
+  // in @react-pdf/render's source, including that it clips correctly — the
+  // earlier "banner not fitted" bug was this banner sitting inside a
+  // header row with alignItems: 'center', which isn't the case anymore
+  // now that it's the first, direct child of Page.)
+  banner: { width: '100%', height: 90, objectFit: 'contain' },
 
   divider: { borderBottomWidth: 0.75, borderBottomColor: '#e3dcc8', marginTop: 18, marginBottom: 18 },
 
@@ -65,11 +63,11 @@ const styles = StyleSheet.create({
  * two can never visually drift apart since there is only ever one
  * definition.
  *
- * No logo, anywhere, ever — the banner alone carries the branding, and
- * removing the logo means there's no leftover header space to account
- * for (contact info is the only header content, and collapses to nothing
- * when blank). "AL ANSAR FOUNDATION" also isn't repeated as a heading for
- * the same reason: the banner already says it.
+ * No logo and no separate header — the banner is the very first thing on
+ * the page, full stop. Nothing repeats "Al Ansar Foundation" above it
+ * (not a logo, not a heading, not the contact-info line this used to
+ * show up top) since the banner itself already carries the name/
+ * branding; contact info still appears once, in the footer.
  *
  * Every section is sized to fit one A4 page for the normal range of
  * content (the banner's height is hard-capped above for exactly this
@@ -88,8 +86,6 @@ export function ReceiptDocument({ data, stripImages = false }: { data: ReceiptDa
   return (
     <Document title={`Receipt ${data.receiptNumber}`}>
       <Page size="A4" style={styles.page}>
-        {data.contactInfo && <Text style={styles.headerContact}>{data.contactInfo}</Text>}
-
         {showBanner && <Image src={data.bannerUrl} style={styles.banner} />}
 
         <View style={styles.divider} />
