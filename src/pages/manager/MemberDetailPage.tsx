@@ -40,7 +40,7 @@ export default function MemberDetailPage() {
       }
       bottomActions={
         <>
-          <AddDonationDialog memberId={member.id} />
+          <AddDonationDialog memberId={member.id} member={member} />
           <AddFollowupDialog member={member} />
         </>
       }

@@ -3,12 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContactBlock } from './ContactBlock'
 import { useProfile } from '@/contexts/ProfileContext'
 import { buildReferenceContactReminderMessage } from '@/features/followups/donationReminderMessage'
-import type { Member } from '@/types'
+import type { Member, ContactedPersonType } from '@/types'
 
 /** Reference Contact is the closest concept this schema has to "family" —
  * its relationship field (e.g. "Brother", "Father") is the actual family
  * signal, split out of ContactSection into its own Member 360 section. */
-export function FamilyInformationCard({ member }: { member: Member }) {
+export function FamilyInformationCard({
+  member,
+  onWhatsAppSend,
+}: {
+  member: Member
+  /** See ContactSection.tsx's own doc comment on the same prop. */
+  onWhatsAppSend?: (type: ContactedPersonType) => void
+}) {
   const hasReference = member.reference_contact_name || member.reference_contact_phone
   const { profile } = useProfile()
 
@@ -36,6 +43,7 @@ export function FamilyInformationCard({ member }: { member: Member }) {
                   )
                 : undefined
             }
+            onWhatsAppSend={onWhatsAppSend ? () => onWhatsAppSend('REFERENCE_CONTACT') : undefined}
           />
         ) : (
           <p className="text-sm text-muted-foreground">No family/reference contact on file.</p>

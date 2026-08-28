@@ -6,35 +6,43 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DuplicateConfirmDialog } from '@/components/DuplicateConfirmDialog'
 import { DonationForm } from './DonationForm'
 import { DonationDuplicateSummary } from './DonationDuplicateSummary'
+import { DonationSuccessDialog } from './receipt/DonationSuccessDialog'
 import { useCreateDonation } from '@/hooks/useDonations'
 import { useDuplicateConfirmation } from '@/hooks/useDuplicateConfirmation'
 import { useProfile } from '@/contexts/ProfileContext'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import type { DonationFormValues } from '@/schemas/donation.schema'
-import type { Donation } from '@/types'
+import type { Donation, Member } from '@/types'
 
 export function AddDonationDialog({
   memberId,
+  member,
   variant = 'default',
   size = 'lg',
   className = 'flex-1',
 }: {
   memberId: string
+  /** Optional — only needed so the post-save receipt can show the
+   * member's name/WhatsApp number without a second fetch. Every current
+   * call site already has the full member in scope. */
+  member?: Pick<Member, 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'>
   variant?: 'outline' | 'default'
   size?: 'default' | 'sm' | 'lg'
   className?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [successDonation, setSuccessDonation] = useState<Donation | null>(null)
   const { profile } = useProfile()
   const { mutate, isPending } = useCreateDonation(profile!.id)
   const { duplicate, checkError, clear } = useDuplicateConfirmation<DonationFormValues, Donation>()
 
   function handleSubmit(values: DonationFormValues) {
     mutate(values, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         toast.success('Donation received — recorded successfully.')
         setOpen(false)
         clear()
+        setSuccessDonation(created)
       },
       onError: (error) => {
         if (checkError(error, values)) return
@@ -48,10 +56,11 @@ export function AddDonationDialog({
     mutate(
       { ...duplicate.values, confirmDuplicate: true },
       {
-        onSuccess: () => {
+        onSuccess: (created) => {
           toast.success('Donation received — recorded successfully.')
           setOpen(false)
           clear()
+          setSuccessDonation(created)
         },
         onError: (error) => toast.error(getFriendlyErrorMessage(error, 'Unable to save donation. Please try again.')),
       },
@@ -82,6 +91,16 @@ export function AddDonationDialog({
           summary={<DonationDuplicateSummary donation={duplicate.existing} />}
           onConfirm={handleConfirmDuplicate}
           isConfirming={isPending}
+        />
+      )}
+
+      {successDonation && (
+        <DonationSuccessDialog
+          donation={successDonation}
+          member={member}
+          recordedByName={profile!.full_name}
+          open
+          onOpenChange={(next) => !next && setSuccessDonation(null)}
         />
       )}
     </>

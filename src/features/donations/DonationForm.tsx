@@ -46,6 +46,7 @@ export function DonationForm({
     resolver: zodResolver(donationFormSchema),
     defaultValues: {
       member_id: memberId,
+      donor_name: '',
       donation_date: todayISO(),
       amount_inr: 0,
       donation_type: 'SADAQAH',
@@ -61,6 +62,27 @@ export function DonationForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Only rendered without a memberId — a real member's name/id
+         * already comes from the member record itself, so this is purely
+         * the "unknown donor" identity capture (feeds the receipt's Donor
+         * Name field; see src/features/donations/receipt/). Optional, per
+         * the request: an unknown donor's name is never required either. */}
+        {!memberId && (
+          <FormField
+            control={form.control}
+            name="donor_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Donor Name (optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="If known" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="donation_date"

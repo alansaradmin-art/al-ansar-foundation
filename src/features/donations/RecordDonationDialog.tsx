@@ -8,6 +8,7 @@ import { DuplicateConfirmDialog } from '@/components/DuplicateConfirmDialog'
 import { MemberPicker } from '@/features/members/MemberPicker'
 import { DonationForm } from './DonationForm'
 import { DonationDuplicateSummary } from './DonationDuplicateSummary'
+import { DonationSuccessDialog } from './receipt/DonationSuccessDialog'
 import { useCreateDonation } from '@/hooks/useDonations'
 import { useDuplicateConfirmation } from '@/hooks/useDuplicateConfirmation'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -28,16 +29,26 @@ export function RecordDonationDialog({
   label?: string
 } = {}) {
   const [open, setOpen] = useState(false)
-  const [member, setMember] = useState<Pick<Member, 'id' | 'member_name' | 'member_id'> | null>(null)
+  const [member, setMember] = useState<Pick<
+    Member,
+    'id' | 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'
+  > | null>(null)
+  // Captured separately from `member` at the moment of success — `member`
+  // itself gets cleared right after (same as before this feature existed),
+  // but the success dialog still needs to know who the receipt is for.
+  const [successDonation, setSuccessDonation] = useState<Donation | null>(null)
+  const [successMember, setSuccessMember] = useState<typeof member>(null)
   const { profile } = useProfile()
   const { mutate, isPending } = useCreateDonation(profile!.id)
   const { duplicate, checkError, clear } = useDuplicateConfirmation<DonationFormValues, Donation>()
 
   function handleSubmit(values: DonationFormValues) {
     mutate(values, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         toast.success('Donation received — recorded successfully.')
         setOpen(false)
+        setSuccessDonation(created)
+        setSuccessMember(member)
         setMember(null)
         clear()
       },
@@ -53,9 +64,11 @@ export function RecordDonationDialog({
     mutate(
       { ...duplicate.values, confirmDuplicate: true },
       {
-        onSuccess: () => {
+        onSuccess: (created) => {
           toast.success('Donation received — recorded successfully.')
           setOpen(false)
+          setSuccessDonation(created)
+          setSuccessMember(member)
           setMember(null)
           clear()
         },
@@ -100,6 +113,16 @@ export function RecordDonationDialog({
           summary={<DonationDuplicateSummary donation={duplicate.existing} />}
           onConfirm={handleConfirmDuplicate}
           isConfirming={isPending}
+        />
+      )}
+
+      {successDonation && (
+        <DonationSuccessDialog
+          donation={successDonation}
+          member={successMember}
+          recordedByName={profile!.full_name}
+          open
+          onOpenChange={(next) => !next && setSuccessDonation(null)}
         />
       )}
     </>

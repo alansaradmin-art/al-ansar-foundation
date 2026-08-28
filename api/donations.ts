@@ -1,6 +1,6 @@
 import { authenticate, getServiceRoleClient, requireAdmin, resolveManagerScope } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
-import { logInsert, logUpdate } from './_lib/auditLog.js'
+import { logInsert, logUpdate, writeAuditLog } from './_lib/auditLog.js'
 import type { Database, DonationType, PaymentMethod } from '../src/types/database'
 
 type DonationInsert = Database['public']['Tables']['donations']['Insert']
@@ -30,9 +30,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       }
 
+      // recorder embed added for the receipt feature's "Received/entered
+      // by" field — every other donation-fetching query already has this
+      // (the admin list, below); this was the one place that didn't.
       const { data, error } = await supabase
         .from('donations')
-        .select('*')
+        .select('*, recorder:profiles!donations_recorded_by_fkey(full_name)')
         .eq('member_id', memberId)
         .eq('is_deleted', false)
         .order('donation_date', { ascending: false })
@@ -74,7 +77,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       let query = supabase
         .from('donations')
         .select(
-          `id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, recorded_by, is_deleted, created_at, ${memberEmbed}, recorder:profiles!donations_recorded_by_fkey(full_name)`,
+          `id, donation_id, member_id, donation_date, donation_month, donation_year, amount_inr, payment_method, donation_type, transaction_reference, notes, donor_name, recorded_by, is_deleted, created_at, ${memberEmbed}, recorder:profiles!donations_recorded_by_fkey(full_name)`,
           { count: 'exact' },
         )
         .eq('is_deleted', false)
@@ -171,6 +174,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           donation_type: values.donation_type!,
           transaction_reference: values.transaction_reference || null,
           notes: values.notes || null,
+          // Only meaningful without a member — see the donor_name column
+          // comment in the migration. Silently ignored (never persisted)
+          // when a real member_id is present, same as the client only ever
+          // rendering this field for an anonymous donation.
+          donor_name: values.member_id ? null : values.donor_name || null,
           // Always the caller's own profile id — never trust a client-supplied
           // recorded_by, matching the old RLS-forced check exactly.
           recorded_by: profile.id,
@@ -256,6 +264,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           donation_type: values.donation_type!,
           transaction_reference: values.transaction_reference || null,
           notes: values.notes || null,
+          donor_name: values.member_id ? null : values.donor_name || null,
           // donation_id, recorded_by, is_deleted, deleted_at/by/reason,
           // created_at are intentionally absent — never taken from the
           // client payload, so a crafted request body can't touch them.
@@ -291,6 +300,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (error) return sendSupabaseError(res, error)
       await logUpdate(supabase, 'donations', profile.id, oldRow, data)
       return sendJson(res, 200, data)
+    }
+
+    if (req.method === 'POST' && action === 'logReceiptEvent') {
+      // Write-only audit trail entry about a donation id the caller already
+      // legitimately has (never returns or mutates donation data) — no
+      // extra manager-scope check beyond being signed in, same reasoning
+      // as this file's other secondary/never-block-the-primary-thing side
+      // effects (see the reactivation logging above).
+      const { id: donationId, event } = await readJsonBody<{ id: string; event: string }>(req)
+      if (!donationId || !event) return sendError(res, 400, 'id and event are required.')
+      await writeAuditLog(supabase, {
+        actorProfileId: profile.id,
+        action: `donations_receipt_${event}`,
+        entityType: 'donations',
+        entityId: donationId,
+      })
+      return sendJson(res, 200, { ok: true })
     }
 
     sendError(res, 404, 'Not found.')

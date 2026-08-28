@@ -45,6 +45,34 @@ export const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
     entityType: 'member_documents',
     action: 'member_documents_updated',
   },
+  // Receipt events (api/donations.ts's ?action=logReceiptEvent) — write-only
+  // audit entries, entityType stays 'donations' since they're always about
+  // one, but the action string is donations_receipt_<event> rather than
+  // the usual _created/_updated so it can't collide with those.
+  {
+    value: 'donations_receipt_generated',
+    label: 'Receipt Generated',
+    entityType: 'donations',
+    action: 'donations_receipt_generated',
+  },
+  {
+    value: 'donations_receipt_viewed',
+    label: 'Receipt Viewed',
+    entityType: 'donations',
+    action: 'donations_receipt_viewed',
+  },
+  {
+    value: 'donations_receipt_downloaded',
+    label: 'Receipt Downloaded',
+    entityType: 'donations',
+    action: 'donations_receipt_downloaded',
+  },
+  {
+    value: 'donations_receipt_shared',
+    label: 'Receipt Shared',
+    entityType: 'donations',
+    action: 'donations_receipt_shared',
+  },
 ]
 
 export function findActionTypeOption(value: string | undefined): ActionTypeOption | undefined {

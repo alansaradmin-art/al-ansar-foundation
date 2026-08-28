@@ -10,6 +10,7 @@ import {
   buildAddedByReminderMessage,
   buildReferenceContactReminderMessage,
 } from '@/features/followups/donationReminderMessage'
+import { useWhatsAppFollowupTrigger } from '@/features/followups/useWhatsAppFollowup'
 import { useProfile } from '@/contexts/ProfileContext'
 import type { Member } from '@/types'
 
@@ -17,6 +18,11 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
   const hasAddedBy = member.added_by_name || member.added_by_phone
   const hasReference = member.reference_contact_name || member.reference_contact_phone
   const { profile } = useProfile()
+  // undefined latestFollowup is correct here, not just a default: this
+  // card only ever renders a member list_pending_followups says has no
+  // open attempt this period, so there's nothing to check against — see
+  // useWhatsAppFollowup.ts's doc comment.
+  const logWhatsAppFollowup = useWhatsAppFollowupTrigger(member, undefined)
 
   return (
     <Card className="overflow-hidden border-l-4 border-l-warning py-0">
@@ -43,6 +49,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
           icon={UserRound}
           tone="primary"
           whatsappMessage={profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined}
+          onWhatsAppSend={() => logWhatsAppFollowup('MEMBER')}
         />
         {hasAddedBy && (
           <ContactBlock
@@ -57,6 +64,7 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
                 ? buildAddedByReminderMessage(member.member_name, member.added_by_name?.trim() || '', profile.full_name)
                 : undefined
             }
+            onWhatsAppSend={() => logWhatsAppFollowup('ADDED_BY')}
           />
         )}
         {hasReference && (
@@ -77,11 +85,12 @@ export function PendingMemberCard({ member, memberHref }: { member: Member; memb
                   )
                 : undefined
             }
+            onWhatsAppSend={() => logWhatsAppFollowup('REFERENCE_CONTACT')}
           />
         )}
       </CardContent>
       <div className="flex flex-wrap gap-2 border-t bg-muted/30 p-3">
-        <AddDonationDialog memberId={member.id} variant="outline" size="default" className="flex-1" />
+        <AddDonationDialog memberId={member.id} member={member} variant="outline" size="default" className="flex-1" />
         <AddFollowupDialog
           member={member}
           label="Complete Follow-up"

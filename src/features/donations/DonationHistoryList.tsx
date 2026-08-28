@@ -1,8 +1,10 @@
 import { IndianRupee } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/StateViews'
+import { ReceiptViewDialog } from './receipt/ReceiptViewDialog'
 import { formatDate, formatINR } from '@/lib/format'
-import type { Donation } from '@/types'
+import type { DonationWithRecorder } from '@/services/donations'
+import type { Member } from '@/types'
 
 const PAYMENT_LABELS: Record<string, string> = {
   CASH: 'Cash',
@@ -20,7 +22,13 @@ const DONATION_TYPE_LABELS: Record<string, string> = {
   OTHER: 'Other',
 }
 
-function DonationRow({ donation: d }: { donation: Donation }) {
+function DonationRow({
+  donation: d,
+  member,
+}: {
+  donation: DonationWithRecorder
+  member: Pick<Member, 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'>
+}) {
   return (
     <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
       <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gold/25 text-gold-foreground">
@@ -34,16 +42,23 @@ function DonationRow({ donation: d }: { donation: Donation }) {
         </p>
         {d.notes && <p className="text-sm text-muted-foreground">{d.notes}</p>}
       </div>
-      <span className="shrink-0 font-display font-semibold tabular-nums">{formatINR(d.amount_inr)}</span>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className="font-display font-semibold tabular-nums">{formatINR(d.amount_inr)}</span>
+        <ReceiptViewDialog donation={d} member={member} recordedByName={d.recorder?.full_name ?? 'Al Ansar Foundation'} />
+      </div>
     </li>
   )
 }
 
 export function DonationHistoryList({
   donations,
+  member,
   showTitle = true,
 }: {
-  donations: Donation[]
+  donations: DonationWithRecorder[]
+  /** Every donation in this list already belongs to this one member — no
+   * per-row anonymous-donor case here (unlike the admin/manager lists). */
+  member: Pick<Member, 'member_name' | 'member_id' | 'mobile_number' | 'mobile_country'>
   showTitle?: boolean
 }) {
   const body = donations.length === 0 ? (
@@ -51,7 +66,7 @@ export function DonationHistoryList({
   ) : (
     <ul className="divide-y">
       {donations.map((d) => (
-        <DonationRow key={d.id} donation={d} />
+        <DonationRow key={d.id} donation={d} member={member} />
       ))}
     </ul>
   )

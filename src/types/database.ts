@@ -104,6 +104,10 @@ export interface Database {
           donation_type: DonationType
           transaction_reference: string | null
           notes: string | null
+          // Only ever set when member_id is null (an anonymous donation) —
+          // a member donation's donor identity always comes from the
+          // member record itself. See supabase/migrations/0037_donation_receipts.sql.
+          donor_name: string | null
           recorded_by: string
           is_deleted: boolean
           deleted_at: string | null

@@ -34,7 +34,7 @@ export default function AdminMemberDetailPage() {
           <StatusButton member={member} />
           <MemberFormDialog member={member} />
           {!member.assigned_manager_id && <AssignManagerDialog member={member} />}
-          <AddDonationDialog memberId={member.id} variant="outline" size="sm" className="" />
+          <AddDonationDialog memberId={member.id} member={member} variant="outline" size="sm" className="" />
         </>
       }
     />

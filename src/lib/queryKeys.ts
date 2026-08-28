@@ -48,6 +48,7 @@ export const queryKeys = {
     pendingDay: ['settings', 'pending-day'] as const,
     nonDonorThreshold: ['settings', 'non-donor-threshold'] as const,
     defaultPageSize: ['settings', 'default-page-size'] as const,
+    receiptBranding: ['settings', 'receipt-branding'] as const,
   },
   auditLogs: {
     list: (filters: unknown) => ['audit-logs', 'list', filters] as const,

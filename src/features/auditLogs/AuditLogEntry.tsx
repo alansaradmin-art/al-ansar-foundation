@@ -126,6 +126,10 @@ const ACTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'destructiv
   managers_updated: 'outline',
   member_documents_created: 'secondary',
   member_documents_updated: 'destructive',
+  donations_receipt_generated: 'secondary',
+  donations_receipt_viewed: 'outline',
+  donations_receipt_downloaded: 'outline',
+  donations_receipt_shared: 'outline',
 }
 
 export function AuditLogEntry({

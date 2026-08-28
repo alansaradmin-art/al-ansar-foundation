@@ -17,12 +17,14 @@ import { FinancialSummaryCard } from '@/features/donations/FinancialSummaryCard'
 import { DonationTrendChart } from '@/features/donations/DonationTrendChart'
 import { DonationHistoryList } from '@/features/donations/DonationHistoryList'
 import { FollowupHistoryList } from '@/features/followups/FollowupHistoryList'
+import { useWhatsAppFollowupTrigger } from '@/features/followups/useWhatsAppFollowup'
+import type { DonationWithRecorder } from '@/services/donations'
 import { AuditLogEntry } from '@/features/auditLogs/AuditLogEntry'
 import { DocumentsSection } from '@/features/documents/DocumentsSection'
 import { useAuditLogs } from '@/hooks/useAuditLogs'
 import { queryKeys } from '@/lib/queryKeys'
 import { formatDate } from '@/lib/format'
-import type { Donation, Member, MonthlyFollowup } from '@/types'
+import type { Member, MonthlyFollowup } from '@/types'
 
 /** The single shared Member 360 body, rendered by both
  * admin/MemberDetailPage.tsx and manager/MemberDetailPage.tsx — role-specific
@@ -42,7 +44,7 @@ export function Member360View({
   periodSummary,
 }: {
   member: Member
-  donations: Donation[]
+  donations: DonationWithRecorder[]
   isDonationsLoading: boolean
   followups: MonthlyFollowup[]
   isFollowupsLoading: boolean
@@ -63,6 +65,16 @@ export function Member360View({
   const memberId = member.id
 
   const { data: auditLogs, isLoading: isTimelineLoading } = useAuditLogs({ memberId, pageSize: 20 })
+
+  // followups is already sorted follow_up_date desc, created_at desc (see
+  // api/followups.ts's ?action=forMember) — [0] is the latest attempt, same
+  // tiebreak used elsewhere (e.g. InProgressMemberCard). Manager-only and a
+  // no-op whenever that latest attempt is still open — see
+  // useWhatsAppFollowup.ts's own doc comment for the full reasoning; in
+  // particular this makes the hook itself a complete no-op for an Admin
+  // viewing this same page, so no separate admin/manager branching is
+  // needed here.
+  const logWhatsAppFollowup = useWhatsAppFollowupTrigger(member, followups[0])
 
   // donations is sorted donation_date desc and excludes deleted rows (see
   // api/donations.ts's ?action=forMember), so [0] is the latest valid
@@ -138,8 +150,8 @@ export function Member360View({
 
         <TabsContent value="overview" className="space-y-4 p-4">
           <MemberInfoCard member={member} />
-          <ContactSection member={member} />
-          <FamilyInformationCard member={member} />
+          <ContactSection member={member} onWhatsAppSend={logWhatsAppFollowup} />
+          <FamilyInformationCard member={member} onWhatsAppSend={logWhatsAppFollowup} />
           <AssignedManagerCard managerId={member.assigned_manager_id} />
           {isDonationsLoading ? <CardListSkeleton count={2} /> : <FinancialSummaryCard donations={donations} />}
           <AuditInformationCard member={member} />
@@ -152,7 +164,7 @@ export function Member360View({
           ) : (
             <>
               <DonationTrendChart donations={donations} />
-              <DonationHistoryList donations={donations} />
+              <DonationHistoryList donations={donations} member={member} />
             </>
           )}
         </TabsContent>

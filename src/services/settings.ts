@@ -36,3 +36,18 @@ export async function getDefaultPageSize(getToken: GetToken): Promise<number> {
 export async function setDefaultPageSize(getToken: GetToken, pageSize: number): Promise<void> {
   await apiClient.put('/api/settings', getToken, { pageSize }, { action: 'pageSize' })
 }
+
+export interface ReceiptBranding {
+  logoUrl: string
+  bannerUrl: string
+  footerText: string
+  contactInfo: string
+}
+
+export async function getReceiptBranding(getToken: GetToken): Promise<ReceiptBranding> {
+  return apiClient.get<ReceiptBranding>('/api/settings', getToken, { action: 'receiptBranding' })
+}
+
+export async function setReceiptBranding(getToken: GetToken, branding: ReceiptBranding): Promise<void> {
+  await apiClient.put('/api/settings', getToken, branding, { action: 'receiptBranding' })
+}

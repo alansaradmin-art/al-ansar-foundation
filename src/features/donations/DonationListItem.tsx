@@ -46,6 +46,11 @@ export function DonationListItem({
             <Link to={memberHref} className="truncate font-medium hover:underline">
               {donation.member.member_name}
             </Link>
+          ) : donation.donor_name ? (
+            <p className="flex flex-wrap items-center gap-1.5">
+              <span className="truncate font-medium">{donation.donor_name}</span>
+              <AnonymousDonationBadge />
+            </p>
           ) : (
             <AnonymousDonationBadge />
           )}

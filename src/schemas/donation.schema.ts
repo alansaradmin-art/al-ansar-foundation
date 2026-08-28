@@ -14,6 +14,12 @@ export const donationFormSchema = z
     // required for them in practice. The server is the real gate on who
     // may omit it (api/donations.ts).
     member_id: z.string().uuid('Select a member.').optional(),
+    // Only rendered (CountryPhoneField-adjacent free-text input) when
+    // member_id is absent — see DonationForm.tsx. Lets an anonymous
+    // donation's receipt address someone by name instead of just "Unknown
+    // Donor" — never required, since the request explicitly says an
+    // unknown donor's name should be optional too.
+    donor_name: z.string().trim().optional().or(z.literal('')),
     donation_date: z
       .string()
       .min(1, 'Donation date is required.')

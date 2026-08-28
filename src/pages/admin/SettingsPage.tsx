@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '@clerk/clerk-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Palette, SlidersHorizontal, ClipboardList, IndianRupee, type LucideIcon } from 'lucide-react'
+import { Palette, SlidersHorizontal, ClipboardList, IndianRupee, Receipt, type LucideIcon } from 'lucide-react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import {
@@ -12,12 +12,16 @@ import {
   setNonDonorThreshold,
   getDefaultPageSize,
   setDefaultPageSize,
+  getReceiptBranding,
+  setReceiptBranding,
+  type ReceiptBranding,
 } from '@/services/settings'
 import { queryKeys } from '@/lib/queryKeys'
 import { getFriendlyErrorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -124,6 +128,32 @@ export default function SettingsPage() {
       toast.error(getFriendlyErrorMessage(error, 'Unable to save this setting.'))
     } finally {
       setSavingThreshold(false)
+    }
+  }
+
+  const EMPTY_BRANDING: ReceiptBranding = { logoUrl: '', bannerUrl: '', footerText: '', contactInfo: '' }
+  const { data: receiptBranding, isLoading: isReceiptBrandingLoading } = useQuery({
+    queryKey: queryKeys.settings.receiptBranding,
+    queryFn: () => getReceiptBranding(getToken),
+  })
+
+  const [branding, setBranding] = useState<ReceiptBranding>(EMPTY_BRANDING)
+  const [savingBranding, setSavingBranding] = useState(false)
+
+  useEffect(() => {
+    if (receiptBranding) setBranding(receiptBranding)
+  }, [receiptBranding])
+
+  async function handleSaveBranding() {
+    setSavingBranding(true)
+    try {
+      await setReceiptBranding(getToken, branding)
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.receiptBranding })
+      toast.success('Setting saved.')
+    } catch (error) {
+      toast.error(getFriendlyErrorMessage(error, 'Unable to save this setting.'))
+    } finally {
+      setSavingBranding(false)
     }
   }
 
@@ -311,6 +341,70 @@ export default function SettingsPage() {
                   {savingThreshold ? 'Saving…' : 'Save'}
                 </Button>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </SettingsSection>
+
+      <SettingsSection
+        icon={Receipt}
+        title="Receipts"
+        description="Branding shown on every donation receipt (PDF view, download, print, and WhatsApp share)."
+        tone="gold"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Receipt Branding</CardTitle>
+            <CardDescription>
+              Logo and banner are plain image URLs — leave either blank to use this app's own default logo/banner
+              instead. Footer text and contact info appear at the bottom of every receipt.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isReceiptBrandingLoading ? (
+              <LoadingState label="Loading…" />
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="receipt-logo-url">Logo URL</Label>
+                  <Input
+                    id="receipt-logo-url"
+                    placeholder="https://… (blank = use the app's default logo)"
+                    value={branding.logoUrl}
+                    onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receipt-banner-url">Banner URL</Label>
+                  <Input
+                    id="receipt-banner-url"
+                    placeholder="https://… (blank = use the app's default banner)"
+                    value={branding.bannerUrl}
+                    onChange={(e) => setBranding({ ...branding, bannerUrl: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receipt-footer-text">Footer Text</Label>
+                  <Textarea
+                    id="receipt-footer-text"
+                    rows={2}
+                    value={branding.footerText}
+                    onChange={(e) => setBranding({ ...branding, footerText: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receipt-contact-info">Contact Info</Label>
+                  <Textarea
+                    id="receipt-contact-info"
+                    rows={2}
+                    value={branding.contactInfo}
+                    onChange={(e) => setBranding({ ...branding, contactInfo: e.target.value })}
+                  />
+                </div>
+                <Button onClick={handleSaveBranding} disabled={savingBranding}>
+                  {savingBranding ? 'Saving…' : 'Save'}
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>

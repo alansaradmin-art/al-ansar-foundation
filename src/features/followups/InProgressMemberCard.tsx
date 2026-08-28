@@ -100,7 +100,7 @@ export function InProgressMemberCard({ member, memberHref }: { member: Member; m
         )}
       </CardContent>
       <div className="flex flex-wrap gap-2 border-t bg-muted/30 p-3">
-        <AddDonationDialog memberId={member.id} variant="outline" size="default" className="flex-1" />
+        <AddDonationDialog memberId={member.id} member={member} variant="outline" size="default" className="flex-1" />
         {latest && (
           <EditFollowupDialog
             followup={latest}

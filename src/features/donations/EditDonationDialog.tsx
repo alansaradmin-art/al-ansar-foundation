@@ -83,6 +83,7 @@ export function EditDonationDialog({ donation }: { donation: DonationWithRelatio
               key={member?.id ?? 'anonymous'}
               memberId={member?.id}
               defaultValues={{
+                donor_name: donation.donor_name ?? '',
                 donation_date: donation.donation_date,
                 amount_inr: donation.amount_inr,
                 donation_type: donation.donation_type,

@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { SoftDeleteDonationDialog } from '@/features/donations/SoftDeleteDonationDialog'
 import { EditDonationDialog } from '@/features/donations/EditDonationDialog'
+import { ReceiptViewDialog } from '@/features/donations/receipt/ReceiptViewDialog'
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
 import { AnonymousDonationDialog } from '@/features/donations/AnonymousDonationDialog'
 import { DonationListItem } from '@/features/donations/DonationListItem'
@@ -161,6 +162,11 @@ export default function AdminDonationsPage() {
                 memberHref={donation.member_id ? `/admin/members/${donation.member_id}` : undefined}
                 actions={
                   <>
+                    <ReceiptViewDialog
+                      donation={donation}
+                      member={donation.member}
+                      recordedByName={donation.recorder?.full_name ?? 'Al Ansar Foundation'}
+                    />
                     <EditDonationDialog donation={donation} />
                     <SoftDeleteDonationDialog donationId={donation.id} />
                   </>
@@ -202,6 +208,11 @@ export default function AdminDonationsPage() {
                           return subline && <p className="text-xs text-muted-foreground">{subline}</p>
                         })()}
                       </>
+                    ) : donation.donor_name ? (
+                      <p className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-medium">{donation.donor_name}</span>
+                        <AnonymousDonationBadge />
+                      </p>
                     ) : (
                       <AnonymousDonationBadge />
                     )}
@@ -217,6 +228,11 @@ export default function AdminDonationsPage() {
                   <TableCell className="text-muted-foreground">{donation.recorder?.full_name ?? '—'}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <ReceiptViewDialog
+                        donation={donation}
+                        member={donation.member}
+                        recordedByName={donation.recorder?.full_name ?? 'Al Ansar Foundation'}
+                      />
                       <EditDonationDialog donation={donation} />
                       <SoftDeleteDonationDialog donationId={donation.id} />
                     </div>

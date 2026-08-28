@@ -13,6 +13,7 @@ import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
 import { DonationListItem } from '@/features/donations/DonationListItem'
 import { RecordDonationDialog } from '@/features/donations/RecordDonationDialog'
+import { ReceiptViewDialog } from '@/features/donations/receipt/ReceiptViewDialog'
 import { formatINR, formatPeriod } from '@/lib/format'
 
 export default function DonationsPage() {
@@ -66,7 +67,18 @@ export default function DonationsPage() {
       {data && data.rows.length > 0 && (
         <div className="space-y-2">
           {data.rows.map((donation) => (
-            <DonationListItem key={donation.id} donation={donation} memberHref={`/manager/members/${donation.member_id}`} />
+            <DonationListItem
+              key={donation.id}
+              donation={donation}
+              memberHref={`/manager/members/${donation.member_id}`}
+              actions={
+                <ReceiptViewDialog
+                  donation={donation}
+                  member={donation.member}
+                  recordedByName={donation.recorder?.full_name ?? profile?.full_name ?? 'Al Ansar Foundation'}
+                />
+              }
+            />
           ))}
         </div>
       )}

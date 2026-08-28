@@ -9,6 +9,7 @@ export function ContactActions({
   name,
   size = 'default',
   message: messageOverride,
+  onWhatsAppSend,
 }: {
   phone: string | null | undefined
   /** ISO2 country code paired with phone — see src/lib/countries.ts. A
@@ -25,6 +26,11 @@ export function ContactActions({
    * still uses the generic greeting below — there's no reminder template
    * addressed to a manager. */
   message?: string
+  /** Fired on click, alongside (never instead of) opening the wa.me link —
+   * never gates or delays the navigation itself, so a failure or absence
+   * here can't affect the existing WhatsApp behavior. See
+   * useWhatsAppFollowup.ts for what this is used for. */
+  onWhatsAppSend?: () => void
 }) {
   const callUsable = hasUsablePhone(phone)
   const message = messageOverride ?? (name ? `Assalamu alaikum ${name}, this is Al Ansar Foundation.` : undefined)
@@ -59,7 +65,7 @@ export function ContactActions({
         className={cn('flex-1 border-teal/40 text-teal hover:bg-teal/10 hover:text-teal', height)}
       >
         {whatsappUrl ? (
-          <a href={whatsappUrl} target="_blank" rel="noreferrer">
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={onWhatsAppSend}>
             <MessageCircle className="size-4" /> WhatsApp
           </a>
         ) : (
