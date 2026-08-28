@@ -7,7 +7,12 @@ const styles = StyleSheet.create({
   logo: { width: 64, height: 64, marginBottom: 8, borderRadius: 32 },
   foundationName: { fontSize: 18, fontWeight: 700, letterSpacing: 1 },
   foundationSubtitle: { fontSize: 10, color: '#6b6155', marginTop: 2 },
-  banner: { width: '100%', height: 90, marginTop: 12, objectFit: 'cover', borderRadius: 4 },
+  // No fixed height/objectFit — 'objectFit' isn't actually a style react-pdf
+  // supports (silently ignored), which was stretching/misplacing the
+  // banner inside a box its own aspect ratio didn't match. Full width with
+  // no height lets it scale proportionally instead, so it always displays
+  // at its own correct proportions with no empty gaps or distortion.
+  banner: { width: '100%', marginTop: 12 },
   divider: { borderBottomWidth: 1, borderBottomColor: '#d8cfae', marginVertical: 16 },
   title: { fontSize: 14, fontWeight: 700, textAlign: 'center', marginBottom: 16, letterSpacing: 2 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
@@ -26,6 +31,7 @@ const styles = StyleSheet.create({
   },
   amountLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: '#6b6155' },
   amountValue: { fontSize: 20, fontWeight: 700, marginTop: 4 },
+  amountWords: { fontSize: 9, color: '#6b6155', marginTop: 6, textAlign: 'center' },
   thankYou: { textAlign: 'center', marginTop: 8, marginBottom: 24, lineHeight: 1.5, color: '#3f382c' },
   footer: { borderTopWidth: 1, borderTopColor: '#d8cfae', paddingTop: 12, textAlign: 'center' },
   footerName: { fontWeight: 700, marginBottom: 2 },
@@ -114,7 +120,8 @@ export function ReceiptDocument({ data, stripImages = false }: { data: ReceiptDa
 
         <View style={styles.amountBox}>
           <Text style={styles.amountLabel}>Amount Received</Text>
-          <Text style={styles.amountValue}>{data.amountFormatted}</Text>
+          <Text style={styles.amountValue}>{data.amountFormattedPdf}</Text>
+          <Text style={styles.amountWords}>{data.amountInWords}</Text>
         </View>
 
         <Text style={styles.thankYou}>{data.footerText}</Text>
