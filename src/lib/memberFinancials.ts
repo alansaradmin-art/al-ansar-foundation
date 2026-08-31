@@ -12,7 +12,14 @@ export interface MemberFinancialSummary {
   currentMonthContribution: number
   donationCount: number
   lastDonationDate: string | null
-  activeMonthsLast12: number
+  /** Count of donation records (not distinct months) whose month falls in
+   * the trailing 12 months including the current one — the same
+   * donations[] used for donationCount above, just recency-filtered. Two
+   * donations recorded in the same month both count here, matching
+   * "Total Donations" counting them as two separate records rather than
+   * collapsing to "1 active month" — that distinct-months version undercounted
+   * relative to Total Donations for exactly that case and read as a bug. */
+  donationsLast12Months: number
 }
 
 export function computeFinancialSummary(donations: Donation[]): MemberFinancialSummary {
@@ -25,7 +32,7 @@ export function computeFinancialSummary(donations: Donation[]): MemberFinancialS
   let totalContribution = 0
   let currentYearContribution = 0
   let currentMonthContribution = 0
-  const activeMonths = new Set<string>()
+  let donationsLast12Months = 0
 
   for (const d of donations) {
     const amount = Number(d.amount_inr)
@@ -34,7 +41,7 @@ export function computeFinancialSummary(donations: Donation[]): MemberFinancialS
     if (d.donation_year === currentYear && d.donation_month === currentMonth) currentMonthContribution += amount
 
     const donationMonthStart = new Date(d.donation_year, d.donation_month - 1, 1)
-    if (donationMonthStart >= cutoff) activeMonths.add(`${d.donation_year}-${d.donation_month}`)
+    if (donationMonthStart >= cutoff) donationsLast12Months++
   }
 
   return {
@@ -45,16 +52,20 @@ export function computeFinancialSummary(donations: Donation[]): MemberFinancialS
     // donations is sorted donation_date desc by every caller (see
     // api/donations.ts's ?action=forMember), so the first row is the latest.
     lastDonationDate: donations[0]?.donation_date ?? null,
-    activeMonthsLast12: activeMonths.size,
+    donationsLast12Months,
   }
 }
 
 /** A plain descriptive classification, never a target/commitment — the
- * spec explicitly rules out assuming any fixed donation goal. */
-export function frequencyLabel(activeMonthsLast12: number): string {
-  if (activeMonthsLast12 >= 9) return 'Regular'
-  if (activeMonthsLast12 >= 4) return 'Occasional'
-  if (activeMonthsLast12 >= 1) return 'Rare'
+ * spec explicitly rules out assuming any fixed donation goal. Thresholds
+ * are unchanged from before (still 9/4/1) — donationsLast12Months has no
+ * hard ceiling the way a distinct-month count did (a donor giving more
+ * than once some months can now exceed 12), but the same cutoffs still
+ * read sensibly as "gives often / sometimes / rarely" against a raw count. */
+export function frequencyLabel(donationsLast12Months: number): string {
+  if (donationsLast12Months >= 9) return 'Regular'
+  if (donationsLast12Months >= 4) return 'Occasional'
+  if (donationsLast12Months >= 1) return 'Rare'
   return 'No Recent Donations'
 }
 

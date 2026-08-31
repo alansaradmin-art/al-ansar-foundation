@@ -33,8 +33,8 @@ export function FinancialSummaryCard({ donations }: { donations: Donation[] }) {
         />
         <DashboardCard
           label="Donation Frequency"
-          value={frequencyLabel(summary.activeMonthsLast12)}
-          description={`${summary.activeMonthsLast12} of the last 12 months`}
+          value={frequencyLabel(summary.donationsLast12Months)}
+          description={`${summary.donationsLast12Months} of the last 12 months`}
           icon={Repeat}
           tone="success"
         />
