@@ -1,4 +1,4 @@
-import { UserRound, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContactBlock } from './ContactBlock'
 import { formatMobileNumber } from '@/lib/format'
@@ -17,10 +17,13 @@ function Field({ label, value }: { label: string; value: string | null | undefin
  * its relationship field is the closest thing this schema has to "family"
  * data, so it's split out into its own Member 360 section.
  *
- * Contact info here is reference-only — no Call/WhatsApp actions (see
- * ContactBlock's hideActions). Those stay in the Follow-ups section
- * (PendingMemberCard/InProgressMemberCard), where contacting a member is
- * actually part of the workflow. */
+ * The member's own mobile number is only ever shown once, in the Mobile
+ * field above — there's no separate "Member" ContactBlock repeating it,
+ * since that duplicated the exact same number/name already on screen.
+ * Added By is a different person, so it isn't duplicate information and
+ * keeps its own block (reference-only, no Call/WhatsApp — see
+ * ContactBlock's hideActions; those stay in the Follow-ups section, where
+ * contacting someone is actually part of the workflow). */
 export function ContactSection({ member }: { member: Member }) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
 
@@ -34,17 +37,8 @@ export function ContactSection({ member }: { member: Member }) {
           <Field label="Mobile" value={formatMobileNumber(member.mobile_number, member.mobile_country)} />
           <Field label="Address" value={member.address} />
         </div>
-        <div className="divide-y border-t pt-3">
-          <ContactBlock
-            label="Member"
-            name={member.member_name}
-            phone={member.mobile_number}
-            country={member.mobile_country}
-            icon={UserRound}
-            tone="primary"
-            hideActions
-          />
-          {hasAddedBy && (
+        {hasAddedBy && (
+          <div className="border-t pt-3">
             <ContactBlock
               label="Added By"
               name={member.added_by_name}
@@ -54,8 +48,8 @@ export function ContactSection({ member }: { member: Member }) {
               tone="gold"
               hideActions
             />
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
