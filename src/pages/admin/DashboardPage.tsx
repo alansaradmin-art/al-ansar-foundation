@@ -146,8 +146,8 @@ export default function AdminDashboardPage() {
           />
           <DashboardCard
             label="Total Donation Count"
-            value={stats.period_donation_count}
-            description="Number of donations"
+            value={stats.total_donations}
+            description="All-time"
             icon={Receipt}
             tone="neutral"
             to="/admin/donations"
