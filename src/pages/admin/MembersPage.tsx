@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Upload, UserX, Users, FileWarning } from 'lucide-react'
 import { useMembers, useUnassignedMembersCount, useIncompleteMembersCount, useMemberLastDonationDates } from '@/hooks/useMembers'
@@ -36,10 +36,25 @@ export default function AdminMembersPage() {
   const { data: unassignedCount = 0 } = useUnassignedMembersCount()
   const { data: incompleteCount = 0 } = useIncompleteMembersCount()
   const { pageSize } = useDefaultPageSize()
-  // Only ever re-run when the page size setting itself changes, not on
-  // every filter change (setFilters is a fresh closure every render).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => setFilters({ page: 1 }), [pageSize])
+  // Only reset to page 1 when the page size setting *genuinely* changes
+  // (e.g. an admin edits it in Settings while this page is open) — never
+  // on the very first render, where pageSize starts at useDefaultPageSize's
+  // loading fallback (10) and then jumps to the real configured value once
+  // the settings query resolves. That fallback-to-real transition used to
+  // count as a "change" too (a bare `[pageSize]` dependency can't tell the
+  // difference), silently resetting the URL's own page back to 1 on every
+  // mount whenever the real setting isn't exactly 10 — including on the
+  // remount from a browser Back navigation, which broke "return to the
+  // exact page/filters you left" for any foundation that had changed this
+  // setting away from its seeded default.
+  const previousPageSizeRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (previousPageSizeRef.current !== null && previousPageSizeRef.current !== pageSize) {
+      setFilters({ page: 1 })
+    }
+    previousPageSizeRef.current = pageSize
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageSize])
   const { data, isLoading, isError, refetch } = useMembers({
     search: debouncedSearch,
     status: status === 'ALL' ? undefined : status,
@@ -53,6 +68,14 @@ export default function AdminMembersPage() {
   const { data: lastDonationDates } = useMemberLastDonationDates(
     status === 'INACTIVE' ? (data?.rows.map((m) => m.id) ?? []) : [],
   )
+
+  // Previous/Next/a specific page number should never leave the reader
+  // scrolled down into where the *previous* page's rows used to be —
+  // scoped to actual pagination clicks only, not every filter change.
+  function handlePageChange(nextPage: number) {
+    setFilters({ page: nextPage })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <div className="space-y-4">
@@ -181,7 +204,7 @@ export default function AdminMembersPage() {
       )}
 
       {data && (
-        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={handlePageChange} />
       )}
     </div>
   )
