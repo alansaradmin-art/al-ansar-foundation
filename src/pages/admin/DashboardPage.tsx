@@ -145,15 +145,7 @@ export default function AdminDashboardPage() {
             to="/admin/donations"
           />
           <DashboardCard
-            label={formatPeriod(period.month, period.year)}
-            value={formatINR(stats.period_donation_amount)}
-            description="Donations this month"
-            icon={IndianRupee}
-            tone="gold"
-            to="/admin/donations"
-          />
-          <DashboardCard
-            label="Donations This Month"
+            label="Total Donation Count"
             value={stats.period_donation_count}
             description="Number of donations"
             icon={Receipt}
