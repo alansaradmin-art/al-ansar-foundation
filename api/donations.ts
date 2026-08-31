@@ -207,6 +207,46 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       }
 
+      // A donation resolves whatever IN_PROGRESS follow-up attempt is
+      // currently open for this member — the donation is exactly what an
+      // in-progress attempt was chasing. Deliberately narrower than the
+      // OPEN_FOLLOWUP_STATUSES set api/followups.ts uses elsewhere: only
+      // IN_PROGRESS auto-completes here, never STARTED or
+      // CALLBACK_REQUIRED, and never an already-COMPLETED/NOT_INTERESTED
+      // row (those are immutable, same as every other update path for this
+      // table). Same "secondary consequence, never fails the donation
+      // over it" pattern as the reactivation above — this only ever runs
+      // after the donation row above has already committed successfully.
+      if (values.member_id) {
+        const { data: openFollowup, error: followupLookupError } = await supabase
+          .from('monthly_followups')
+          .select('*')
+          .eq('member_id', values.member_id)
+          .eq('follow_up_status', 'IN_PROGRESS')
+          .order('follow_up_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (followupLookupError) {
+          console.error('[api/donations] failed to look up in-progress follow-up', values.member_id, followupLookupError)
+        } else if (openFollowup) {
+          const { data: completedFollowup, error: completeError } = await supabase
+            .from('monthly_followups')
+            .update({
+              follow_up_status: 'COMPLETED',
+              remarks: openFollowup.remarks ? `${openFollowup.remarks}\nDonation received.` : 'Donation received.',
+            })
+            .eq('id', openFollowup.id)
+            .select('*')
+            .single()
+          if (completeError) {
+            console.error('[api/donations] failed to auto-complete in-progress follow-up', openFollowup.id, completeError)
+          } else if (completedFollowup) {
+            await logUpdate(supabase, 'monthly_followups', profile.id, openFollowup, completedFollowup)
+          }
+        }
+      }
+
       return sendJson(res, 201, data)
     }
 
