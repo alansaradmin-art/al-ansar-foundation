@@ -19,6 +19,7 @@ export function ContactBlock({
   tone = 'primary',
   whatsappMessage,
   onWhatsAppSend,
+  hideActions = false,
 }: {
   label: string
   name: string | null | undefined
@@ -33,6 +34,13 @@ export function ContactBlock({
   whatsappMessage?: string
   /** Passed straight through to ContactActions — see its doc comment. */
   onWhatsAppSend?: () => void
+  /** Member 360 → Overview shows contact info as reference only — Call/
+   * WhatsApp stay available in the Follow-ups section (PendingMemberCard/
+   * InProgressMemberCard, which render ContactBlock directly and don't set
+   * this), where contacting a member is actually part of the workflow.
+   * The phone number itself still displays either way; this only hides
+   * the action buttons. */
+  hideActions?: boolean
 }) {
   return (
     <div className="flex gap-3 py-3 first:pt-0 last:pb-0">
@@ -44,14 +52,16 @@ export function ContactBlock({
         <p className="font-medium leading-tight">{name || 'Not provided'}</p>
         {relationship && <p className="text-sm text-muted-foreground">{relationship}</p>}
         <p className="text-sm text-muted-foreground">{formatMobileNumber(phone, country) || 'No phone on file'}</p>
-        <ContactActions
-          phone={phone}
-          country={country}
-          name={name ?? undefined}
-          size="sm"
-          message={whatsappMessage}
-          onWhatsAppSend={onWhatsAppSend}
-        />
+        {!hideActions && (
+          <ContactActions
+            phone={phone}
+            country={country}
+            name={name ?? undefined}
+            size="sm"
+            message={whatsappMessage}
+            onWhatsAppSend={onWhatsAppSend}
+          />
+        )}
       </div>
     </div>
   )

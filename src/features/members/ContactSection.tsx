@@ -1,10 +1,8 @@
 import { UserRound, UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContactBlock } from './ContactBlock'
-import { useProfile } from '@/contexts/ProfileContext'
-import { buildDonationReminderMessage, buildAddedByReminderMessage } from '@/features/followups/donationReminderMessage'
 import { formatMobileNumber } from '@/lib/format'
-import type { Member, ContactedPersonType } from '@/types'
+import type { Member } from '@/types'
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -17,19 +15,14 @@ function Field({ label, value }: { label: string; value: string | null | undefin
 
 /** Reference Contact deliberately lives in FamilyInformationCard, not here —
  * its relationship field is the closest thing this schema has to "family"
- * data, so it's split out into its own Member 360 section. */
-export function ContactSection({
-  member,
-  onWhatsAppSend,
-}: {
-  member: Member
-  /** See useWhatsAppFollowup.ts — owned by Member360View, passed down so
-   * the WhatsApp buttons here can trigger it without each card needing its
-   * own mutation/profile plumbing. */
-  onWhatsAppSend?: (type: ContactedPersonType) => void
-}) {
+ * data, so it's split out into its own Member 360 section.
+ *
+ * Contact info here is reference-only — no Call/WhatsApp actions (see
+ * ContactBlock's hideActions). Those stay in the Follow-ups section
+ * (PendingMemberCard/InProgressMemberCard), where contacting a member is
+ * actually part of the workflow. */
+export function ContactSection({ member }: { member: Member }) {
   const hasAddedBy = member.added_by_name || member.added_by_phone
-  const { profile } = useProfile()
 
   return (
     <Card>
@@ -49,8 +42,7 @@ export function ContactSection({
             country={member.mobile_country}
             icon={UserRound}
             tone="primary"
-            whatsappMessage={profile ? buildDonationReminderMessage(member.member_name, profile.full_name) : undefined}
-            onWhatsAppSend={onWhatsAppSend ? () => onWhatsAppSend('MEMBER') : undefined}
+            hideActions
           />
           {hasAddedBy && (
             <ContactBlock
@@ -60,12 +52,7 @@ export function ContactSection({
               country={member.added_by_country}
               icon={UserPlus}
               tone="gold"
-              whatsappMessage={
-                profile
-                  ? buildAddedByReminderMessage(member.member_name, member.added_by_name?.trim() || '', profile.full_name)
-                  : undefined
-              }
-              onWhatsAppSend={onWhatsAppSend ? () => onWhatsAppSend('ADDED_BY') : undefined}
+              hideActions
             />
           )}
         </div>
