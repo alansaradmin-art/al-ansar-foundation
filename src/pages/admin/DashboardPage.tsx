@@ -1,5 +1,20 @@
 import { Link } from 'react-router-dom'
-import { Users, UserCheck, UserX, UserCog, Wallet, IndianRupee, Receipt, CheckCircle2, ClipboardX, Hourglass } from 'lucide-react'
+import {
+  Users,
+  UserCheck,
+  UserX,
+  UserCog,
+  Wallet,
+  IndianRupee,
+  Receipt,
+  CheckCircle2,
+  ClipboardX,
+  Hourglass,
+  HandCoins,
+  Sparkles,
+  Wheat,
+  CircleDollarSign,
+} from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
 import { useAdminDashboard, useMemberGrowthTrend, useMonthlyDonationReport } from '@/hooks/useDashboard'
 import { useOverdueFollowups, useAdminOpenFollowups } from '@/hooks/useFollowups'
@@ -169,6 +184,47 @@ export default function AdminDashboardPage() {
             tone="info"
             to="/admin/followups?tab=inProgress"
           />
+        </div>
+      )}
+
+      {/* Moved here from Reports → Donation Report (now removed) — reuses
+       * the exact same donationReport query already fetched above for Top
+       * Donors/Engagement Snapshot, so this is the identical database
+       * logic and summary figures, just also rendered as KPI cards.
+       * Same grid breakpoints the original Donation Report used
+       * (2 cols mobile, 3 cols small tablet, 6 cols desktop). */}
+      {isDonationReportLoading && <StatGridSkeleton count={6} />}
+      {isDonationReportError && (
+        <ErrorState message="Unable to load the donation breakdown." onRetry={refetchDonationReport} />
+      )}
+      {donationReport && period && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">Donation Breakdown — {formatPeriod(period.month, period.year)}</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <DashboardCard
+              label="Total Donations"
+              value={donationReport.summary.totalCount}
+              icon={Receipt}
+              tone="neutral"
+              to="/admin/donations"
+            />
+            <DashboardCard
+              label="Total Amount"
+              value={formatINR(donationReport.summary.totalAmount)}
+              icon={IndianRupee}
+              tone="primary"
+              to="/admin/donations"
+            />
+            <DashboardCard label="Zakat" value={formatINR(donationReport.summary.zakat)} icon={HandCoins} tone="success" />
+            <DashboardCard label="Sadaqah/Sadka" value={formatINR(donationReport.summary.sadaqah)} icon={Sparkles} tone="gold" />
+            <DashboardCard label="Fitra" value={formatINR(donationReport.summary.fitra)} icon={Wheat} tone="info" />
+            <DashboardCard
+              label="General/Other"
+              value={formatINR(donationReport.summary.generalOrOther)}
+              icon={CircleDollarSign}
+              tone="neutral"
+            />
+          </div>
         </div>
       )}
 

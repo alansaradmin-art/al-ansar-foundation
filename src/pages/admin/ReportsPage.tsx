@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useManagerWiseReport, useMonthWiseReport, useMonthlyDonationReport } from '@/hooks/useDashboard'
+import { useManagerWiseReport, useMonthWiseReport } from '@/hooks/useDashboard'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
@@ -12,30 +12,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { MonthlyBarChart } from '@/features/reports/MonthlyBarChart'
-import { MonthlyDonationReport } from '@/features/reports/MonthlyDonationReport'
 import { DonationEngagementReport } from '@/features/reports/DonationEngagementReport'
 import { ManagerFollowupReport } from '@/features/reports/ManagerFollowupReport'
-import { formatINR, formatMobileNumber, formatPeriod, monthName } from '@/lib/format'
+import { formatINR, formatPeriod, monthName } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
-import type { ManagerWiseReportRow, MonthWiseReportRow, DonationReportRow } from '@/services/dashboard'
+import type { ManagerWiseReportRow, MonthWiseReportRow } from '@/services/dashboard'
 
-const DONATION_TYPE_LABELS: Record<string, string> = {
-  ZAKAT: 'Zakat',
-  SADAQAH: 'Sadaqah/Sadka',
-  FITRA: 'Fitra',
-  GENERAL: 'General Donation',
-  OTHER: 'Other',
-}
-
-const PAYMENT_LABELS: Record<string, string> = {
-  CASH: 'Cash',
-  UPI: 'UPI',
-  ONLINE: 'Online',
-  BANK_TRANSFER: 'Bank Transfer',
-  OTHER: 'Other',
-}
-
-const VALID_TABS = new Set(['manager', 'month', 'donations', 'engagement', 'followups'])
+const VALID_TABS = new Set(['manager', 'month', 'engagement', 'followups'])
 
 /** Mobile card view for the Manager-wise tab's table — same dl/dt/dd
  * pattern already used by ManagerFollowupReport/DonationEngagementReport's
@@ -112,7 +95,6 @@ export default function ReportsPage() {
 
   const { data: managerRows, isLoading: isManagerLoading } = useManagerWiseReport(period?.month, period?.year)
   const { data: monthRows, isLoading: isMonthLoading } = useMonthWiseReport(year)
-  const { data: donationReport, isLoading: isDonationReportLoading } = useMonthlyDonationReport(period?.month, period?.year)
 
   // Each tab's report is fetched once at page mount — switching tabs
   // re-fetches that tab's own report so changes made elsewhere in the
@@ -121,7 +103,6 @@ export default function ReportsPage() {
     setFilters({ tab: value })
     if (value === 'manager') queryClient.invalidateQueries({ queryKey: ['reports', 'manager-wise'] })
     if (value === 'month') queryClient.invalidateQueries({ queryKey: ['reports', 'month-wise'] })
-    if (value === 'donations') queryClient.invalidateQueries({ queryKey: ['reports', 'monthly-donation'] })
     if (value === 'engagement') queryClient.invalidateQueries({ queryKey: ['reports', 'donation-engagement'] })
     if (value === 'followups') queryClient.invalidateQueries({ queryKey: ['reports', 'manager-followup'] })
   }
@@ -153,39 +134,12 @@ export default function ReportsPage() {
     downloadCsv(`month-wise-report-${year}.csv`, csv)
   }
 
-  function exportDonationReport() {
-    if (!donationReport || !period) return
-    type FlatRow = DonationReportRow & { memberLabel: string; fatherNameLabel: string; mobileLabel: string }
-    const flatRows: FlatRow[] = [
-      ...donationReport.members.flatMap((m) =>
-        m.donations.map((d) => ({
-          ...d,
-          memberLabel: m.memberName,
-          fatherNameLabel: m.memberFatherName ?? '',
-          mobileLabel: formatMobileNumber(m.memberMobileNumber, m.memberMobileCountry),
-        })),
-      ),
-      ...donationReport.anonymous.donations.map((d) => ({ ...d, memberLabel: 'Anonymous', fatherNameLabel: '', mobileLabel: '' })),
-    ]
-    const csv = toCsv<FlatRow>(flatRows, [
-      { key: 'member', label: 'Member Name', value: (r) => r.memberLabel },
-      { key: 'father_name', label: "Father's Name", value: (r) => r.fatherNameLabel },
-      { key: 'mobile', label: 'Mobile Number', value: (r) => r.mobileLabel },
-      { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
-      { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
-      { key: 'date', label: 'Donation Date', value: (r) => r.donation_date },
-      { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
-      { key: 'ref', label: 'Transaction Reference', value: (r) => r.transaction_reference ?? '' },
-    ])
-    downloadCsv(`monthly-donation-report-${period.year}-${period.month}.csv`, csv)
-  }
-
   return (
     <div className="space-y-4">
       <PageHeader title="Reports" description="Manager performance and month-over-month donation trends" />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
-        {/* Five tab labels don't fit a phone-width bar — TabsList is
+        {/* These tab labels don't fit a phone-width bar — TabsList is
          * inline-flex/w-fit (never wraps), so without this it would widen
          * past the viewport and push the whole page into horizontal
          * scroll. Scoping the scroll to just this bar (swipeable on
@@ -194,7 +148,6 @@ export default function ReportsPage() {
           <TabsList>
             <TabsTrigger value="manager">Manager-wise</TabsTrigger>
             <TabsTrigger value="month">Month-wise</TabsTrigger>
-            <TabsTrigger value="donations">Donation Report</TabsTrigger>
             <TabsTrigger value="engagement">Donation Engagement</TabsTrigger>
             <TabsTrigger value="followups">Manager Follow-ups</TabsTrigger>
           </TabsList>
@@ -295,18 +248,6 @@ export default function ReportsPage() {
               </Table>
             </>
           )}
-        </TabsContent>
-
-        <TabsContent value="donations" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {period && <PeriodSelector period={period} onChange={setPeriod} />}
-            <Button variant="outline" onClick={exportDonationReport} disabled={!donationReport?.summary.totalCount}>
-              <Download className="size-4" /> Export CSV
-            </Button>
-          </div>
-
-          {isDonationReportLoading && <TableSkeleton cols={3} />}
-          {donationReport && <MonthlyDonationReport data={donationReport} />}
         </TabsContent>
 
         <TabsContent value="engagement" className="space-y-4">
