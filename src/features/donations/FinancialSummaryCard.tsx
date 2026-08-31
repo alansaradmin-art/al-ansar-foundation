@@ -17,7 +17,7 @@ export function FinancialSummaryCard({ donations }: { donations: Donation[] }) {
       <CardHeader>
         <CardTitle className="text-base">Donation Summary</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <CardContent className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
         <DashboardCard label="Total Contribution" value={formatINR(summary.totalContribution)} icon={IndianRupee} tone="gold" />
         <DashboardCard
           label="This Year"
