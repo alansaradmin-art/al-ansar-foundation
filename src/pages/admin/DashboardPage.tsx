@@ -99,7 +99,7 @@ export default function AdminDashboardPage() {
         actions={period && <PeriodSelector period={period} onChange={setPeriod} />}
       />
 
-      {isLoading && <StatGridSkeleton count={10} />}
+      {isLoading && <StatGridSkeleton count={9} />}
       {isError && <ErrorState message="Unable to load the dashboard. Please try again." onRetry={refetch} />}
 
       {stats && period && (
