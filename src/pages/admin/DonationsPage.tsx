@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
@@ -56,8 +56,20 @@ export default function AdminDonationsPage() {
 
   const { data: managers = [] } = useManagers()
   const { pageSize } = useDefaultPageSize()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => setFilters({ page: 1 }), [pageSize])
+  // Only reset to page 1 on a genuine pageSize change, never on the first
+  // render's loading-fallback-to-real-value jump — see
+  // admin/MembersPage.tsx's matching comment for the full reasoning (that
+  // transition used to silently reset the URL's own page back to 1 on
+  // every mount, breaking "return to the exact page you left" whenever the
+  // configured default page size wasn't exactly the fallback value of 10).
+  const previousPageSizeRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (previousPageSizeRef.current !== null && previousPageSizeRef.current !== pageSize) {
+      setFilters({ page: 1 })
+    }
+    previousPageSizeRef.current = pageSize
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageSize])
   const { data, isLoading, isError, refetch } = useAdminDonations({
     month: period?.month,
     year: period?.year,
@@ -67,6 +79,14 @@ export default function AdminDonationsPage() {
     page,
     pageSize,
   })
+
+  // Previous/Next/a specific page number should never leave the reader
+  // scrolled down into where the *previous* page's rows used to be —
+  // scoped to actual pagination clicks only, not every filter change.
+  function handlePageChange(nextPage: number) {
+    setFilters({ page: nextPage })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function handleExport() {
     if (!data) return
@@ -240,7 +260,7 @@ export default function AdminDonationsPage() {
       )}
 
       {data && (
-        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+        <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={handlePageChange} />
       )}
     </div>
   )

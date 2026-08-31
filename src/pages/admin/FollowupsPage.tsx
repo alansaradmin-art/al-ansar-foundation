@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
@@ -143,9 +143,26 @@ export default function AdminFollowupsPage() {
 
   const { data: managers = [] } = useManagers()
   const { pageSize } = useDefaultPageSize()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => setFilters({ page: 1 }), [pageSize])
+  // Only reset to page 1 on a genuine pageSize change, never on the first
+  // render's loading-fallback-to-real-value jump — see
+  // admin/MembersPage.tsx's matching comment for the full reasoning.
+  const previousPageSizeRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (previousPageSizeRef.current !== null && previousPageSizeRef.current !== pageSize) {
+      setFilters({ page: 1 })
+    }
+    previousPageSizeRef.current = pageSize
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageSize])
   const scopedManagerId = managerId === 'ALL' ? undefined : managerId
+
+  // Previous/Next/a specific page number should never leave the reader
+  // scrolled down into where the *previous* page's rows used to be —
+  // scoped to actual pagination clicks only, not every filter change.
+  function handlePageChange(nextPage: number) {
+    setFilters({ page: nextPage })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   // Every tab's data is fetched once at page mount — switching tabs
   // re-fetches that tab's own data so a follow-up recorded elsewhere in
@@ -352,7 +369,7 @@ export default function AdminFollowupsPage() {
           )}
 
           {data && (
-            <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={(p) => setFilters({ page: p })} />
+            <Pagination page={page} pageSize={pageSize} total={data.count} onPageChange={handlePageChange} />
           )}
         </TabsContent>
       </Tabs>
