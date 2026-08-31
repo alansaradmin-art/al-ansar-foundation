@@ -38,6 +38,7 @@ export function Member360View({
   isFollowupsLoading,
   canDeleteDocuments,
   canEditFollowups = false,
+  showAssignedManager = true,
   headerActions,
   bottomActions,
   periodSummary,
@@ -51,6 +52,12 @@ export function Member360View({
   /** Only the Manager page passes this true — there is no admin follow-up
    * editing path, matching create's manager-only rule. */
   canEditFollowups?: boolean
+  /** Defaults true (the Admin page's existing behavior, unchanged); the
+   * Manager page explicitly passes false — a manager never sees their own
+   * assigned-manager section at all (not hidden with CSS, simply never
+   * rendered, so AssignedManagerCard's own useManager() fetch never even
+   * runs for them). */
+  showAssignedManager?: boolean
   headerActions?: ReactNode
   bottomActions?: ReactNode
   /** Manager's existing period-scoped MonthlyDonationSummary (with its own
@@ -141,7 +148,7 @@ export function Member360View({
           <MemberInfoCard member={member} />
           <ContactSection member={member} />
           <FamilyInformationCard member={member} />
-          <AssignedManagerCard managerId={member.assigned_manager_id} />
+          {showAssignedManager && <AssignedManagerCard managerId={member.assigned_manager_id} />}
           {isDonationsLoading ? <CardListSkeleton count={2} /> : <FinancialSummaryCard donations={donations} />}
           <AuditInformationCard member={member} />
         </TabsContent>
