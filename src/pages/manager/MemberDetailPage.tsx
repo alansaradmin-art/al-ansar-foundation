@@ -8,6 +8,7 @@ import { Member360View } from '@/features/members/Member360View'
 import { MonthlyDonationSummary } from '@/features/donations/MonthlyDonationSummary'
 import { AddDonationDialog } from '@/features/donations/AddDonationDialog'
 import { AddFollowupDialog } from '@/features/followups/AddFollowupDialog'
+import { DonationStatusBadge } from '@/components/StatusBadge'
 
 export default function MemberDetailPage() {
   const { memberId } = useParams<{ memberId: string }>()
@@ -25,6 +26,10 @@ export default function MemberDetailPage() {
   const periodDonations = period
     ? donations.filter((d) => d.donation_month === period.month && d.donation_year === period.year)
     : []
+  // Reflects the same rule the backend actually enforces (api/followups.ts
+  // rejects a new follow-up for an already-paid member regardless of what
+  // this page shows) — this is a UX nicety, not the real enforcement.
+  const hasPaidThisPeriod = periodDonations.length > 0
 
   return (
     <Member360View
@@ -42,7 +47,11 @@ export default function MemberDetailPage() {
       bottomActions={
         <>
           <AddDonationDialog memberId={member.id} member={member} />
-          <AddFollowupDialog member={member} />
+          {hasPaidThisPeriod ? (
+            <DonationStatusBadge received label="Payment Received — Follow-up Not Required" />
+          ) : (
+            <AddFollowupDialog member={member} />
+          )}
         </>
       }
     />

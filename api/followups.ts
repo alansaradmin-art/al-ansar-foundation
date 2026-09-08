@@ -179,6 +179,34 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         return sendError(res, 403, 'You can only add follow-ups for your own members.')
       }
 
+      const [year, month] = values.follow_up_date.split('-').map(Number)
+
+      // Payment-received rule: an already-paid member is never eligible
+      // for a new follow-up, enforced here (not just hidden in the UI) so
+      // a direct API call can't bypass it either. Same donation-exists
+      // condition is_pending_followup() already uses for its own donation
+      // check (0002_functions.sql), applied here at write time. A hard
+      // block, unlike the softer possible-duplicate check below — "already
+      // paid" isn't something a manager should be able to click through.
+      const { data: existingDonation, error: donationCheckError } = await supabase
+        .from('donations')
+        .select('id')
+        .eq('member_id', values.member_id)
+        .eq('donation_month', month)
+        .eq('donation_year', year)
+        .eq('is_deleted', false)
+        .limit(1)
+        .maybeSingle()
+      if (donationCheckError) return sendSupabaseError(res, donationCheckError)
+      if (existingDonation) {
+        return sendJson(res, 409, {
+          error: {
+            message: 'Member has already completed the payment for this period. Follow-up is not required.',
+            code: 'PAYMENT_ALREADY_RECEIVED',
+          },
+        })
+      }
+
       // Soft duplicate check — a warning, not a block. Deliberately keyed
       // on status too, not just date: the request explicitly allows
       // multiple genuinely separate attempts on the same day (e.g. no
@@ -206,7 +234,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       }
 
-      const [year, month] = values.follow_up_date.split('-').map(Number)
       const contactedPersonPhone = resolveContactedPersonPhone(values.contacted_person_phone, values.contacted_person_country)
       const { data, error } = await supabase
         .from('monthly_followups')
@@ -264,6 +291,32 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (memberError) return sendSupabaseError(res, memberError)
       if (!member || member.assigned_manager_id !== profile.managerId) {
         return sendError(res, 403, 'You can only update follow-ups for your own members.')
+      }
+
+      // Same payment-received rule as create, checked against this row's
+      // own stored period (never "current period" — an update never moves
+      // a follow-up to a different month, see below). Defense in depth:
+      // this row should already have been auto-closed by the donation
+      // that made this true (api/donations.ts), so reaching here at all
+      // means something bypassed that — reject rather than let a stale
+      // client continue an attempt that shouldn't still be open.
+      const { data: existingDonation, error: donationCheckError } = await supabase
+        .from('donations')
+        .select('id')
+        .eq('member_id', oldRow.member_id)
+        .eq('donation_month', oldRow.month)
+        .eq('donation_year', oldRow.year)
+        .eq('is_deleted', false)
+        .limit(1)
+        .maybeSingle()
+      if (donationCheckError) return sendSupabaseError(res, donationCheckError)
+      if (existingDonation) {
+        return sendJson(res, 409, {
+          error: {
+            message: 'Member has already completed the payment for this period. Follow-up is not required.',
+            code: 'PAYMENT_ALREADY_RECEIVED',
+          },
+        })
       }
 
       const values = await readJsonBody<Partial<FollowupInsert> & { confirmDuplicate?: boolean }>(req)

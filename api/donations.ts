@@ -207,28 +207,32 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       }
 
-      // A donation resolves whatever IN_PROGRESS follow-up attempt is
-      // currently open for this member — the donation is exactly what an
-      // in-progress attempt was chasing. Deliberately narrower than the
-      // OPEN_FOLLOWUP_STATUSES set api/followups.ts uses elsewhere: only
-      // IN_PROGRESS auto-completes here, never STARTED or
-      // CALLBACK_REQUIRED, and never an already-COMPLETED/NOT_INTERESTED
-      // row (those are immutable, same as every other update path for this
-      // table). Same "secondary consequence, never fails the donation
-      // over it" pattern as the reactivation above — this only ever runs
-      // after the donation row above has already committed successfully.
+      // A donation resolves whatever open follow-up attempt is currently
+      // chasing it for *this same period* — the donation is exactly what
+      // that attempt was chasing. Matches the same OPEN_FOLLOWUP_STATUSES
+      // set api/followups.ts defines (STARTED/IN_PROGRESS/CALLBACK_REQUIRED
+      // — never an already-COMPLETED/NOT_INTERESTED row, those are
+      // immutable, same as every other update path for this table).
+      // Scoped to this donation's own month/year so it can never reach
+      // back and close a *different* period's open row for a member with
+      // follow-up history across multiple months. Same "secondary
+      // consequence, never fails the donation over it" pattern as the
+      // reactivation above — this only ever runs after the donation row
+      // above has already committed successfully.
       if (values.member_id) {
         const { data: openFollowup, error: followupLookupError } = await supabase
           .from('monthly_followups')
           .select('*')
           .eq('member_id', values.member_id)
-          .eq('follow_up_status', 'IN_PROGRESS')
+          .eq('month', month)
+          .eq('year', year)
+          .in('follow_up_status', ['STARTED', 'IN_PROGRESS', 'CALLBACK_REQUIRED'])
           .order('follow_up_date', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle()
         if (followupLookupError) {
-          console.error('[api/donations] failed to look up in-progress follow-up', values.member_id, followupLookupError)
+          console.error('[api/donations] failed to look up open follow-up', values.member_id, followupLookupError)
         } else if (openFollowup) {
           const { data: completedFollowup, error: completeError } = await supabase
             .from('monthly_followups')
@@ -240,7 +244,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
             .select('*')
             .single()
           if (completeError) {
-            console.error('[api/donations] failed to auto-complete in-progress follow-up', openFollowup.id, completeError)
+            console.error('[api/donations] failed to auto-complete open follow-up', openFollowup.id, completeError)
           } else if (completedFollowup) {
             await logUpdate(supabase, 'monthly_followups', profile.id, openFollowup, completedFollowup)
           }
