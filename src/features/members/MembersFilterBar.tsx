@@ -8,11 +8,17 @@ export function MembersFilterBar({
   onSearchChange,
   status,
   onStatusChange,
+  showStatusFilter = true,
 }: {
   search: string
   onSearchChange: (value: string) => void
   status: MemberStatus | 'ALL'
   onStatusChange: (value: MemberStatus | 'ALL') => void
+  /** Managers can only ever see ACTIVE members — the backend now enforces
+   * this unconditionally, so offering "All"/"Inactive" tabs there would
+   * just be a control that always returns nothing. Admin (default) keeps
+   * the full three-way filter; the manager Members page passes false. */
+  showStatusFilter?: boolean
 }) {
   return (
     <div className="space-y-3">
@@ -25,13 +31,15 @@ export function MembersFilterBar({
           className="pl-9"
         />
       </div>
-      <Tabs value={status} onValueChange={(v) => onStatusChange(v as MemberStatus | 'ALL')}>
-        <TabsList>
-          <TabsTrigger value="ALL">All</TabsTrigger>
-          <TabsTrigger value="ACTIVE">Active</TabsTrigger>
-          <TabsTrigger value="INACTIVE">Inactive</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {showStatusFilter && (
+        <Tabs value={status} onValueChange={(v) => onStatusChange(v as MemberStatus | 'ALL')}>
+          <TabsList>
+            <TabsTrigger value="ALL">All</TabsTrigger>
+            <TabsTrigger value="ACTIVE">Active</TabsTrigger>
+            <TabsTrigger value="INACTIVE">Inactive</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
     </div>
   )
 }

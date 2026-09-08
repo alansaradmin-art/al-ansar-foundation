@@ -157,6 +157,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       let query = supabase.from('members').select('*').eq('id', id)
       const managerScope = resolveManagerScope(profile)
       if (managerScope) query = query.eq('assigned_manager_id', managerScope)
+      // A Manager can never see an INACTIVE member, even one of their own —
+      // an inactive member simply doesn't exist for them, same 404 as a
+      // member outside their scope entirely. Admin is unrestricted.
+      if (profile.role === 'MANAGER') query = query.eq('status', 'ACTIVE')
       const { data, error } = await query.maybeSingle()
       if (error) return sendSupabaseError(res, error)
       if (!data) return sendError(res, 404, 'Member not found.')
@@ -176,7 +180,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       if (managerScope) query = query.eq('assigned_manager_id', managerScope)
       else if (readQueryParam(req, 'unassigned') === 'true') query = query.is('assigned_manager_id', null)
       if (readQueryParam(req, 'incomplete') === 'true') query = query.or(INCOMPLETE_MEMBER_OR)
-      if (status) query = query.eq('status', status as MemberStatus)
+      // A Manager's list is always ACTIVE-only, regardless of any status
+      // filter they request — enforced server-side so it can't be bypassed
+      // by requesting ?status=INACTIVE (or omitting status) directly.
+      // Admin keeps the existing unrestricted behavior.
+      if (profile.role === 'MANAGER') {
+        query = query.eq('status', 'ACTIVE')
+      } else if (status) {
+        query = query.eq('status', status as MemberStatus)
+      }
       if (search) {
         query = query.or(
           `member_name.ilike.%${search}%,member_id.ilike.%${search}%,mobile_number.ilike.%${search}%,father_name.ilike.%${search}%`,
@@ -194,6 +206,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       let scopedIdsQuery = supabase.from('members').select('id').in('id', memberIds)
       const managerScope = resolveManagerScope(profile)
       if (managerScope) scopedIdsQuery = scopedIdsQuery.eq('assigned_manager_id', managerScope)
+      // Defense in depth: a Manager's period summaries should never surface
+      // an INACTIVE member's data even if a stale/tampered client request
+      // includes their id — matches the same restriction enforced on the
+      // list/detail GET handlers above.
+      if (profile.role === 'MANAGER') scopedIdsQuery = scopedIdsQuery.eq('status', 'ACTIVE')
       const { data: scopedMembers, error: scopeError } = await scopedIdsQuery
       if (scopeError) return sendSupabaseError(res, scopeError)
       const allowedIds = (scopedMembers ?? []).map((m) => m.id)

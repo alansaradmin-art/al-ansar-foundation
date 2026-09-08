@@ -25,6 +25,10 @@ export default function MembersPage() {
     page: 1,
   })
   const { search, status, page } = filters
+  // Managers can only ever see ACTIVE members (enforced server-side too —
+  // see api/members.ts). The filter bar hides the All/Inactive tabs below,
+  // so `status` here always stays 'ACTIVE'; keeping the field in useUrlFilters
+  // as-is avoids reshaping the shared filter-state hook for one role.
   const debouncedSearch = useDebouncedValue(search)
 
   const { pageSize } = useDefaultPageSize()
@@ -74,6 +78,7 @@ export default function MembersPage() {
         onSearchChange={(v) => setFilters({ search: v, page: 1 })}
         status={status}
         onStatusChange={(v) => setFilters({ status: v, page: 1 })}
+        showStatusFilter={false}
       />
 
       {isLoading && <CardListSkeleton />}
