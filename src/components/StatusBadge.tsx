@@ -10,9 +10,14 @@ import {
   XCircle,
   IndianRupee,
   UserX,
+  FileEdit,
+  Ban,
+  Send,
+  ShieldCheck,
+  ShieldX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FollowUpStatus, MemberStatus } from '@/types'
+import type { ExpenseStatus, FollowUpStatus, MemberStatus } from '@/types'
 
 type Tone = 'success' | 'warning' | 'info' | 'neutral'
 
@@ -114,4 +119,18 @@ export function NoRecentDonationBadge() {
  * for Admin, not a fault in the member's record. */
 export function UnassignedManagerBadge() {
   return <Badge label="Unassigned" tone="warning" icon={<UserX className="size-3.5" />} />
+}
+
+const EXPENSE_STATUS_CONFIG: Record<ExpenseStatus, { label: string; tone: Tone; icon: ReactNode }> = {
+  DRAFT: { label: 'Draft', tone: 'neutral', icon: <FileEdit className="size-3.5" /> },
+  SUBMITTED: { label: 'Pending Approval', tone: 'warning', icon: <Send className="size-3.5" /> },
+  APPROVED: { label: 'Approved', tone: 'info', icon: <ShieldCheck className="size-3.5" /> },
+  REJECTED: { label: 'Rejected', tone: 'neutral', icon: <ShieldX className="size-3.5" /> },
+  PAID: { label: 'Paid', tone: 'success', icon: <CheckCircle2 className="size-3.5" /> },
+  CANCELLED: { label: 'Cancelled', tone: 'neutral', icon: <Ban className="size-3.5" /> },
+}
+
+export function ExpenseStatusBadge({ status }: { status: ExpenseStatus }) {
+  const config = EXPENSE_STATUS_CONFIG[status]
+  return <Badge label={config.label} tone={config.tone} icon={config.icon} />
 }

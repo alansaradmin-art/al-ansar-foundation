@@ -229,3 +229,28 @@ export function resolveManagerScope(profile: CallerProfile, requestedManagerId?:
   if (profile.role === 'MANAGER') return profile.managerId ?? undefined
   return requestedManagerId
 }
+
+/** Whether `profile` currently holds an active (non-revoked)
+ * profile_financial_roles grant for `roleCode` — the "can this caller sign
+ * off on this expense as its Treasurer/Secretary/etc." check. ADMIN is
+ * deliberately NOT special-cased here: an Admin can always fill any open
+ * quorum slot, but that's decided by the caller (api/expenses.ts), not
+ * baked into this helper, so this function answers exactly one question. */
+export async function hasActiveFinancialRole(
+  supabase: SupabaseClient<Database>,
+  profileId: string,
+  roleCode: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('profile_financial_roles')
+    .select('id')
+    .eq('profile_id', profileId)
+    // roleCode is validated against the same check constraint by Postgres
+    // itself on write — this cast just tells supabase-js's query builder
+    // to accept the caller's plain string here.
+    .eq('role_code', roleCode as Database['public']['Tables']['profile_financial_roles']['Row']['role_code'])
+    .is('revoked_at', null)
+    .maybeSingle()
+  if (error) throw error
+  return !!data
+}

@@ -1,7 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../../src/types/database'
 
-export type AuditEntityType = 'members' | 'donations' | 'monthly_followups' | 'managers' | 'member_documents'
+export type AuditEntityType =
+  | 'members'
+  | 'donations'
+  | 'monthly_followups'
+  | 'managers'
+  | 'member_documents'
+  | 'funds'
+  | 'expense_categories'
+  | 'payment_methods'
+  | 'beneficiaries'
+  | 'expenses'
+  | 'expense_attachments'
+  | 'profile_financial_roles'
+  | 'expense_approvals'
 
 interface WriteAuditLogParams {
   actorProfileId: string | null

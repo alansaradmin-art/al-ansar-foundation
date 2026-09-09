@@ -14,9 +14,21 @@ import {
   Sparkles,
   Wheat,
   CircleDollarSign,
+  Send,
+  ShieldCheck,
+  Ban,
+  PiggyBank,
 } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useAdminDashboard, useMemberGrowthTrend, useMonthlyDonationReport } from '@/hooks/useDashboard'
+import {
+  useAdminDashboard,
+  useMemberGrowthTrend,
+  useMonthlyDonationReport,
+  useExpenseDashboardStats,
+  useExpenseCategoryBreakdown,
+  useExpenseFundBreakdown,
+  useExpenseMonthlyTrend,
+} from '@/hooks/useDashboard'
 import { useOverdueFollowups, useAdminOpenFollowups } from '@/hooks/useFollowups'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { PageHeader } from '@/components/PageHeader'
@@ -46,6 +58,49 @@ function MemberGrowthChart({ rows }: { rows: MemberGrowthRow[] }) {
             />
           </div>
           <span className="text-[11px] text-muted-foreground">{monthName(row.month).slice(0, 3)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ExpenseTrendChart({ rows }: { rows: { month: number; amount: number }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.amount))
+
+  return (
+    <div className="flex items-end gap-2 overflow-x-auto pb-2" role="img" aria-label="Paid expenses per month">
+      {rows.map((row) => (
+        <div key={row.month} className="flex w-14 shrink-0 flex-col items-center gap-1.5">
+          <span className="text-[11px] tabular-nums text-muted-foreground">{row.amount > 0 ? formatINR(row.amount) : ''}</span>
+          <div className="flex h-32 w-full items-end rounded-md bg-muted/40">
+            <div
+              className="w-full rounded-md bg-destructive/70"
+              style={{ height: `${(row.amount / max) * 100}%`, minHeight: row.amount > 0 ? 4 : 0 }}
+            />
+          </div>
+          <span className="text-[11px] text-muted-foreground">{monthName(row.month).slice(0, 3)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** A ranked list with a proportional bar per row — shared shape for both
+ * the category and fund breakdowns below, since they're the same kind of
+ * "which slice is biggest" question against a different grouping. */
+function ExpenseBreakdownList({ rows }: { rows: { label: string; amount: number }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.amount))
+  return (
+    <div className="space-y-3">
+      {rows.map((row) => (
+        <div key={row.label} className="space-y-1">
+          <div className="flex items-center justify-between text-sm">
+            <span className="truncate text-muted-foreground">{row.label}</span>
+            <span className="shrink-0 font-medium tabular-nums">{formatINR(row.amount)}</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-destructive/60" style={{ width: `${(row.amount / max) * 100}%` }} />
+          </div>
         </div>
       ))}
     </div>
@@ -85,6 +140,16 @@ export default function AdminDashboardPage() {
     isError: isDonationReportError,
     refetch: refetchDonationReport,
   } = useMonthlyDonationReport(period?.month, period?.year)
+
+  const {
+    data: expenseStats,
+    isLoading: isExpenseStatsLoading,
+    isError: isExpenseStatsError,
+    refetch: refetchExpenseStats,
+  } = useExpenseDashboardStats(period?.month, period?.year)
+  const { data: categoryBreakdown = [] } = useExpenseCategoryBreakdown(period?.month, period?.year)
+  const { data: fundBreakdown = [] } = useExpenseFundBreakdown(period?.month, period?.year)
+  const { data: expenseTrend = [] } = useExpenseMonthlyTrend(period?.year)
 
   const topDonors = [...(donationReport?.members ?? [])].sort((a, b) => b.total - a.total).slice(0, TOP_DONORS_LIMIT)
   const donorCount = donationReport?.members.length ?? 0
@@ -219,6 +284,104 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Expense Overview (Phase 4) — same section shape as Donation
+       * Breakdown above: a KPI row scoped to the selected period, plus
+       * category/fund/trend charts below. Every number here reflects only
+       * PAID expenses (never Draft/Submitted commitments) except the two
+       * live queue counts, which intentionally aren't period-scoped — see
+       * expense_dashboard_stats() in supabase/migrations/0043. */}
+      {isExpenseStatsLoading && <StatGridSkeleton count={6} />}
+      {isExpenseStatsError && <ErrorState message="Unable to load the expense overview." onRetry={refetchExpenseStats} />}
+      {expenseStats && period && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">Expense Overview — {formatPeriod(period.month, period.year)}</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <DashboardCard
+              label="Total Expenses"
+              value={formatINR(expenseStats.total_expenses_amount)}
+              description="All-time, paid"
+              icon={Wallet}
+              tone="neutral"
+              to="/admin/expenses"
+            />
+            <DashboardCard
+              label="This Month's Expenses"
+              value={formatINR(expenseStats.period_expenses_amount)}
+              icon={IndianRupee}
+              tone="primary"
+              to="/admin/expenses"
+            />
+            <DashboardCard
+              label="Pending Approval"
+              value={expenseStats.pending_approval_count}
+              description="Awaiting committee sign-off"
+              icon={Send}
+              tone="warning"
+              to="/admin/expenses?status=SUBMITTED"
+            />
+            <DashboardCard
+              label="Approved"
+              value={expenseStats.approved_count}
+              description="Awaiting payment"
+              icon={ShieldCheck}
+              tone="info"
+              to="/admin/expenses?status=APPROVED"
+            />
+            <DashboardCard
+              label="Rejected / Cancelled"
+              value={expenseStats.period_rejected_count + expenseStats.period_cancelled_count}
+              description="This month"
+              icon={Ban}
+              tone="neutral"
+            />
+            <DashboardCard
+              label="Net Available Balance"
+              value={formatINR(expenseStats.available_balance)}
+              description="Donations − paid expenses, all funds"
+              icon={PiggyBank}
+              tone="success"
+            />
+          </div>
+        </div>
+      )}
+
+      {(categoryBreakdown.length > 0 || fundBreakdown.length > 0) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {categoryBreakdown.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Expenses by Category</CardTitle>
+                <CardDescription>{period && formatPeriod(period.month, period.year)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ExpenseBreakdownList rows={categoryBreakdown.map((r) => ({ label: r.category_name, amount: r.amount }))} />
+              </CardContent>
+            </Card>
+          )}
+          {fundBreakdown.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Expenses by Fund</CardTitle>
+                <CardDescription>{period && formatPeriod(period.month, period.year)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ExpenseBreakdownList rows={fundBreakdown.map((r) => ({ label: r.fund_name, amount: r.amount }))} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Expense Trend</CardTitle>
+          <CardDescription>{period && `Paid expenses in ${period.year}`}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ExpenseTrendChart rows={expenseTrend} />
+        </CardContent>
+      </Card>
 
       <NeedsAttentionSection period={period} />
 

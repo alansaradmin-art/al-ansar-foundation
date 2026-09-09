@@ -16,6 +16,9 @@ export type DonationType = 'ZAKAT' | 'SADAQAH' | 'FITRA' | 'GENERAL' | 'OTHER'
 export type FollowUpStatus = 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'NOT_INTERESTED' | 'CALLBACK_REQUIRED'
 export type FollowUpMethod = 'PHONE' | 'WHATSAPP' | 'IN_PERSON' | 'OTHER'
 export type ContactedPersonType = 'MEMBER' | 'ADDED_BY' | 'REFERENCE_CONTACT' | 'OTHER'
+export type ExpenseStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PAID' | 'CANCELLED'
+export type FinancialRoleCode = 'TREASURER' | 'VICE_TREASURER' | 'PRESIDENT' | 'VICE_PRESIDENT' | 'SECRETARY' | 'GENERAL_SECRETARY'
+export type ApprovalAction = 'APPROVE' | 'REJECT'
 
 export interface Database {
   public: {
@@ -108,6 +111,11 @@ export interface Database {
           // a member donation's donor identity always comes from the
           // member record itself. See supabase/migrations/0037_donation_receipts.sql.
           donor_name: string | null
+          // Maintained entirely by a database trigger (see
+          // supabase/migrations/0042_fund_donation_bridge.sql) — always
+          // kept in sync with donation_type. No application code sets
+          // this directly; it's typed here only for read accuracy.
+          fund_id: string | null
           recorded_by: string
           is_deleted: boolean
           deleted_at: string | null
@@ -223,6 +231,184 @@ export interface Database {
           uploaded_by: string
         }
         Update: Partial<Database['public']['Tables']['member_documents']['Row']>
+        Relationships: []
+      }
+      funds: {
+        Row: {
+          id: string
+          code: string
+          name: string
+          description: string | null
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['funds']['Row']> & {
+          code: string
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['funds']['Row']>
+        Relationships: []
+      }
+      expense_categories: {
+        Row: {
+          id: string
+          name: string
+          group_label: string | null
+          is_active: boolean
+          sort_order: number
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['expense_categories']['Row']> & {
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['expense_categories']['Row']>
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          id: string
+          name: string
+          requires_reference: boolean
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['payment_methods']['Row']> & {
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['payment_methods']['Row']>
+        Relationships: []
+      }
+      beneficiaries: {
+        Row: {
+          id: string
+          member_id: string | null
+          display_name: string | null
+          phone: string | null
+          address: string | null
+          is_confidential: boolean
+          notes: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['beneficiaries']['Row']> & {
+          created_by: string
+        }
+        Update: Partial<Database['public']['Tables']['beneficiaries']['Row']>
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          id: string
+          expense_number: string
+          expense_date: string
+          amount_inr: number
+          fund_id: string
+          category_id: string
+          beneficiary_id: string | null
+          paid_to: string | null
+          payment_method_id: string | null
+          transaction_reference: string | null
+          purpose: string
+          description: string | null
+          status: ExpenseStatus
+          created_by: string
+          submitted_at: string | null
+          required_approval_roles: FinancialRoleCode[] | null
+          approved_at: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejected_reason: string | null
+          approval_cycle: number
+          paid_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancellation_reason: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['expenses']['Row']> & {
+          expense_date: string
+          amount_inr: number
+          fund_id: string
+          category_id: string
+          purpose: string
+          created_by: string
+        }
+        Update: Partial<Database['public']['Tables']['expenses']['Row']>
+        Relationships: []
+      }
+      expense_attachments: {
+        Row: {
+          id: string
+          expense_id: string
+          file_name: string
+          storage_path: string
+          file_size: number
+          content_type: string
+          uploaded_by: string
+          is_deleted: boolean
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['expense_attachments']['Row']> & {
+          expense_id: string
+          file_name: string
+          storage_path: string
+          file_size: number
+          content_type: string
+          uploaded_by: string
+        }
+        Update: Partial<Database['public']['Tables']['expense_attachments']['Row']>
+        Relationships: []
+      }
+      profile_financial_roles: {
+        Row: {
+          id: string
+          profile_id: string
+          role_code: FinancialRoleCode
+          granted_by: string
+          granted_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['profile_financial_roles']['Row']> & {
+          profile_id: string
+          role_code: FinancialRoleCode
+          granted_by: string
+        }
+        Update: Partial<Database['public']['Tables']['profile_financial_roles']['Row']>
+        Relationships: []
+      }
+      expense_approvals: {
+        Row: {
+          id: string
+          expense_id: string
+          approval_cycle: number
+          role_code: FinancialRoleCode | null
+          signer_id: string
+          action: ApprovalAction
+          is_override: boolean
+          comment: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['expense_approvals']['Row']> & {
+          expense_id: string
+          approval_cycle: number
+          signer_id: string
+          action: ApprovalAction
+        }
+        Update: Partial<Database['public']['Tables']['expense_approvals']['Row']>
         Relationships: []
       }
     }
@@ -378,6 +564,48 @@ export interface Database {
       member_last_donation_dates: {
         Args: { p_member_ids: string[] }
         Returns: { member_id: string; last_donation_date: string | null }[]
+      }
+      fund_balance: {
+        Args: { p_fund_id: string; p_as_of?: string }
+        Returns: number
+      }
+      fund_balances_summary: {
+        Args: { p_as_of?: string }
+        Returns: {
+          fund_id: string
+          fund_code: string
+          fund_name: string
+          donations_total: number
+          expenses_total: number
+          balance: number
+        }[]
+      }
+      expense_dashboard_stats: {
+        Args: { p_month: number; p_year: number }
+        Returns: {
+          total_expenses_amount: number
+          total_expenses_count: number
+          period_expenses_amount: number
+          period_expenses_count: number
+          pending_approval_count: number
+          approved_count: number
+          period_rejected_count: number
+          period_cancelled_count: number
+          total_donations_amount: number
+          available_balance: number
+        }[]
+      }
+      expense_category_breakdown: {
+        Args: { p_month: number; p_year: number }
+        Returns: { category_id: string; category_name: string; amount: number; expense_count: number }[]
+      }
+      expense_fund_breakdown: {
+        Args: { p_month: number; p_year: number }
+        Returns: { fund_id: string; fund_name: string; amount: number; expense_count: number }[]
+      }
+      expense_monthly_trend: {
+        Args: { p_year: number }
+        Returns: { month: number; year: number; amount: number; expense_count: number }[]
       }
       manager_followup_report: {
         Args: { p_date_from: string | null; p_date_to: string | null }

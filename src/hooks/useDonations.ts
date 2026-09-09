@@ -41,6 +41,9 @@ export function useCreateDonation(recordedBy: string) {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['members'] })
+      // A donation now feeds its matching fund's balance too — see
+      // supabase/migrations/0042_fund_donation_bridge.sql.
+      queryClient.invalidateQueries({ queryKey: queryKeys.funds.balances })
     },
   })
 }
@@ -61,6 +64,7 @@ export function useUpdateDonation() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['members'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.funds.balances })
     },
   })
 }
@@ -76,6 +80,7 @@ export function useSoftDeleteDonation() {
       queryClient.invalidateQueries({ queryKey: ['followups', 'pending'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.funds.balances })
     },
   })
 }

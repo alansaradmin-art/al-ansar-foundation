@@ -196,6 +196,41 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { summary, members, anonymous })
     }
 
+    if (type === 'expenseDashboardStats') {
+      if (!requireAdmin(res, profile)) return
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const { data, error } = await supabase.rpc('expense_dashboard_stats', { p_month: month, p_year: year }).single()
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, data)
+    }
+
+    if (type === 'expenseCategoryBreakdown') {
+      if (!requireAdmin(res, profile)) return
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const { data, error } = await supabase.rpc('expense_category_breakdown', { p_month: month, p_year: year })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (type === 'expenseFundBreakdown') {
+      if (!requireAdmin(res, profile)) return
+      const month = Number(readQueryParam(req, 'month'))
+      const year = Number(readQueryParam(req, 'year'))
+      const { data, error } = await supabase.rpc('expense_fund_breakdown', { p_month: month, p_year: year })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (type === 'expenseMonthlyTrend') {
+      if (!requireAdmin(res, profile)) return
+      const year = Number(readQueryParam(req, 'year'))
+      const { data, error } = await supabase.rpc('expense_monthly_trend', { p_year: year })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
     sendError(res, 400, 'Unknown dashboard type.')
   } catch (error) {
     console.error('[api/dashboard]', error)

@@ -81,3 +81,39 @@ export function useMonthlyDonationReport(month: number | undefined, year: number
     enabled: month != null && year != null,
   })
 }
+
+export function useExpenseDashboardStats(month: number | undefined, year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.expenseStats(month ?? 0, year ?? 0),
+    queryFn: () => dashboardService.getExpenseDashboardStats(getToken, month!, year!),
+    enabled: month != null && year != null,
+  })
+}
+
+export function useExpenseCategoryBreakdown(month: number | undefined, year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.expenseCategoryBreakdown(month ?? 0, year ?? 0),
+    queryFn: () => dashboardService.getExpenseCategoryBreakdown(getToken, month!, year!),
+    enabled: month != null && year != null,
+  })
+}
+
+export function useExpenseFundBreakdown(month: number | undefined, year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.expenseFundBreakdown(month ?? 0, year ?? 0),
+    queryFn: () => dashboardService.getExpenseFundBreakdown(getToken, month!, year!),
+    enabled: month != null && year != null,
+  })
+}
+
+export function useExpenseMonthlyTrend(year: number | undefined) {
+  const { getToken } = useAuth()
+  return useQuery({
+    queryKey: queryKeys.dashboard.expenseMonthlyTrend(year ?? 0),
+    queryFn: () => dashboardService.getExpenseMonthlyTrend(getToken, year!),
+    enabled: year != null,
+  })
+}

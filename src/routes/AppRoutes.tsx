@@ -25,6 +25,7 @@ const AdminMembersPage = lazy(() => import('@/pages/admin/MembersPage'))
 const AdminMemberDetailPage = lazy(() => import('@/pages/admin/MemberDetailPage'))
 const AdminManagersPage = lazy(() => import('@/pages/admin/ManagersPage'))
 const AdminDonationsPage = lazy(() => import('@/pages/admin/DonationsPage'))
+const AdminExpensesPage = lazy(() => import('@/pages/admin/ExpensesPage'))
 const AdminFollowupsPage = lazy(() => import('@/pages/admin/FollowupsPage'))
 const AdminReportsPage = lazy(() => import('@/pages/admin/ReportsPage'))
 const AdminAuditLogsPage = lazy(() => import('@/pages/admin/AuditLogsPage'))
@@ -60,6 +61,7 @@ export default function AppRoutes() {
               <Route path="members/import" element={<AdminImportPage />} />
               <Route path="managers" element={<AdminManagersPage />} />
               <Route path="donations" element={<AdminDonationsPage />} />
+              <Route path="expenses" element={<AdminExpensesPage />} />
               <Route path="followups" element={<AdminFollowupsPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
               <Route path="audit-logs" element={<AdminAuditLogsPage />} />

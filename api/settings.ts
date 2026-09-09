@@ -124,6 +124,31 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendJson(res, 200, { bannerUrl, footerText, contactInfo, receivedByLabel })
     }
 
+    // The expense-approval committee roster, by role: every one of these
+    // role_codes must have an active signature before an expense reaches
+    // Approved. Read fresh here (Settings screen); an in-flight expense
+    // instead carries its own snapshot (expenses.required_approval_roles)
+    // taken at submit time — see supabase/migrations/0041.
+    if (req.method === 'GET' && action === 'expenseApprovalRoles') {
+      const { data, error } = await supabase.from('app_settings').select('value').eq('key', 'EXPENSE_APPROVAL_QUORUM_ROLES').single()
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { roles: (data.value as string[]) ?? [] })
+    }
+
+    if (req.method === 'PUT' && action === 'expenseApprovalRoles') {
+      if (!requireAdmin(res, profile)) return
+      const { roles } = await readJsonBody<{ roles: string[] }>(req)
+      if (!Array.isArray(roles) || roles.length === 0) {
+        return sendError(res, 400, 'At least one committee role is required for quorum.')
+      }
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ value: roles, updated_by: profile.id, updated_at: new Date().toISOString() })
+        .eq('key', 'EXPENSE_APPROVAL_QUORUM_ROLES')
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { roles })
+    }
+
     sendError(res, 404, 'Not found.')
   } catch (error) {
     console.error('[api/settings]', error)

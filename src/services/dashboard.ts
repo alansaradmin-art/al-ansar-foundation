@@ -263,3 +263,66 @@ export async function getMonthlyDonationReport(
 ): Promise<MonthlyDonationReport> {
   return apiClient.get('/api/dashboard', getToken, { type: 'monthlyDonationReport', month, year })
 }
+
+export interface ExpenseDashboardStats {
+  total_expenses_amount: number
+  total_expenses_count: number
+  period_expenses_amount: number
+  period_expenses_count: number
+  pending_approval_count: number
+  approved_count: number
+  period_rejected_count: number
+  period_cancelled_count: number
+  total_donations_amount: number
+  available_balance: number
+}
+
+export async function getExpenseDashboardStats(getToken: GetToken, month: number, year: number): Promise<ExpenseDashboardStats> {
+  return apiClient.get('/api/dashboard', getToken, { type: 'expenseDashboardStats', month, year })
+}
+
+export interface ExpenseBreakdownRow {
+  amount: number
+  expense_count: number
+}
+
+export async function getExpenseCategoryBreakdown(
+  getToken: GetToken,
+  month: number,
+  year: number,
+): Promise<(ExpenseBreakdownRow & { category_id: string; category_name: string })[]> {
+  const { rows } = await apiClient.get<{ rows: (ExpenseBreakdownRow & { category_id: string; category_name: string })[] }>(
+    '/api/dashboard',
+    getToken,
+    { type: 'expenseCategoryBreakdown', month, year },
+  )
+  return rows
+}
+
+export async function getExpenseFundBreakdown(
+  getToken: GetToken,
+  month: number,
+  year: number,
+): Promise<(ExpenseBreakdownRow & { fund_id: string; fund_name: string })[]> {
+  const { rows } = await apiClient.get<{ rows: (ExpenseBreakdownRow & { fund_id: string; fund_name: string })[] }>(
+    '/api/dashboard',
+    getToken,
+    { type: 'expenseFundBreakdown', month, year },
+  )
+  return rows
+}
+
+export interface ExpenseMonthlyTrendRow {
+  month: number
+  year: number
+  amount: number
+  expense_count: number
+}
+
+export async function getExpenseMonthlyTrend(getToken: GetToken, year: number): Promise<ExpenseMonthlyTrendRow[]> {
+  const { rows } = await apiClient.get<{ rows: ExpenseMonthlyTrendRow[] }>('/api/dashboard', getToken, {
+    type: 'expenseMonthlyTrend',
+    year,
+  })
+  return rows
+}

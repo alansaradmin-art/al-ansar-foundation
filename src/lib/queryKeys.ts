@@ -42,6 +42,10 @@ export const queryKeys = {
     memberGrowthTrend: (year: number) => ['dashboard', 'member-growth', year] as const,
     donationEngagement: (params: unknown) => ['reports', 'donation-engagement', params] as const,
     managerFollowupReport: (params: unknown) => ['reports', 'manager-followup', params] as const,
+    expenseStats: (month: number, year: number) => ['dashboard', 'expense-stats', month, year] as const,
+    expenseCategoryBreakdown: (month: number, year: number) => ['dashboard', 'expense-category', month, year] as const,
+    expenseFundBreakdown: (month: number, year: number) => ['dashboard', 'expense-fund', month, year] as const,
+    expenseMonthlyTrend: (year: number) => ['dashboard', 'expense-trend', year] as const,
   },
   settings: {
     currentPeriod: ['settings', 'current-period'] as const,
@@ -49,6 +53,11 @@ export const queryKeys = {
     nonDonorThreshold: ['settings', 'non-donor-threshold'] as const,
     defaultPageSize: ['settings', 'default-page-size'] as const,
     receiptBranding: ['settings', 'receipt-branding'] as const,
+    expenseApprovalRoles: ['settings', 'expense-approval-roles'] as const,
+  },
+  financialRoles: {
+    active: ['financial-roles', 'active'] as const,
+    forProfile: (profileId: string) => ['financial-roles', 'profile', profileId] as const,
   },
   auditLogs: {
     list: (filters: unknown) => ['audit-logs', 'list', filters] as const,
@@ -56,6 +65,23 @@ export const queryKeys = {
   },
   documents: {
     forMember: (memberId: string) => ['documents', 'member', memberId] as const,
+  },
+  expenses: {
+    list: (filters: unknown) => ['expenses', 'list', filters] as const,
+    detail: (id: string) => ['expenses', 'detail', id] as const,
+  },
+  funds: {
+    list: (includeInactive: boolean) => ['funds', 'list', includeInactive] as const,
+    balances: ['funds', 'balances'] as const,
+  },
+  expenseCategories: {
+    list: (includeInactive: boolean) => ['expense-categories', 'list', includeInactive] as const,
+  },
+  paymentMethods: {
+    list: (includeInactive: boolean) => ['payment-methods', 'list', includeInactive] as const,
+  },
+  beneficiaries: {
+    picker: (query: string) => ['beneficiaries', 'picker', query] as const,
   },
   profile: {
     current: (clerkUserId: string | undefined) => ['current-profile', clerkUserId] as const,

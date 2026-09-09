@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '@clerk/clerk-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Palette, SlidersHorizontal, ClipboardList, IndianRupee, Receipt, type LucideIcon } from 'lucide-react'
+import { Palette, SlidersHorizontal, ClipboardList, IndianRupee, Receipt, Users, type LucideIcon } from 'lucide-react'
+import { ExpenseCommitteeSection } from '@/features/expenses/ExpenseCommitteeSection'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import {
@@ -410,6 +411,15 @@ export default function SettingsPage() {
             )}
           </CardContent>
         </Card>
+      </SettingsSection>
+
+      <SettingsSection
+        icon={Users}
+        title="Expense Committee"
+        description="Who holds a financial role, and which roles must sign off before an expense is Approved."
+        tone="gold"
+      >
+        <ExpenseCommitteeSection />
       </SettingsSection>
 
       <AppFooter />

@@ -54,3 +54,16 @@ export async function getReceiptBranding(getToken: GetToken): Promise<ReceiptBra
 export async function setReceiptBranding(getToken: GetToken, branding: ReceiptBranding): Promise<void> {
   await apiClient.put('/api/settings', getToken, branding, { action: 'receiptBranding' })
 }
+
+/** Every one of these role_codes must have an active signature before an
+ * expense reaches Approved — the committee, for quorum purposes. See
+ * supabase/migrations/0041 and api/expenses.ts's ?action=submit, which
+ * snapshots this onto the expense at submission time. */
+export async function getExpenseApprovalRoles(getToken: GetToken): Promise<string[]> {
+  const { roles } = await apiClient.get<{ roles: string[] }>('/api/settings', getToken, { action: 'expenseApprovalRoles' })
+  return roles
+}
+
+export async function setExpenseApprovalRoles(getToken: GetToken, roles: string[]): Promise<void> {
+  await apiClient.put('/api/settings', getToken, { roles }, { action: 'expenseApprovalRoles' })
+}
