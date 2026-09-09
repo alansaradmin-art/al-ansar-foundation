@@ -538,6 +538,23 @@ new environment variable values retroactively.
 
 ## 12. Troubleshooting
 
+**Console shows `Failed to load module script... MIME type of "text/html"` and/or
+`Failed to fetch dynamically imported module`, usually right after a deploy** — a tab that was
+already open before the deploy still has the *previous* build's hashed chunk filenames (e.g.
+`AdminLayout-<hash>.js`, one per lazy-loaded route — see `AppRoutes.tsx`) baked into its
+already-loaded page. Once a newer deploy replaces those files, fetching one can never succeed.
+Two things prevent this going forward:
+- `vercel.json`'s SPA catch-all rewrite excludes `assets/` (`/((?!api/|__clerk/|assets/).*)`),
+  so a genuinely missing asset now 404s instead of being silently rewritten to `index.html` —
+  which is what actually produced the confusing "MIME type text/html" error (the browser got
+  real HTML back from a request for a `.js` file, since the old rewrite matched *any* path).
+- `main.tsx` listens for Vite's own `vite:preloadError` event (fired whenever a dynamic
+  `import()` — i.e. any lazy route — fails to load) and reloads the page once. A fresh page
+  load always fetches the *current* `index.html`, which points at the current deploy's real
+  chunks, so this self-heals automatically rather than leaving the user on a dead page.
+If you still hit this, it means the reload itself is failing too — check the Network tab for
+what the reloaded page's own request returns before assuming this fix regressed.
+
 **"Not authorized" for someone who should have access** — an email that doesn't match
 `FOUNDATION_ADMIN_EMAIL` or any `managers.email` row is rejected: the app signs them out.
 Only a genuinely brand-new, never-before-seen Clerk user also gets deleted server-side, and
