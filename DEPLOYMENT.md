@@ -219,6 +219,7 @@ Covered in [§9](#9-post-deploy-wiring), since it needs your live Vercel URL fir
 | `CLERK_SECRET_KEY`             | **Server-only**         | Clerk → API Keys — verifies every `api/*.ts` request now (`api/_lib/auth.ts`), not just the webhook |
 | `CLERK_WEBHOOK_SIGNING_SECRET` | **Server-only**         | Clerk → Webhooks (set up in §9)                   |
 | `CLERK_PROXY_UPSTREAM`         | **Server-only**, optional (§9.3) | Clerk Dashboard → Domains → "Copy setup instructions" |
+| `CLERK_PROXY_PUBLIC_URL`       | **Server-only**, local dev only (§6) | Your production domain's `/__clerk` path — not needed in Vercel |
 | `FOUNDATION_ADMIN_EMAIL`       | **Server-only**         | You choose it — default `alansar.admin@gmail.com` |
 | `CRON_SECRET`                  | **Server-only**         | You generate it (§9.4) — any long random string    |
 
@@ -262,6 +263,31 @@ bookkeeping (a local `.vercel/` folder, already gitignored), not what gets deplo
 
 If you only need the frontend (no sign-in, no data — rare, mostly for pure UI work), plain
 `npm run dev` runs `vite` without the API layer, same as before this project had an API layer.
+
+**Using the Production Clerk key locally (not a separate Development instance)?** §9.3 says
+to leave `VITE_CLERK_PROXY_URL` unset for local dev — that's only true when local dev uses a
+Development-instance key (`*.clerk.accounts.dev`, no proxy needed). If `.env.local` instead
+has the same Production key as Vercel, Clerk still decodes `clerk.<your-domain>` from it
+locally, which still can't resolve, and you'll hit `failed_to_load_clerk_js` exactly as in
+production without a proxy. Two variables fix it, both in `.env.local` only (neither is
+needed in Vercel — production already resolves both correctly with no config):
+
+```
+# Relative, not absolute — Clerk's SDK resolves a leading "/" against
+# window.location.origin (see isProxyUrlRelative in @clerk/shared), so this
+# hits vercel dev's own /__clerk locally and the real one in production,
+# same value either way. Also avoids a genuinely cross-origin fetch from
+# localhost straight to the live domain, which Clerk's own CORS response
+# would reject anyway.
+VITE_CLERK_PROXY_URL=/__clerk
+
+# Server-only. api/clerk-proxy.ts now runs on localhost too (same-origin
+# with the page), but a Production key rejects any HTTP Origin other than
+# its one configured domain ("Production Keys are only allowed for domain
+# ...") — without this, the proxy would tell Clerk the request's real
+# (local) host instead of the domain the key actually accepts.
+CLERK_PROXY_PUBLIC_URL=https://al-ansar-foundation.vercel.app/__clerk
+```
 
 ---
 

@@ -107,15 +107,33 @@ function buildForwardedHeaders(req: IncomingRequest, proxyPublicUrl: string): He
     if (v !== undefined) headers.set(key, v)
   }
 
-  const host = firstValue(req.headers['x-forwarded-host']) ?? firstValue(req.headers.host) ?? ''
-  const proto = firstValue(req.headers['x-forwarded-proto']) ?? 'https'
+  // Every one of these describes the proxy's public identity to Clerk, so
+  // all four are derived from the same proxyPublicUrl (real Host header in
+  // production, CLERK_PROXY_PUBLIC_URL's fixed value locally) rather than
+  // independently re-reading request headers — a mix of "real local host"
+  // and "claimed public host" across different headers would be an
+  // inconsistent signal to Clerk even if Origin alone were fixed.
+  const proxyOrigin = new URL(proxyPublicUrl)
   // Tells Clerk which public proxy URL this request is arriving through —
   // required for a Production instance running behind a proxy instead of a
   // direct clerk.<domain> DNS record. Best-effort header name/value — not
   // independently verifiable from published SDK source (see DEPLOYMENT.md).
   headers.set('Clerk-Proxy-Url', proxyPublicUrl)
-  headers.set('X-Forwarded-Host', host)
-  headers.set('X-Forwarded-Proto', proto)
+  headers.set('X-Forwarded-Host', proxyOrigin.host)
+  headers.set('X-Forwarded-Proto', proxyOrigin.protocol.replace(':', ''))
+
+  // Clerk's backend independently rejects a Production key's requests
+  // unless the HTTP Origin header equals (or is a subdomain of) the key's
+  // configured domain — a check this proxy's job is specifically to get
+  // around, so the browser's real Origin (whatever domain the developer
+  // actually loaded the page from — localhost during local dev, the
+  // *.vercel.app domain in production) must never reach Clerk unmodified.
+  // Rewritten to the proxy's own public origin instead, exactly the origin
+  // Clerk expects: identical to the browser's real one in production (a
+  // no-op there), but what makes local dev work at all against a
+  // Production-instance key with no separate Development instance.
+  headers.set('Origin', proxyOrigin.origin)
+  headers.set('Referer', proxyPublicUrl)
 
   const clientIp = firstValue(req.headers['x-forwarded-for']) ?? req.socket?.remoteAddress
   if (clientIp) headers.set('X-Forwarded-For', clientIp)
@@ -130,9 +148,20 @@ function buildForwardedHeaders(req: IncomingRequest, proxyPublicUrl: string): He
 }
 
 export default async function handler(req: IncomingRequest, res: ServerResponse) {
-  const host = firstValue(req.headers['x-forwarded-host']) ?? firstValue(req.headers.host) ?? ''
-  const proto = firstValue(req.headers['x-forwarded-proto']) ?? 'https'
-  const proxyPublicUrl = `${proto}://${host}/__clerk`
+  // Normally derived from this request's own Host header — correct in
+  // production, since the browser and this function are already
+  // same-origin (VITE_CLERK_PROXY_URL is a relative /__clerk, per Clerk's
+  // own documented support for that — see isProxyUrlRelative in
+  // @clerk/shared). CLERK_PROXY_PUBLIC_URL overrides this only for local
+  // dev: `vercel dev` serves this same function on http://localhost:*,
+  // whose Host header a Production Clerk key can never be configured to
+  // accept — this variable tells Clerk (via the Clerk-Proxy-Url header and
+  // the Origin/Referer rewrite below) that the request is really the one
+  // fixed production domain the key IS configured for, regardless of what
+  // host actually received it locally.
+  const proxyPublicUrl =
+    process.env.CLERK_PROXY_PUBLIC_URL ||
+    `${firstValue(req.headers['x-forwarded-proto']) ?? 'https'}://${firstValue(req.headers['x-forwarded-host']) ?? firstValue(req.headers.host) ?? ''}/__clerk`
   const pathParam = firstValue(req.query?.path) ?? ''
 
   // Safe, no-secret self-check: GET /__clerk/__debug shows exactly what
