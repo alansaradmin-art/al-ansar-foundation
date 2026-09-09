@@ -112,6 +112,20 @@ export function formatMobileNumber(phone: string | null | undefined, country?: s
   return known ? `${countryFlag(known.iso2)} +${known.dialCode} ${local}` : local
 }
 
+/** Same as formatMobileNumber but without the flag emoji — for CSV/report
+ * exports specifically, never the on-screen UI. A flag emoji is really two
+ * Unicode "regional indicator" characters (e.g. 🇮🇳 is the letters I+N in
+ * that special alphabet); a browser's emoji font renders them as one flag
+ * glyph, but a spreadsheet app opening the exported file often has no such
+ * font and falls back to showing the two indicator letters as plain text —
+ * literally "I N" or "S A" sitting right in front of the number. */
+export function formatMobileNumberPlain(phone: string | null | undefined, country?: string | null): string {
+  if (!phone) return ''
+  const local = normalizeMobileNumber(phone)
+  const known = findCountry(country)
+  return known ? `+${known.dialCode} ${local}` : local
+}
+
 /** LEGACY FALLBACK ONLY — kept for rows with no stored country (see
  * migration 0035_phone_country_split.sql's backfill notes: only a bare
  * 10-digit number could be reliably backfilled to India; genuinely

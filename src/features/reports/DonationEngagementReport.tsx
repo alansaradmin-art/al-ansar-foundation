@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { DateRangePicker, type DateRangeValue } from '@/components/DateRangePicker'
-import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
+import { formatDate, formatINR, formatMobileNumber, formatMobileNumberPlain } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import type { DonationEngagementParams, DonationEngagementRow } from '@/services/dashboard'
 import type { Period } from '@/types'
@@ -301,7 +301,7 @@ export function DonationEngagementReport() {
     const csv = toCsv<DonationEngagementRow>(filtered, [
       { key: 'member', label: 'Member Name', value: (r) => r.memberName },
       { key: 'father', label: "Father's Name", value: (r) => r.fatherName ?? '' },
-      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.mobileNumber, r.mobileCountry) },
+      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumberPlain(r.mobileNumber, r.mobileCountry) },
       { key: 'manager', label: 'Manager', value: (r) => r.managerName ?? 'Unassigned' },
       { key: 'status', label: 'Donation Status', value: (r) => (r.donated ? 'Donated' : 'Not Donated') },
       { key: 'amount', label: 'Total Amount (INR)', value: (r) => r.totalAmount },
