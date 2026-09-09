@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { authenticate, getServiceRoleClient, hasActiveFinancialRole, requireAdmin } from './_lib/auth.js'
 import { type ApiRequest, type ApiResponse, readJsonBody, readQueryParam, sendError, sendJson, sendSupabaseError } from './_lib/http.js'
 import { logInsert, logUpdate } from './_lib/auditLog.js'
@@ -8,7 +9,12 @@ type ExpenseInsert = Database['public']['Tables']['expenses']['Insert']
 type ExpenseUpdate = Database['public']['Tables']['expenses']['Update']
 type ExpenseStatus = Database['public']['Tables']['expenses']['Row']['status']
 type FinancialRoleCode = Database['public']['Tables']['profile_financial_roles']['Row']['role_code']
+type BeneficiaryInsert = Database['public']['Tables']['beneficiaries']['Insert']
+type AttachmentInsert = Database['public']['Tables']['expense_attachments']['Insert']
 type Supabase = ReturnType<typeof getServiceRoleClient>
+
+const ATTACHMENTS_BUCKET = 'expense-attachments'
+const ATTACHMENT_MAX_FILE_SIZE = 10 * 1024 * 1024
 
 // Treasurer/Vice Treasurer are the only grants that can also disburse —
 // matches the user's own framing ("payment is disbursed by treasure").
@@ -59,6 +65,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const profile = await authenticate(req, res)
   if (!profile) return
   const supabase = getServiceRoleClient()
+
+  // Folded into this file (never their own api/*.ts) specifically to stay
+  // under Vercel's Hobby-plan 12-serverless-function-per-deployment cap —
+  // main was already sitting at exactly 12 before this module existed, so
+  // every new endpoint here has to share a file rather than get its own.
+  // Both are otherwise unrelated to the expenses resource below; each is
+  // its own self-contained handler, called before any expenses-specific
+  // query param is even read.
+  const resource = readQueryParam(req, 'resource')
+  if (resource === 'beneficiaries') return handleBeneficiaries(req, res, profile, supabase)
+  if (resource === 'attachments') return handleAttachments(req, res, profile, supabase)
+
   const action = readQueryParam(req, 'action')
   const id = readQueryParam(req, 'id')
 
@@ -468,6 +486,198 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     sendError(res, 404, 'Not found.')
   } catch (error) {
     console.error('[api/expenses]', error)
+    sendError(res, 500, 'Something went wrong. Please try again.')
+  }
+}
+
+// ── ?resource=beneficiaries ─────────────────────────────────
+// Admin-only end to end in Phase 1 — matches every other expense endpoint
+// until Phase 2's Treasurer grant exists. A confidential beneficiary's
+// identity fields are never populated in the first place (enforced by the
+// DB check in 0040), so there's no separate redaction step needed here.
+async function handleBeneficiaries(req: ApiRequest, res: ApiResponse, profile: CallerProfile, supabase: Supabase) {
+  if (!requireAdmin(res, profile)) return
+  const action = readQueryParam(req, 'action')
+  const id = readQueryParam(req, 'id')
+
+  try {
+    if (req.method === 'GET' && action === 'picker') {
+      const search = readQueryParam(req, 'search')?.trim()
+      let query = supabase
+        .from('beneficiaries')
+        .select('id, display_name, phone, is_confidential')
+        .order('display_name', { ascending: true })
+        .limit(20)
+      if (search) query = query.ilike('display_name', `%${search}%`)
+      const { data, error } = await query
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (req.method === 'GET' && id) {
+      const { data, error } = await supabase.from('beneficiaries').select('*').eq('id', id).maybeSingle()
+      if (error) return sendSupabaseError(res, error)
+      if (!data) return sendError(res, 404, 'Beneficiary not found.')
+      return sendJson(res, 200, data)
+    }
+
+    if (req.method === 'GET') {
+      const search = readQueryParam(req, 'search')?.trim()
+      let query = supabase.from('beneficiaries').select('*', { count: 'exact' }).order('created_at', { ascending: false })
+      if (search) query = query.or(`display_name.ilike.%${search}%,phone.ilike.%${search}%`)
+      const { data, error, count } = await query
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [], count: count ?? 0 })
+    }
+
+    if (req.method === 'POST') {
+      const values = await readJsonBody<Partial<BeneficiaryInsert>>(req)
+      if (!values.is_confidential && !values.display_name?.trim()) {
+        return sendError(res, 400, 'display_name is required unless the beneficiary is confidential.')
+      }
+      const isConfidential = values.is_confidential === true
+      const { data, error } = await supabase
+        .from('beneficiaries')
+        .insert({
+          member_id: isConfidential ? null : values.member_id || null,
+          display_name: isConfidential ? null : values.display_name!.trim(),
+          phone: isConfidential ? null : values.phone || null,
+          address: values.address || null,
+          is_confidential: isConfidential,
+          notes: values.notes || null,
+          created_by: profile.id,
+        })
+        .select('*')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      await logInsert(supabase, 'beneficiaries', profile.id, data)
+      return sendJson(res, 201, data)
+    }
+
+    sendError(res, 404, 'Not found.')
+  } catch (error) {
+    console.error('[api/expenses?resource=beneficiaries]', error)
+    sendError(res, 500, 'Something went wrong. Please try again.')
+  }
+}
+
+// ── ?resource=attachments ───────────────────────────────────
+// Mirrors api/members.ts's ?resource=documents handler exactly (signed
+// upload URL, confirm, signed download URL, soft-delete) — same private-
+// bucket pattern, just scoped to expenses instead of members. Admin-only
+// throughout Phase 1.
+async function handleAttachments(req: ApiRequest, res: ApiResponse, profile: CallerProfile, supabase: Supabase) {
+  if (!requireAdmin(res, profile)) return
+  const action = readQueryParam(req, 'action')
+  const id = readQueryParam(req, 'id')
+
+  try {
+    if (req.method === 'GET' && action === 'forExpense') {
+      const expenseId = readQueryParam(req, 'expenseId')
+      if (!expenseId) return sendError(res, 400, 'expenseId is required.')
+
+      const { data, error } = await supabase
+        .from('expense_attachments')
+        .select('*, uploader:profiles!expense_attachments_uploaded_by_fkey(full_name)')
+        .eq('expense_id', expenseId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+      if (error) return sendSupabaseError(res, error)
+      return sendJson(res, 200, { rows: data ?? [] })
+    }
+
+    if (req.method === 'GET' && action === 'downloadUrl') {
+      if (!id) return sendError(res, 400, 'id is required.')
+      const { data: doc, error: docError } = await supabase
+        .from('expense_attachments')
+        .select('*')
+        .eq('id', id)
+        .eq('is_deleted', false)
+        .maybeSingle()
+      if (docError) return sendSupabaseError(res, docError)
+      if (!doc) return sendError(res, 404, 'Attachment not found.')
+
+      const { data: signed, error: signError } = await supabase.storage.from(ATTACHMENTS_BUCKET).createSignedUrl(doc.storage_path, 60)
+      if (signError) return sendError(res, 500, 'Unable to generate a download link. Please try again.')
+      return sendJson(res, 200, { url: signed.signedUrl, fileName: doc.file_name })
+    }
+
+    if (req.method === 'POST' && action === 'createUploadUrl') {
+      const { expense_id, file_name, content_type, file_size } = await readJsonBody<{
+        expense_id: string
+        file_name: string
+        content_type: string
+        file_size: number
+      }>(req)
+      if (!expense_id || !file_name) return sendError(res, 400, 'expense_id and file_name are required.')
+      if (file_size > ATTACHMENT_MAX_FILE_SIZE) return sendError(res, 400, 'File is larger than the 10MB limit.')
+
+      const { data: expense, error: expenseError } = await supabase.from('expenses').select('id').eq('id', expense_id).maybeSingle()
+      if (expenseError) return sendSupabaseError(res, expenseError)
+      if (!expense) return sendError(res, 404, 'Expense not found.')
+
+      // Never trust the client-supplied file name beyond its extension — a
+      // fresh random id rules out collisions and path traversal alike; the
+      // original name is preserved separately for display.
+      const extensionMatch = /\.[a-zA-Z0-9]{1,10}$/.exec(file_name)
+      const extension = extensionMatch ? extensionMatch[0] : ''
+      const storagePath = `${expense_id}/${randomUUID()}${extension}`
+
+      const { data: signed, error: signError } = await supabase.storage.from(ATTACHMENTS_BUCKET).createSignedUploadUrl(storagePath)
+      if (signError) return sendError(res, 500, 'Unable to prepare the upload. Please try again.')
+      return sendJson(res, 200, { signedUrl: signed.signedUrl, token: signed.token, storagePath, contentType: content_type })
+    }
+
+    if (req.method === 'POST' && action === 'confirm') {
+      const values = await readJsonBody<Partial<AttachmentInsert>>(req)
+      if (!values.expense_id || !values.storage_path || !values.file_name) {
+        return sendError(res, 400, 'expense_id, storage_path, and file_name are required.')
+      }
+
+      const { data, error } = await supabase
+        .from('expense_attachments')
+        .insert({
+          expense_id: values.expense_id,
+          file_name: values.file_name,
+          storage_path: values.storage_path,
+          file_size: values.file_size ?? 0,
+          content_type: values.content_type ?? 'application/octet-stream',
+          // Always the caller's own profile id — never trust a
+          // client-supplied uploaded_by.
+          uploaded_by: profile.id,
+        })
+        .select('*')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      await logInsert(supabase, 'expense_attachments', profile.id, data)
+      return sendJson(res, 201, data)
+    }
+
+    if (req.method === 'PATCH' && id && action === 'softDelete') {
+      const { reason } = await readJsonBody<{ reason?: string }>(req)
+      const { data: oldRow, error: oldError } = await supabase.from('expense_attachments').select('*').eq('id', id).maybeSingle()
+      if (oldError) return sendSupabaseError(res, oldError)
+      if (!oldRow) return sendError(res, 404, 'Attachment not found.')
+
+      const { data, error } = await supabase
+        .from('expense_attachments')
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: profile.id,
+          deletion_reason: reason || null,
+        })
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (error) return sendSupabaseError(res, error)
+      await logUpdate(supabase, 'expense_attachments', profile.id, oldRow, data)
+      return sendJson(res, 200, data)
+    }
+
+    sendError(res, 404, 'Not found.')
+  } catch (error) {
+    console.error('[api/expenses?resource=attachments]', error)
     sendError(res, 500, 'Something went wrong. Please try again.')
   }
 }

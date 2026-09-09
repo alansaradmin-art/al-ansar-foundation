@@ -5,8 +5,12 @@ export type MemberDocumentWithUploader = MemberDocument & {
   uploader: { full_name: string } | null
 }
 
+// Served from api/members.ts's ?resource=documents branch, not its own
+// endpoint — folded in to stay under Vercel's Hobby-plan serverless
+// function cap (see the comment at the top of that file's handler()).
 export async function listMemberDocuments(getToken: GetToken, memberId: string): Promise<MemberDocumentWithUploader[]> {
-  const { rows } = await apiClient.get<{ rows: MemberDocumentWithUploader[] }>('/api/documents', getToken, {
+  const { rows } = await apiClient.get<{ rows: MemberDocumentWithUploader[] }>('/api/members', getToken, {
+    resource: 'documents',
     action: 'forMember',
     memberId,
   })
@@ -27,12 +31,17 @@ export async function createUploadUrl(
   contentType: string,
   fileSize: number,
 ): Promise<CreateUploadUrlResponse> {
-  return apiClient.post('/api/documents', getToken, {
-    member_id: memberId,
-    file_name: fileName,
-    content_type: contentType,
-    file_size: fileSize,
-  }, { action: 'createUploadUrl' })
+  return apiClient.post(
+    '/api/members',
+    getToken,
+    {
+      member_id: memberId,
+      file_name: fileName,
+      content_type: contentType,
+      file_size: fileSize,
+    },
+    { resource: 'documents', action: 'createUploadUrl' },
+  )
 }
 
 export async function confirmDocument(
@@ -40,7 +49,7 @@ export async function confirmDocument(
   params: { memberId: string; storagePath: string; fileName: string; fileSize: number; contentType: string },
 ): Promise<MemberDocument> {
   return apiClient.post(
-    '/api/documents',
+    '/api/members',
     getToken,
     {
       member_id: params.memberId,
@@ -49,7 +58,7 @@ export async function confirmDocument(
       file_size: params.fileSize,
       content_type: params.contentType,
     },
-    { action: 'confirm' },
+    { resource: 'documents', action: 'confirm' },
   )
 }
 
@@ -85,9 +94,9 @@ export async function uploadMemberDocument(getToken: GetToken, memberId: string,
 }
 
 export async function getDocumentDownloadUrl(getToken: GetToken, id: string): Promise<{ url: string; fileName: string }> {
-  return apiClient.get('/api/documents', getToken, { action: 'downloadUrl', id })
+  return apiClient.get('/api/members', getToken, { resource: 'documents', action: 'downloadUrl', id })
 }
 
 export async function softDeleteDocument(getToken: GetToken, id: string, reason?: string): Promise<void> {
-  await apiClient.patch('/api/documents', getToken, { reason }, { id, action: 'softDelete' })
+  await apiClient.patch('/api/members', getToken, { reason }, { resource: 'documents', id, action: 'softDelete' })
 }

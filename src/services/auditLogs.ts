@@ -24,11 +24,14 @@ export type AuditLogWithActor = AuditLog & {
   managerName: string | null
 }
 
+// Served from api/settings.ts's ?resource=auditLogs branch, not its own
+// endpoint — folded in to stay under Vercel's Hobby-plan serverless
+// function cap (see the comment at the top of that file's handler()).
 export async function listAuditLogs(
   getToken: GetToken,
   filters: AuditLogFilters = {},
 ): Promise<PaginatedResult<AuditLogWithActor>> {
-  return apiClient.get('/api/audit-logs', getToken, { ...filters })
+  return apiClient.get('/api/settings', getToken, { resource: 'auditLogs', ...filters })
 }
 
 export interface AuditLogActor {
@@ -38,6 +41,9 @@ export interface AuditLogActor {
 }
 
 export async function listAuditLogActors(getToken: GetToken): Promise<AuditLogActor[]> {
-  const { rows } = await apiClient.get<{ rows: AuditLogActor[] }>('/api/audit-logs', getToken, { action: 'actors' })
+  const { rows } = await apiClient.get<{ rows: AuditLogActor[] }>('/api/settings', getToken, {
+    resource: 'auditLogs',
+    action: 'actors',
+  })
   return rows
 }
