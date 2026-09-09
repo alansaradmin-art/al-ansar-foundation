@@ -7,6 +7,7 @@ import { useDonationEngagementReport } from '@/hooks/useDashboard'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { DashboardCard } from '@/features/dashboard/DashboardCard'
+import { PeriodSelector } from '@/components/PeriodSelector'
 import { Pagination } from '@/components/Pagination'
 import { CardListSkeleton } from '@/components/LoadingSkeletons'
 import { EmptyState, ErrorState } from '@/components/StateViews'
@@ -19,6 +20,7 @@ import { DateRangePicker, type DateRangeValue } from '@/components/DateRangePick
 import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import type { DonationEngagementParams, DonationEngagementRow } from '@/services/dashboard'
+import type { Period } from '@/types'
 
 type Preset = 'THIS_MONTH' | 'LAST_2_MONTHS' | 'THIS_YEAR' | 'NEVER_DONATED' | 'CUSTOM'
 
@@ -187,12 +189,32 @@ function EngagementRowCard({ row }: { row: DonationEngagementRow }) {
 
 export function DonationEngagementReport() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { period } = usePeriodSelector()
+  // Only ever used as the fallback default below, until a selection is
+  // made — this hook's own state has no UI control in this component, so
+  // using it directly (as this used to) meant THIS_MONTH/LAST_2_MONTHS/
+  // THIS_YEAR could only ever mean the real calendar "now", with no way
+  // for the user to pick a different month — exactly the bug where the
+  // export always reflected the current month regardless of any period
+  // selected elsewhere on the page.
+  const { period: serverPeriod } = usePeriodSelector()
 
   const presetParam = searchParams.get('preset')
   const preset: Preset = presetParam && presetParam in PRESET_LABELS ? (presetParam as Preset) : 'THIS_MONTH'
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
+  const monthParam = searchParams.get('month')
+  const yearParam = searchParams.get('year')
+  // The month/year THIS_MONTH/LAST_2_MONTHS/THIS_YEAR anchor on — kept in
+  // the URL (not local state), matching every other filter in this
+  // component, so it's shareable/bookmarkable and consistent with the
+  // rest of the page's own state model. Memoized on the primitive params
+  // (not recreated as a fresh object every render), same reasoning as
+  // customRange below — otherwise the params useMemo depending on this
+  // would never see a stable reference and recompute every render.
+  const selectedPeriod: Period | null = useMemo(
+    () => (monthParam && yearParam ? { month: Number(monthParam), year: Number(yearParam) } : serverPeriod),
+    [monthParam, yearParam, serverPeriod],
+  )
   // Memoized on the primitive from/to strings, not recreated as a fresh
   // object every render — otherwise the params useMemo below (which depends
   // on customRange) would never see a stable reference and recompute on
@@ -230,7 +252,7 @@ export function DonationEngagementReport() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => updateParams({ page: undefined }), [PAGE_SIZE])
 
-  const params = useMemo(() => resolveDateRange(preset, period, customRange), [preset, period, customRange])
+  const params = useMemo(() => resolveDateRange(preset, selectedPeriod, customRange), [preset, selectedPeriod, customRange])
   const { data: rows, isLoading, isError, refetch } = useDonationEngagementReport(params)
   const debouncedSearch = useDebouncedValue(search)
 
@@ -263,6 +285,10 @@ export function DonationEngagementReport() {
     updateParams({ preset: value === 'THIS_MONTH' ? undefined : value, page: undefined })
   }
 
+  function handlePeriodChange(next: Period) {
+    updateParams({ month: String(next.month), year: String(next.year), page: undefined })
+  }
+
   function handleSort(key: SortKey) {
     if (sortKey === key) {
       updateParams({ sortDir: sortDir === 'asc' ? 'desc' : undefined, page: undefined })
@@ -282,7 +308,11 @@ export function DonationEngagementReport() {
       { key: 'count', label: 'Donation Count', value: (r) => r.donationCount },
       { key: 'latest', label: 'Latest Donation Date', value: (r) => r.latestDonationDate ?? '' },
     ])
-    downloadCsv(`donation-engagement-${preset.toLowerCase()}.csv`, csv)
+    // Reflects the actually-selected month/year for the presets that have
+    // one, so the filename matches what's actually inside the file.
+    const periodSuffix =
+      selectedPeriod && preset !== 'CUSTOM' && preset !== 'NEVER_DONATED' ? `-${selectedPeriod.year}-${selectedPeriod.month}` : ''
+    downloadCsv(`donation-engagement-${preset.toLowerCase()}${periodSuffix}.csv`, csv)
   }
 
   return (
@@ -306,6 +336,14 @@ export function DonationEngagementReport() {
             value={customRange}
             onChange={(v) => updateParams({ dateFrom: v?.from, dateTo: v?.to, page: undefined })}
           />
+        )}
+
+        {/* Which month/year THIS_MONTH/LAST_2_MONTHS/THIS_YEAR actually
+         * mean — previously not selectable at all here, silently always
+         * the real current month regardless of anything picked elsewhere
+         * on the page. */}
+        {preset !== 'CUSTOM' && preset !== 'NEVER_DONATED' && selectedPeriod && (
+          <PeriodSelector period={selectedPeriod} onChange={handlePeriodChange} />
         )}
 
         {preset !== 'NEVER_DONATED' && (

@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Download } from 'lucide-react'
 import { usePeriodSelector } from '@/hooks/useCurrentPeriod'
-import { useAdminDonations } from '@/hooks/useDonations'
+import { useAdminDonations, useExportAdminDonations } from '@/hooks/useDonations'
 import { useManagers } from '@/hooks/useManagers'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
@@ -24,6 +25,7 @@ import { DonationListItem } from '@/features/donations/DonationListItem'
 import { AnonymousDonationBadge } from '@/components/StatusBadge'
 import { formatDate, formatINR, formatMobileNumber } from '@/lib/format'
 import { toCsv, downloadCsv } from '@/lib/csv'
+import { getFriendlyErrorMessage } from '@/lib/errors'
 import { DONATION_TYPES, PAYMENT_METHODS } from '@/schemas/donation.schema'
 import type { DonationType, PaymentMethod } from '@/types'
 import type { DonationWithRelations } from '@/services/donations'
@@ -88,20 +90,40 @@ export default function AdminDonationsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const { mutate: exportAll, isPending: isExporting } = useExportAdminDonations()
+
+  // Deliberately its own fetch of everything matching the current filters
+  // (see useExportAdminDonations), never the already-loaded `data.rows` —
+  // that's just whatever one page the list happens to be showing, so a
+  // month with more donations than the page size would silently export an
+  // incomplete file.
   function handleExport() {
-    if (!data) return
-    const csv = toCsv<DonationWithRelations>(data.rows, [
-      { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
-      { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
-      { key: 'father_name', label: "Father's Name", value: (r) => r.member?.father_name ?? '' },
-      { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.member?.mobile_number, r.member?.mobile_country) },
-      { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
-      { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
-      { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
-      { key: 'ref', label: 'Transaction Reference', value: (r) => r.transaction_reference ?? '' },
-      { key: 'recorded_by', label: 'Recorded By', value: (r) => r.recorder?.full_name ?? '' },
-    ])
-    downloadCsv(`donations-${period?.year}-${period?.month}.csv`, csv)
+    exportAll(
+      {
+        month: period?.month,
+        year: period?.year,
+        managerId: managerId === 'ALL' ? undefined : managerId,
+        paymentMethod: paymentMethod === 'ALL' ? undefined : paymentMethod,
+        donationType: donationType === 'ALL' ? undefined : donationType,
+      },
+      {
+        onSuccess: (result) => {
+          const csv = toCsv<DonationWithRelations>(result.rows, [
+            { key: 'donation_date', label: 'Donation Date', value: (r) => r.donation_date },
+            { key: 'member', label: 'Member', value: (r) => r.member?.member_name ?? 'Anonymous' },
+            { key: 'father_name', label: "Father's Name", value: (r) => r.member?.father_name ?? '' },
+            { key: 'mobile', label: 'Mobile Number', value: (r) => formatMobileNumber(r.member?.mobile_number, r.member?.mobile_country) },
+            { key: 'type', label: 'Donation Type', value: (r) => DONATION_TYPE_LABELS[r.donation_type] },
+            { key: 'amount', label: 'Amount (INR)', value: (r) => r.amount_inr },
+            { key: 'method', label: 'Payment Method', value: (r) => PAYMENT_LABELS[r.payment_method] },
+            { key: 'ref', label: 'Transaction Reference', value: (r) => r.transaction_reference ?? '' },
+            { key: 'recorded_by', label: 'Recorded By', value: (r) => r.recorder?.full_name ?? '' },
+          ])
+          downloadCsv(`donations-${period?.year}-${period?.month}.csv`, csv)
+        },
+        onError: (error) => toast.error(getFriendlyErrorMessage(error, 'Unable to export donations. Please try again.')),
+      },
+    )
   }
 
   return (
@@ -152,8 +174,8 @@ export default function AdminDonationsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={handleExport} disabled={!data || data.rows.length === 0} className="ml-auto">
-          <Download className="size-4" /> Export CSV
+        <Button variant="outline" onClick={handleExport} disabled={!data || data.rows.length === 0 || isExporting} className="ml-auto">
+          <Download className="size-4" /> {isExporting ? 'Exporting…' : 'Export CSV'}
         </Button>
         <RecordDonationDialog />
         <AnonymousDonationDialog />

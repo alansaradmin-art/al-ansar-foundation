@@ -23,6 +23,22 @@ export function useAdminDonations(filters: AdminDonationFilters) {
   })
 }
 
+/** Export CSV must never reuse the on-screen `data.rows` from
+ * useAdminDonations directly — that's whatever one page of the list
+ * happens to be showing (25 by default, or whatever the configured page
+ * size is), so a month with more donations than that would silently
+ * export an incomplete file. This issues its own one-off fetch for the
+ * same filters with a generous ceiling instead of the display's own page
+ * size, so the export always has everything currently matching the
+ * selected month/manager/method/type filters, independent of pagination. */
+export function useExportAdminDonations() {
+  const { getToken } = useAuth()
+  return useMutation({
+    mutationFn: (filters: Omit<AdminDonationFilters, 'page' | 'pageSize'>) =>
+      donationsService.listDonationsAdmin(getToken, { ...filters, page: 1, pageSize: 10000 }),
+  })
+}
+
 /** Creating a donation can flip a member off the pending-followups list and
  * change dashboard totals, so invalidation is intentionally broad. */
 export function useCreateDonation(recordedBy: string) {
